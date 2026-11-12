@@ -35,7 +35,7 @@ const confirmed = () => startedGame();
 describe('migrazione dei salvataggi', () => {
   it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(5);
+    expect(s.version).toBe(6);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.budget).toBe(firstSite.budget);
@@ -65,13 +65,16 @@ describe('migrazione dei salvataggi', () => {
     delete v2.stage;
     delete v2.siteId;
     delete v2.pv;
+    delete v2.survey;
+    delete v2.hiddenHazards;
+    delete v2.rng;
     delete v2.budget;
     delete v2.stock;
     delete v2.orders;
     v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
     (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
     const s = migrate(v2, defaultContent);
-    expect(s.version).toBe(5);
+    expect(s.version).toBe(6);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.active).toEqual([]);
@@ -83,10 +86,13 @@ describe('migrazione dei salvataggi', () => {
     delete v3.stage;
     delete v3.siteId;
     delete v3.pv;
-    expect(migrate(v3, defaultContent)).toMatchObject({ version: 5, stage: 'cantiere', siteId: 'demo-torrente', pv: 0 });
+    delete v3.survey;
+    delete v3.hiddenHazards;
+    delete v3.rng;
+    expect(migrate(v3, defaultContent)).toMatchObject({ version: 6, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
   });
 
-  it('un salvataggio v5 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it('un salvataggio v6 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

@@ -60,7 +60,9 @@ export function generatePlan(g: ParkGrid, c: Content): ConstructionPlan {
     for (const t of tilesOf(p)) {
       for (const prep of c.preparations) {
         const bySurface = prep.surfaces?.includes(g.surface[t]) ?? false;
-        if (bySurface || e.prep.includes(prep.id)) {
+        const risk = g.risk[t];
+        const byRisk = risk !== null && prep.risks.includes(risk);
+        if (bySurface || byRisk || e.prep.includes(prep.id)) {
           if (!prepTiles.has(prep.id)) prepTiles.set(prep.id, new Set());
           prepTiles.get(prep.id)!.add(t);
         }
@@ -90,7 +92,7 @@ export function generatePlan(g: ParkGrid, c: Content): ConstructionPlan {
         maxVolunteers: prep.maxVolunteers,
         requires: [...prep.pratiche],
         after: depsOn(lot, prep.after, prepTaskAt),
-        materials: [],
+        materials: sumMaterials(lot.flatMap(() => prep.materialsPerTile)),
         placements: [],
         tiles: lot,
         prepId: prep.id,
@@ -237,4 +239,49 @@ export function gamePratiche(c: Content, planPratiche: string[]): string[] {
   const fromCatalog = new Set([...c.elements.flatMap((e) => e.pratiche), ...c.preparations.flatMap((p) => p.pratiche)]);
   const needed = new Set([...planPratiche, ...c.tasks.flatMap((t) => t.requires)]);
   return c.pratiche.filter((p) => needed.has(p.id) || !fromCatalog.has(p.id)).map((p) => p.id);
+}
+
+/**
+ * Compiti di messa in sicurezza per un'insidia emersa in cantiere. Coprono solo
+ * le tile dell'insidia sotto elementi non ancora costruiti; aspettano le
+ * lavorazioni preliminari ancora da fare sulle stesse tile.
+ */
+export function emergencyTasks(
+  g: ParkGrid,
+  c: Content,
+  hazardId: string,
+  hazardTiles: number[],
+  plan: PlanTask[],
+  completed: string[],
+  tag: string,
+): PlanTask[] {
+  const hazard = c.hazards.find((h) => h.id === hazardId);
+  if (!hazard) throw new Error(`Insidia sconosciuta: ${hazardId}`);
+  const prep = c.preparations.find((p) => p.id === hazard.prep);
+  if (!prep) throw new Error(`Lavorazione sconosciuta: ${hazard.prep}`);
+  const underProject = new Set<number>();
+  for (const p of g.placements) {
+    if (g.built.includes(p.uid)) continue;
+    const e = c.elements.find((x) => x.id === p.elementId);
+    if (!e) continue;
+    for (let dy = 0; dy < e.h; dy++) for (let dx = 0; dx < e.w; dx++) underProject.add((p.y + dy) * g.width + p.x + dx);
+  }
+  const tiles = hazardTiles.filter((t) => underProject.has(t)).sort((a, b) => a - b);
+  const lots = chunk(tiles, lotSize(prep.hoursPerTile));
+  return lots.map((lot, i) => ({
+    id: `risk:${hazardId}:${tag}:${i + 1}`,
+    name: lotName(`${prep.name} (imprevisto)`, i, lots.length),
+    phase: 'operativa' as const,
+    hours: lot.length * prep.hoursPerTile,
+    skill: prep.skill,
+    maxVolunteers: prep.maxVolunteers,
+    requires: [...prep.pratiche],
+    after: plan
+      .filter((t) => !completed.includes(t.id) && t.prepId !== null && prep.after.includes(t.prepId) && t.tiles.some((x) => lot.includes(x)))
+      .map((t) => t.id),
+    materials: sumMaterials(lot.flatMap(() => prep.materialsPerTile)),
+    placements: [],
+    tiles: lot,
+    prepId: prep.id,
+  }));
 }

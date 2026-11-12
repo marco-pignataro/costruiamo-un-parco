@@ -58,6 +58,8 @@ export class ParkScene extends Phaser.Scene {
   private sim!: () => Simulation;
   private ground: Phaser.GameObjects.Image[] = [];
   private trash: Phaser.GameObjects.Image[] = [];
+  private risk: Phaser.GameObjects.Rectangle[] = [];
+  private poiMarks = new Map<string, Phaser.GameObjects.Image>();
   private elements = new Map<number, Phaser.GameObjects.Image[]>();
   private people = new Map<string, Phaser.GameObjects.Image>();
   private targets = new Map<string, string>();
@@ -86,6 +88,8 @@ export class ParkScene extends Phaser.Scene {
     // Anche dopo un restart: si riparte da zero.
     this.ground = [];
     this.trash = [];
+    this.risk = [];
+    this.poiMarks.clear();
     this.elements.clear();
     this.people.clear();
     this.targets.clear();
@@ -108,7 +112,12 @@ export class ParkScene extends Phaser.Scene {
       const { x, y } = tileTopLeft(i, g.width);
       this.ground.push(this.add.image(x, y, 'terra').setOrigin(0));
       this.trash.push(this.add.image(x + 8, y + 9, 'rifiuto').setVisible(false).setDepth(1));
+      this.risk.push(this.add.rectangle(x, y, TILE, TILE, 0xe04a3a, 0.3).setOrigin(0).setStrokeStyle(1, 0xe04a3a, 0.6).setDepth(5).setVisible(false));
       if (g.surface[i] === 'albero-tutelato') this.add.image(x + 8, y + TILE, 'albero').setOrigin(0.5, 1).setDepth(4);
+    }
+
+    for (const p of this.sim().pois) {
+      this.poiMarks.set(p.id, this.add.image(GRID.x + p.x * TILE + 8, GRID.y + p.y * TILE + 8, 'indizio').setDepth(6).setVisible(false));
     }
 
     this.hoverFrame = this.add.rectangle(0, 0, TILE, TILE).setOrigin(0).setStrokeStyle(1, 0xffffff).setDepth(20).setVisible(false);
@@ -223,7 +232,14 @@ export class ParkScene extends Phaser.Scene {
     g.surface.forEach((s, i) => {
       this.ground[i].setTexture(SURFACE_TEXTURE[s]);
       this.trash[i].setVisible(s === 'rifiuti');
+      this.risk[i].setVisible(g.risk[i] !== null);
     });
+    const surveying = sim.state.stage === 'sopralluogo';
+    for (const [id, mark] of this.poiMarks) {
+      const st = sim.state.survey.find((x) => x.id === id);
+      mark.setVisible(surveying && st !== undefined && !st.found);
+      if (st) mark.setTexture(st.status === 'analizzato' ? 'indizio-ok' : 'indizio');
+    }
     this.syncPlacements();
     const built = new Set(g.built);
     const designing = sim.state.stage === 'progettazione';
@@ -238,7 +254,8 @@ export class ParkScene extends Phaser.Scene {
     const where = new Map<string, { x: number; y: number }>();
     for (const a of sim.state.active) {
       const def = a.kind === 'lavoro' ? sim.taskDef(a.refId) : null;
-      const tiles = def && 'tiles' in def ? (def as PlanTask).tiles : [];
+      const poi = a.kind === 'analisi' ? sim.poi(a.refId) : null;
+      const tiles = poi ? [poi.y * g.width + poi.x] : def && 'tiles' in def ? (def as PlanTask).tiles : [];
       a.volunteerIds.forEach((id, i) => {
         if (tiles.length > 0) {
           const t = tileTopLeft(tiles[i % tiles.length], g.width);

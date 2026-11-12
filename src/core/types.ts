@@ -62,8 +62,11 @@ export interface Volunteer {
 
 export interface ActiveTask {
   uid: number;
-  /** lavoro: compito; richiesta: pratica a timer; ordine: ordine al fornitore per un compito del piano. */
-  kind: 'lavoro' | 'richiesta' | 'ordine';
+  /**
+   * lavoro: compito; richiesta: pratica a timer; ordine: ordine al fornitore per un
+   * compito del piano; analisi: punto sospetto del sopralluogo.
+   */
+  kind: 'lavoro' | 'richiesta' | 'ordine' | 'analisi';
   refId: string;
   volunteerIds: string[];
   startedAt: number;
@@ -94,13 +97,29 @@ export interface Report {
   seen: boolean;
 }
 
-export type Stage = 'terreno' | 'squadra' | 'progettazione' | 'cantiere';
+export type Stage = 'terreno' | 'squadra' | 'sopralluogo' | 'progettazione' | 'cantiere';
+
+export interface SurveyPoiState {
+  id: string;
+  status: 'da-analizzare' | 'in-analisi' | 'analizzato';
+  /** Esito dell'analisi: insidia trovata, oppure null (niente, o non vista). */
+  found: string | null;
+}
+
+/** Insidia sfuggita al sopralluogo: può emergere in cantiere. */
+export interface HiddenHazard {
+  poiId: string;
+  hazardId: string;
+  /** Indici delle tile dell'insidia. */
+  tiles: number[];
+}
 
 export interface GameState {
-  version: 5;
+  version: 6;
   /**
    * terreno: scelta del terreno (Fase 1); squadra: reclutamento con i PV (Fase 2);
-   * progettazione: si disegna il parco (Fase 4); cantiere: turni settimanali (Fase 5).
+   * sopralluogo: analisi dei punti sospetti (Fase 3); progettazione: si disegna
+   * il parco (Fase 4); cantiere: turni settimanali (Fase 5).
    */
   stage: Stage;
   siteId: string;
@@ -127,6 +146,11 @@ export interface GameState {
   /** Materiali in magazzino, per id. */
   stock: MaterialStock;
   orders: Order[];
+  /** Punti sospetti del sopralluogo e il loro esito. */
+  survey: SurveyPoiState[];
+  hiddenHazards: HiddenHazard[];
+  /** Stato del generatore casuale (con seme): la stessa partita dà gli stessi esiti. */
+  rng: number;
 }
 
 // ---------- Progettazione del parco (Fase 4) ----------
@@ -181,6 +205,37 @@ export interface PrepDef {
   pratiche: string[];
   /** Superficie delle tile a lavorazione finita (null = resta com'è). */
   result: SurfaceId | null;
+  /** Scatta anche sulle tile con queste insidie note (messa in sicurezza). */
+  risks: string[];
+  /** Materiali consumati per ogni tile lavorata. */
+  materialsPerTile: { id: string; qty: number }[];
+}
+
+/** Insidia nascosta nel terreno (Fase 3). */
+export interface HazardDef {
+  id: string;
+  name: string;
+  /** Cosa comporta: si legge nel resoconto quando la si scopre. */
+  description: string;
+  /** Skill che fa da lente: con lo specialista l'analisi non sbaglia. */
+  lensSkill: string | null;
+  /** Probabilità di non accorgersene senza lo specialista. */
+  errorChance: number;
+  /** Lavorazione di messa in sicurezza che serve sopra di lei. */
+  prep: string;
+}
+
+/** Punto sospetto da analizzare nel sopralluogo; hazard null = falso allarme. */
+export interface PoiDef {
+  id: string;
+  x: number;
+  y: number;
+  clue: string;
+  /** Ore complessive dell'analisi. */
+  hours: number;
+  hazard: string | null;
+  /** Tile dove sta l'insidia. */
+  area: { x: number; y: number; w: number; h: number } | null;
 }
 
 /** Fattore della scheda terreno; quelli nascosti si vedono come "?" fino al sopralluogo. */
@@ -203,6 +258,7 @@ export interface SiteDef {
   scoreMultiplier: number;
   bonus: string;
   factors: SiteFactor[];
+  pois: PoiDef[];
   /** Un carattere per tile, vedi SURFACE_CHARS in grid.ts. */
   rows: string[];
   placements: { elementId: string; x: number; y: number }[];

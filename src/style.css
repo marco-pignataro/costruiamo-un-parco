@@ -102,3 +102,6 @@ button.confirm { width: 100%; background: var(--accent); color: white; border-co
 .factors li { display: flex; justify-content: space-between; gap: 8px; }
 .cands li.cand { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
 .cand i { width: 10px; height: 10px; border-radius: 2px; }
+
+.danger { color: var(--warn); }
+.warn { color: var(--warn); }

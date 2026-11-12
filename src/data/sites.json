@@ -45,6 +45,13 @@
       {"elementId": "panchina", "x": 9, "y": 4},
       {"elementId": "aiuola", "x": 3, "y": 1},
       {"elementId": "cestino", "x": 6, "y": 6}
+    ],
+    "pois": [
+      {"id": "tombino", "x": 6, "y": 6, "clue": "Un tombino arrugginito nascosto nell'erba", "hours": 3, "hazard": "sottoservizi", "area": {"x": 5, "y": 5, "w": 3, "h": 2}},
+      {"id": "ristagni", "x": 10, "y": 3, "clue": "Ristagni d'acqua e canne tra il cemento", "hours": 4, "hazard": "falda-alta", "area": {"x": 9, "y": 3, "w": 3, "h": 3}},
+      {"id": "plastica", "x": 2, "y": 2, "clue": "Pezzi di plastica che affiorano dalla terra", "hours": 2, "hazard": "rifiuti-interrati", "area": {"x": 2, "y": 1, "w": 3, "h": 2}},
+      {"id": "avvallamento", "x": 12, "y": 9, "clue": "Un avvallamento con qualche crepa", "hours": 4, "hazard": "cavita", "area": {"x": 11, "y": 8, "w": 2, "h": 2}},
+      {"id": "odore", "x": 1, "y": 7, "clue": "Un odore strano vicino al muretto", "hours": 2, "hazard": null, "area": null}
     ]
   },
   {
@@ -88,6 +95,12 @@
       {"elementId": "panchina", "x": 4, "y": 3},
       {"elementId": "aiuola", "x": 6, "y": 1},
       {"elementId": "cestino", "x": 8, "y": 5}
+    ],
+    "pois": [
+      {"id": "chiusino", "x": 5, "y": 5, "clue": "Un chiusino con la scritta sbiadita", "hours": 3, "hazard": "sottoservizi", "area": {"x": 4, "y": 4, "w": 3, "h": 2}},
+      {"id": "terra-smossa", "x": 7, "y": 2, "clue": "Terra smossa di recente", "hours": 2, "hazard": null, "area": null},
+      {"id": "crepe", "x": 10, "y": 7, "clue": "Crepe nel vecchio vialetto", "hours": 3, "hazard": null, "area": null},
+      {"id": "cocci", "x": 3, "y": 2, "clue": "Cocci di bottiglia e plastica nell'erba", "hours": 2, "hazard": "rifiuti-interrati", "area": {"x": 2, "y": 2, "w": 2, "h": 2}}
     ]
   },
   {
@@ -139,6 +152,14 @@
       {"elementId": "staccionata", "x": 1, "y": 10},
       {"elementId": "staccionata", "x": 2, "y": 10},
       {"elementId": "staccionata", "x": 3, "y": 10}
+    ],
+    "pois": [
+      {"id": "buca", "x": 6, "y": 3, "clue": "Una buca che non si vede il fondo", "hours": 5, "hazard": "cavita", "area": {"x": 5, "y": 2, "w": 3, "h": 3}},
+      {"id": "discarica", "x": 4, "y": 1, "clue": "Rifiuti ammassati e terra di riporto", "hours": 3, "hazard": "rifiuti-interrati", "area": {"x": 3, "y": 0, "w": 5, "h": 2}},
+      {"id": "vernice", "x": 8, "y": 6, "clue": "Segni di vernice sull'asfalto vecchio", "hours": 3, "hazard": "sottoservizi", "area": {"x": 7, "y": 6, "w": 3, "h": 1}},
+      {"id": "muschio", "x": 10, "y": 7, "clue": "Muschio e terra sempre bagnata", "hours": 4, "hazard": "falda-alta", "area": {"x": 9, "y": 7, "w": 2, "h": 2}},
+      {"id": "capanno", "x": 12, "y": 1, "clue": "Un vecchio capanno con le lastre rotte", "hours": 3, "hazard": null, "area": null},
+      {"id": "paletti", "x": 1, "y": 9, "clue": "Paletti storti e una rete arrugginita", "hours": 2, "hazard": null, "area": null}
     ]
   }
 ]

@@ -32,7 +32,7 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | --- | --- |
 | `src/config.ts` | Titolo, associazione, ore di sessione, efficienze, ordini, lotti del piano, velocità di test |
 | `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `plan.ts` (piano di cantiere dal progetto), `migrate.ts` (salvataggi vecchi), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
-| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), elementi del parco, materiali, lavorazioni del terreno, terreni con progetto proposto (`sites.json`) |
+| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), elementi del parco, materiali, lavorazioni del terreno e messa in sicurezza, insidie (`hazards.json`), terreni con progetto proposto e punti sospetti (`sites.json`) |
 | `src/game/` | `ParkScene.ts` (legge lo stato e disegna griglia, progetto e volontari; non decide nulla), `sprites.ts` (pixel art da griglie di caratteri) |
 | `src/ui/hud.ts` | Pannello di gestione HTML e modale dei resoconti |
 | `tests/` | Vitest sulla simulazione |
@@ -64,7 +64,9 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 - **Fase 4, editor fatto:** si progetta partendo dal progetto proposto del terreno scelto; si posano e tolgono elementi sulla griglia (tasto destro = gomma) con preventivo live, gradimento previsto (`expectedAppeal`) e controlli; la conferma genera piano e pratiche e apre il cantiere.
 - **Fase 1 e Fase 2 fatte:** la partita va terreno → squadra → progettazione → cantiere (`stage`). Tre terreni in `sites.json` (difficoltà 1, 2, 4) con cassa, PV, moltiplicatore, fattori (tipo di terra e sottosuolo "?" fino al sopralluogo) e bonus descritto; la squadra si recluta da 17 candidati spendendo i PV (presidente e segretario/a unici, minimo 3). `GameState` v5 con migrazione dalle versioni 1-4; 71 test. Fattori e bonus dei terreni e gli effetti di coordinatore, presidente e segretario/a sono ancora solo testo.
 - **Ancora fuori dalla Fase 4:** mappa dei rischi sovrapposta (arriva con il sopralluogo), regola di accessibilità, varianti in corso d'opera; ritardi casuali delle consegne, capienza del magazzino, altre fonti di materiali (recupero, donazioni, scambi); la raccolta fondi non porta ancora soldi.
-- **Prossimo blocco:** sopralluogo con insidie (Fase 3) → poi una side-quest a mini-puzzle, una raccolta fondi, inaugurazione e punteggio → MVP.
+- **Fase 3 fatta:** dopo la squadra c'è il sopralluogo, una giornata di 8 ore di sessione in cui si analizzano i punti sospetti del terreno (max 2 volontari per punto). Con lo specialista giusto (la "lente" dell'insidia) l'esito è sempre corretto, senza c'è `errorChance` di non vedere l'insidia; il caso usa un generatore con seme salvato nello stato (`rng`). Le insidie trovate vanno sulla mappa dei rischi: in progettazione costruirci sopra aggiunge lavori di messa in sicurezza con materiali (il preventivo ora è quello del piano completo). Quelle sfuggite emergono in cantiere quando un lavoro tocca le loro tile (`revealHazards`): nascono compiti imprevisti che bloccano i lavori sopra. 4 insidie (rifiuti interrati, sottoservizi, falda alta, cavità); `GameState` v6; 82 test.
+- **Rischio noto:** un'insidia emersa in cantiere costa materiali, e se la cassa non basta la partita si blocca, perché la raccolta fondi non porta ancora soldi. È il motivo per fare subito la raccolta fondi.
+- **Prossimo blocco: una side-quest a mini-puzzle, una raccolta fondi, inaugurazione e punteggio → MVP.
 
 ## Pixel art: Aseprite + server MCP in WSL2
 

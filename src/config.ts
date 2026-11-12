@@ -32,6 +32,9 @@ export const ORDERS = {
   deliveryWeeks: 1,
 } as const;
 
+/** Sopralluogo (Fase 3): una giornata di 8 ore di sessione, al massimo 2 volontari per punto. */
+export const SURVEY = { hours: 8, maxVolunteers: 2 } as const;
+
 /** Squadra minima per aprire il cantiere (sotto, in futuro, si perde). */
 export const MIN_TEAM = 3;
 

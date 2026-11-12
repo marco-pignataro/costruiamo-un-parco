@@ -5,7 +5,7 @@ import type { PraticaStatus } from '../core/types';
 import { ERASER, type EditorTool } from '../game/ParkScene';
 import { SHIRTS } from '../game/sprites';
 
-type Kind = 'lavoro' | 'richiesta' | 'ordine';
+type Kind = 'lavoro' | 'richiesta' | 'ordine' | 'analisi';
 type Selection = { kind: Kind; id: string } | null;
 
 const STATUS_LABEL: Record<PraticaStatus, string> = {
@@ -59,7 +59,7 @@ export class Hud {
       return;
     }
     const stage = this.sim.state.stage;
-    if (stage !== 'cantiere') {
+    if (stage !== 'cantiere' && stage !== 'sopralluogo') {
       if (stage === 'terreno') this.renderSites();
       else if (stage === 'squadra') this.renderTeam();
       else this.renderDesign();
@@ -71,7 +71,12 @@ export class Hud {
     const now = Date.now();
     const used = s.sessionUsedH;
     const limit = sim.sessionLimitH;
-    const phaseName = s.phase === 'burocratica' ? 'Parte burocratica (infrasettimanale)' : 'Parte operativa (weekend)';
+    const surveying = stage === 'sopralluogo';
+    const phaseName = surveying
+      ? 'Sopralluogo (una giornata)'
+      : s.phase === 'burocratica'
+        ? 'Parte burocratica (infrasettimanale)'
+        : 'Parte operativa (weekend)';
 
     const active = s.active
       .map((a) => {
@@ -80,7 +85,9 @@ export class Hud {
             ? sim.taskDef(a.refId).name
             : a.kind === 'ordine'
               ? `Ordine: materiali per ${sim.taskDef(a.refId).name}`
-              : `Richiesta: ${sim.praticaDef(a.refId).name}`;
+              : a.kind === 'analisi'
+                ? `Analisi: ${sim.poi(a.refId).clue}`
+                : `Richiesta: ${sim.praticaDef(a.refId).name}`;
         const left = Math.max(0, (a.endsAt - now) / s.msPerHour);
         const pct = Math.min(100, ((now - a.startedAt) / (a.endsAt - a.startedAt)) * 100);
         const who = a.volunteerIds.map((id) => sim.volunteer(id).name).join(', ');
@@ -90,13 +97,18 @@ export class Hud {
       .join('');
 
     const options = [
+      ...(surveying
+        ? sim.pois
+            .filter((p) => sim.poiState(p.id).status === 'da-analizzare')
+            .map((p) => ({ kind: 'analisi' as const, id: p.id, label: `${p.clue} (${p.hours} h complessive)` }))
+        : []),
       ...sim.availableTasks().map((t) => ({ kind: 'lavoro' as const, id: t.id, label: `${t.name} (${t.hours} h complessive)` })),
-      ...(s.phase === 'burocratica'
+      ...(!surveying && s.phase === 'burocratica'
         ? sim.allPratiche
             .filter((p) => sim.pratica(p.id).status === 'da-avviare')
             .map((p) => ({ kind: 'richiesta' as const, id: p.id, label: `Pratica: ${p.name} (richiesta ${p.requestHours} h)` }))
         : []),
-      ...(s.phase === 'burocratica'
+      ...(!surveying && s.phase === 'burocratica'
         ? sim.orderableTasks().map((t) => ({
             kind: 'ordine' as const,
             id: t.id,
@@ -129,7 +141,9 @@ export class Hud {
           ? sim.previewTask(this.selection.id, ids)
           : this.selection.kind === 'ordine'
             ? sim.previewOrder(this.selection.id, ids)
-            : sim.previewRequest(this.selection.id, ids);
+            : this.selection.kind === 'analisi'
+              ? sim.previewAnalysis(this.selection.id, ids)
+              : sim.previewRequest(this.selection.id, ids);
       const cost = 'costEur' in p && p.costEur !== undefined ? ` · spesa <strong>${p.costEur} €</strong>` : '';
       preview =
         p.hours !== undefined
@@ -163,15 +177,41 @@ export class Hud {
             .join('')}</ul>`
         : '');
 
+    const LENS: Record<string, string> = { impianti: 'elettricista / idraulico', verde: 'giardiniere', progetto: 'geometra' };
+    const pois = surveying
+      ? sim.pois
+          .map((p) => {
+            const st = sim.poiState(p.id);
+            const lens = sim.poiLens(p.id);
+            const hint = lens ? ` · più sicuro con: ${LENS[lens] ?? lens}` : '';
+            const result =
+              st.status === 'da-analizzare'
+                ? `Da analizzare · ${p.hours} h${hint}`
+                : st.status === 'in-analisi'
+                  ? 'In analisi…'
+                  : st.found
+                    ? `<strong class="danger">${esc(sim.hazard(st.found).name)}</strong>`
+                    : 'Niente di preoccupante (forse)';
+            return `<li><strong>${esc(p.clue)}</strong><br><small>${result}</small></li>`;
+          })
+          .join('')
+      : '';
+    const bottom = surveying
+      ? `<section><h2>Punti sospetti</h2><ul>${pois}</ul>
+          <p><small>Le ore non bastano per tutto: scegli dove guardare. Senza lo specialista giusto un'insidia può sfuggire, e si scoprirà in cantiere.</small></p></section>`
+      : `<section><h2>Magazzino</h2>${stock}</section>
+      <section><h2>Registro delle pratiche</h2><ul class="pratiche">${pratiche}</ul></section>`;
+    const closeLabel = surveying ? 'Chiudi il sopralluogo' : s.phase === 'burocratica' ? 'Chiudi e vai al weekend' : 'Chiudi il weekend';
+    const closeTitle = surveying ? 'I punti non analizzati restano un mistero' : 'I giorni rimanenti passano comunque e le attese avanzano';
+
     this.root.innerHTML = `
       <header>
         <h1>${esc(GAME_TITLE)}</h1>
-        <p>Settimana ${s.week} · ${phaseName}</p>
-        <p>In cassa: <strong>${s.budget} €</strong> · Progetto realizzato: <strong>${Math.round(sim.projectProgress * 100)}%</strong></p>
+        <p>${surveying ? `Fase 3 · ${esc(sim.siteName)}` : `Settimana ${s.week}`} · ${phaseName}</p>
+        ${surveying ? '' : `<p>In cassa: <strong>${s.budget} €</strong> · Progetto realizzato: <strong>${Math.round(sim.projectProgress * 100)}%</strong></p>`}
         <div class="bar session"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div>
         <small>Sessione: ${formatHours(used)} su ${limit} h</small>
-        <button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I giorni rimanenti passano comunque e le attese avanzano">
-          ${s.phase === 'burocratica' ? 'Chiudi e vai al weekend' : 'Chiudi il weekend'}</button>
+        <button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="${closeTitle}">${closeLabel}</button>
       </header>
       ${this.message ? `<p class="msg">${esc(this.message)}</p>` : ''}
       <section><h2>Assegna un compito</h2>
@@ -183,8 +223,7 @@ export class Hud {
         ${preview}
       </section>
       <section><h2>In corso</h2><ul class="active">${active || '<li><small>Nessun compito in corso: il tempo di sessione è fermo.</small></li>'}</ul></section>
-      <section><h2>Magazzino</h2>${stock}</section>
-      <section><h2>Registro delle pratiche</h2><ul class="pratiche">${pratiche}</ul></section>
+      ${bottom}
       ${this.footer()}`;
 
     this.renderModal();
@@ -304,7 +343,8 @@ export class Hud {
       ${this.message ? `<p class="msg">${esc(this.message)}</p>` : ''}
       <section><h2>Elementi</h2><div class="tools-grid">${tools}</div></section>
       <section><h2>Preventivo</h2>
-        <p>Materiali: <strong>${sum.costEur} €</strong> · Lavoro: <strong>${sum.hours} h</strong> complessive (più la preparazione del terreno)</p>
+        <p>Materiali: <strong>${sum.costEur} €</strong> · Lavoro: <strong>${sum.hours} h</strong> complessive, preparazione del terreno compresa</p>
+        ${sum.riskTiles > 0 ? `<p class="warn"><small>Costruisci su ${sum.riskTiles} tile a rischio: servono lavori di messa in sicurezza.</small></p>` : ''}
         <p><small>Skill utili: ${esc(sum.skills.join(', ') || '—')}</small></p>
         <p><small>Da ordinare: ${materials}</small></p>
         <p><small>Pratiche: ${pratiche}</small></p>
@@ -384,6 +424,7 @@ export class Hud {
           if (!this.selection) return;
           if (this.selection.kind === 'lavoro') this.sim.startTask(this.selection.id, [...this.team], now);
           else if (this.selection.kind === 'ordine') this.sim.startOrder(this.selection.id, [...this.team], now);
+          else if (this.selection.kind === 'analisi') this.sim.startAnalysis(this.selection.id, [...this.team], now);
           else this.sim.startRequest(this.selection.id, [...this.team], now);
           this.selection = null;
           this.team.clear();

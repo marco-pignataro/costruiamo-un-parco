@@ -5,10 +5,11 @@ import candidates from '../data/candidates.json';
 import elements from '../data/elements.json';
 import materials from '../data/materials.json';
 import preparations from '../data/preparations.json';
+import hazards from '../data/hazards.json';
 import sites from '../data/sites.json';
 import { GRID_MAX } from '../config';
 import { estimate, gridFromSite, validateProject } from './grid';
-import type { Archetype, CandidateDef, ElementDef, MaterialDef, PraticaDef, PrepDef, SiteDef, TaskDef } from './types';
+import type { Archetype, CandidateDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SiteDef, TaskDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
@@ -21,6 +22,7 @@ export interface Content {
   preparations: PrepDef[];
   /** Terreni tra cui scegliere in Fase 1, ognuno con il suo progetto proposto. */
   sites: SiteDef[];
+  hazards: HazardDef[];
 }
 
 export const defaultContent: Content = {
@@ -32,6 +34,7 @@ export const defaultContent: Content = {
   materials: materials as MaterialDef[],
   preparations: preparations as PrepDef[],
   sites: sites as SiteDef[],
+  hazards: hazards as HazardDef[],
 };
 
 /**
@@ -56,6 +59,12 @@ export function validateContent(c: Content): string[] {
     if (p.skill && !skills.has(p.skill)) errors.push(`${p.id}: skill sconosciuta ${p.skill}`);
     for (const a of p.after) if (!has(c.preparations, a)) errors.push(`${p.id}: lavorazione sconosciuta ${a}`);
     for (const x of p.pratiche) if (!has(c.pratiche, x)) errors.push(`${p.id}: pratica sconosciuta ${x}`);
+    for (const r of p.risks) if (!has(c.hazards, r)) errors.push(`${p.id}: insidia sconosciuta ${r}`);
+    for (const m of p.materialsPerTile) if (!has(c.materials, m.id)) errors.push(`${p.id}: materiale sconosciuto ${m.id}`);
+  }
+  for (const h of c.hazards) {
+    if (!has(c.preparations, h.prep)) errors.push(`${h.id}: lavorazione sconosciuta ${h.prep}`);
+    if (h.lensSkill && !skills.has(h.lensSkill)) errors.push(`${h.id}: skill sconosciuta ${h.lensSkill}`);
   }
   for (const t of c.tasks) {
     if (t.skill && !skills.has(t.skill)) errors.push(`${t.id}: skill sconosciuta ${t.skill}`);
@@ -68,6 +77,15 @@ export function validateContent(c: Content): string[] {
     for (const site of c.sites) {
       if (site.rows.length > GRID_MAX.height || site.rows[0].length > GRID_MAX.width) {
         errors.push(`${site.id}: terreno più grande di ${GRID_MAX.width}×${GRID_MAX.height}`);
+      }
+      for (const poi of site.pois) {
+        const w = site.rows[0].length;
+        const h = site.rows.length;
+        if (poi.x < 0 || poi.y < 0 || poi.x >= w || poi.y >= h) errors.push(`${site.id}/${poi.id}: fuori dal terreno`);
+        if ((poi.hazard === null) !== (poi.area === null)) errors.push(`${site.id}/${poi.id}: insidia e area vanno insieme`);
+        if (poi.hazard && !has(c.hazards, poi.hazard)) errors.push(`${site.id}/${poi.id}: insidia sconosciuta ${poi.hazard}`);
+        const a = poi.area;
+        if (a && (a.x < 0 || a.y < 0 || a.x + a.w > w || a.y + a.h > h)) errors.push(`${site.id}/${poi.id}: area fuori dal terreno`);
       }
       try {
         const g = gridFromSite(site, c);

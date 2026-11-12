@@ -1,0 +1,6 @@
+[
+  {"id": "rifiuti-interrati", "name": "Rifiuti interrati", "description": "Sotto la superficie c'è uno strato di rifiuti: va scavato e smaltito prima di costruire.", "lensSkill": null, "errorChance": 0.2, "prep": "scavo-rifiuti-interrati"},
+  {"id": "sottoservizi", "name": "Sottoservizi", "description": "Passano tubi e cavi: vicino a loro si scava solo a mano, con molta attenzione.", "lensSkill": "impianti", "errorChance": 0.4, "prep": "scavo-sottoservizi"},
+  {"id": "falda-alta", "name": "Falda alta", "description": "L'acqua è vicina alla superficie: senza drenaggio la zona si allaga dopo la pioggia.", "lensSkill": "verde", "errorChance": 0.4, "prep": "drenaggio"},
+  {"id": "cavita", "name": "Cavità nel terreno", "description": "Il terreno è instabile: va consolidato o i sentieri cedono.", "lensSkill": "progetto", "errorChance": 0.4, "prep": "consolidamento"}
+]

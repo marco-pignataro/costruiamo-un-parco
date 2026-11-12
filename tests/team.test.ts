@@ -89,7 +89,7 @@ describe('Fase 2: squadra con i PV', () => {
     expect(() => sim.confirmTeam()).toThrow('almeno');
     sim.recruit('v15');
     sim.confirmTeam();
-    expect(sim.state.stage).toBe('progettazione');
+    expect(sim.state.stage).toBe('sopralluogo');
     expect(() => sim.recruit('v8')).toThrow('Fase 2');
   });
 

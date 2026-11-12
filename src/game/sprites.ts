@@ -111,6 +111,11 @@ const TREE = [
   '.....tttt.......',
 ];
 
+/** Cartello giallo con il punto esclamativo: un punto sospetto da analizzare. */
+const CLUE = ['.yyyyy.', 'yyybyyy', 'yyybyyy', 'yyybyyy', 'yyyyyyy', 'yyybyyy', '.yyyyy.', '...L...', '...L...'];
+/** Lo stesso cartello in verde: analizzato, niente di preoccupante. */
+const CLUE_OK = ['.vvvvv.', 'vvvvvwv', 'vvvvwvv', 'vwvwvvv', 'vvwvvvv', 'vvvvvvv', '.vvvvv.', '...L...', '...L...'];
+
 const BIN = ['.kkkk.', 'kkkkkk', '.kwwk.', '.kkkk.', '.kkkk.', '.kkkk.', '..kk..'];
 
 const DESK = [
@@ -205,6 +210,8 @@ export function createTextures(scene: Phaser.Scene, width: number, skyHeight: nu
   tile(scene, 'aiuola', '#6b4423', ['#2f7a2a', '#8e5bb5', '#4c8a31', '#5e3b1b'], 0.45, 6);
   paint(scene, 'albero', TREE);
   paint(scene, 'cestino', BIN);
+  paint(scene, 'indizio', CLUE);
+  paint(scene, 'indizio-ok', CLUE_OK);
   paint(scene, 'rifiuto', TRASH);
   paint(scene, 'panchina-rotta', BENCH_BROKEN);
   paint(scene, 'panchina', BENCH);

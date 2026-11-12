@@ -1,10 +1,12 @@
 [
-  { "id": "ghiaia", "name": "Ghiaia", "unit": "sacco", "unitPrice": 6 },
-  { "id": "tavole", "name": "Tavole di legno", "unit": "tavola", "unitPrice": 12 },
-  { "id": "pali", "name": "Pali di castagno", "unit": "palo", "unitPrice": 9 },
-  { "id": "viti", "name": "Viti e bulloni", "unit": "scatola", "unitPrice": 8 },
-  { "id": "vernice", "name": "Impregnante per legno", "unit": "barattolo", "unitPrice": 15 },
-  { "id": "piantine", "name": "Piantine aromatiche", "unit": "piantina", "unitPrice": 3 },
-  { "id": "terriccio", "name": "Terriccio", "unit": "sacco", "unitPrice": 7 },
-  { "id": "cestino", "name": "Cestino per la differenziata", "unit": "pezzo", "unitPrice": 55 }
+  {"id": "ghiaia", "name": "Ghiaia", "unit": "sacco", "unitPrice": 6},
+  {"id": "tavole", "name": "Tavole di legno", "unit": "tavola", "unitPrice": 12},
+  {"id": "pali", "name": "Pali di castagno", "unit": "palo", "unitPrice": 9},
+  {"id": "viti", "name": "Viti e bulloni", "unit": "scatola", "unitPrice": 8},
+  {"id": "vernice", "name": "Impregnante per legno", "unit": "barattolo", "unitPrice": 15},
+  {"id": "piantine", "name": "Piantine aromatiche", "unit": "piantina", "unitPrice": 3},
+  {"id": "terriccio", "name": "Terriccio", "unit": "sacco", "unitPrice": 7},
+  {"id": "cestino", "name": "Cestino per la differenziata", "unit": "pezzo", "unitPrice": 55},
+  {"id": "big-bag", "name": "Big bag per rifiuti speciali", "unit": "sacco", "unitPrice": 25},
+  {"id": "tubo-drenante", "name": "Tubo drenante", "unit": "tubo", "unitPrice": 18}
 ]
