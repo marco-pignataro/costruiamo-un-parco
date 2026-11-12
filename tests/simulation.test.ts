@@ -10,13 +10,13 @@ const newGame = () => Simulation.newGame(defaultContent, T0);
 describe('timer reali e recupero a gioco chiuso', () => {
   it('un compito finisce dopo le sue ore reali e produce un resoconto', () => {
     const sim = newGame();
-    sim.startTask('ordine-materiali', ['v2'], T0); // segretaria: 3 / 1,1 h
-    sim.tick(at(2));
+    sim.startTask('raccolta-fondi', ['v7'], T0); // comunicatrice: 8 / 1,1 h
+    sim.tick(at(7));
     expect(sim.state.active).toHaveLength(1);
-    sim.tick(at(3));
+    sim.tick(at(8));
     expect(sim.state.active).toHaveLength(0);
-    expect(sim.state.completedTasks).toContain('ordine-materiali');
-    expect(sim.unseenReports().map((r) => r.title)).toEqual(['Completato: Ordinare legno e viti']);
+    expect(sim.state.completedTasks).toContain('raccolta-fondi');
+    expect(sim.unseenReports().map((r) => r.title)).toEqual(['Completato: Organizzare una raccolta fondi']);
   });
 
   it('a gioco chiuso gli eventi si recuperano tutti, in ordine', () => {
@@ -33,7 +33,7 @@ describe('timer reali e recupero a gioco chiuso', () => {
 describe('sessioni', () => {
   it('le ore di sessione contano il tempo con almeno un compito in corso, una volta sola', () => {
     const sim = newGame();
-    sim.startTask('ordine-materiali', ['v2'], T0);
+    sim.startRequest('assicurazione', ['v2'], T0);
     sim.startTask('raccolta-fondi', ['v7'], T0);
     sim.tick(at(1));
     expect(sim.state.sessionUsedH).toBeCloseTo(1);
@@ -81,6 +81,7 @@ describe('sessioni', () => {
     sim.closeSession(at(2));
     const panchina = sim.state.plan.find((t) => t.id.startsWith('el:panchina'))!;
     sim.state.completedTasks.push(...sim.missingPrerequisites(panchina).map((t) => t.id));
+    for (const m of panchina.materials) sim.state.stock[m.id] = m.qty;
     const t = sim.startTask(panchina.id, ['v3', 'v5', 'v6'], at(3));
     expect(t.hours).toBeCloseTo(1.96, 2);
     expect(t.quality).toBe('alta');
@@ -130,7 +131,7 @@ describe('piano di cantiere nella partita', () => {
 
   it('i lavori del weekend nascono dal progetto del terreno di prova', () => {
     const sim = newGame();
-    expect(sim.state.version).toBe(2);
+    expect(sim.state.version).toBe(3);
     expect(sim.state.plan.length).toBeGreaterThan(0);
     expect(sim.state.plan.every((t) => t.phase === 'operativa')).toBe(true);
   });
@@ -158,6 +159,7 @@ describe('piano di cantiere nella partita', () => {
     const sim = weekend();
     const cestino = sim.state.plan.find((t) => t.id.startsWith('el:cestino'))!;
     sim.state.completedTasks.push(...sim.missingPrerequisites(cestino).map((t) => t.id));
+    sim.state.stock.cestino = 1;
     sim.startTask(cestino.id, ['v5'], at(3));
     sim.tick(at(5));
     expect(sim.state.grid.built).toEqual(cestino.placements);
@@ -180,5 +182,70 @@ describe('piano di cantiere nella partita', () => {
     expect(ids).toContain('assicurazione');
     expect(ids).toContain('occupazione-suolo'); // non dipende dal progetto
     expect(ids).not.toContain('videosorveglianza');
+  });
+});
+
+describe('cassa, ordini e magazzino', () => {
+  const cestinoId = (sim: Simulation) => sim.state.plan.find((t) => t.id.startsWith('el:cestino'))!.id;
+
+  it('si parte con la cassa del terreno e il magazzino vuoto', () => {
+    const sim = newGame();
+    expect(sim.state.budget).toBe(defaultContent.site.budget);
+    expect(sim.state.stock).toEqual({});
+  });
+
+  it('un lavoro senza materiali non parte, e il messaggio dice cosa manca', () => {
+    const sim = newGame();
+    const t = sim.taskDef(cestinoId(sim));
+    sim.state.completedTasks.push(...sim.missingPrerequisites(t).map((x) => x.id));
+    sim.state.phase = 'operativa';
+    sim.pratica('assicurazione').status = 'approvata';
+    expect(sim.previewTask(t.id, ['v5']).errors).toEqual(['Mancano i materiali: 1 × cestino per la differenziata (da ordinare)']);
+  });
+
+  it('ordine: si paga all’avvio, parte quando il volontario finisce, arriva il weekend dopo', () => {
+    const sim = newGame();
+    const id = cestinoId(sim);
+    expect(sim.orderableTasks().map((t) => t.id)).toContain(id);
+    sim.startOrder(id, ['v2'], T0); // 1 / 1,1 h
+    expect(sim.state.budget).toBe(defaultContent.site.budget - 55);
+    expect(sim.orderableTasks().map((t) => t.id)).not.toContain(id);
+    sim.tick(at(1));
+    expect(sim.openOrder(id)).toMatchObject({ status: 'in-consegna', arrivesWeek: 2 });
+
+    sim.closeSession(at(1)); // weekend della settimana 1: ancora niente
+    expect(sim.state.stock.cestino ?? 0).toBe(0);
+    sim.closeSession(at(1)); // settimana 2, parte burocratica
+    sim.closeSession(at(1)); // weekend della settimana 2: consegna
+    expect(sim.state.stock.cestino).toBe(1);
+    expect(sim.state.orders[0].status).toBe('consegnato');
+    expect(sim.state.reports.some((r) => r.title.startsWith('Consegna arrivata'))).toBe(true);
+  });
+
+  it('avviare il lavoro consuma i materiali', () => {
+    const sim = newGame();
+    const t = sim.taskDef(cestinoId(sim));
+    sim.state.completedTasks.push(...sim.missingPrerequisites(t).map((x) => x.id));
+    sim.state.phase = 'operativa';
+    sim.pratica('assicurazione').status = 'approvata';
+    sim.state.stock.cestino = 2;
+    sim.startTask(t.id, ['v5'], T0);
+    expect(sim.state.stock.cestino).toBe(1);
+  });
+
+  it('si ordina solo quello che manca e solo con abbastanza soldi in cassa', () => {
+    const sim = newGame();
+    const panchina = sim.state.plan.find((t) => t.id.startsWith('el:panchina'))!;
+    sim.state.stock.tavole = 3; // ne servono 4
+    expect(sim.missingMaterials(panchina)).toContainEqual({ id: 'tavole', qty: 1 });
+    expect(sim.previewOrder(panchina.id, ['v2']).costEur).toBe(12 + 8 + 15);
+    sim.state.budget = 10;
+    expect(sim.previewOrder(panchina.id, ['v2']).errors.join(' ')).toMatch(/Costa 35 €, in cassa ce ne sono 10/);
+  });
+
+  it('gli ordini si fanno solo nella parte burocratica', () => {
+    const sim = newGame();
+    sim.closeSession(T0);
+    expect(sim.previewOrder(cestinoId(sim), ['v2']).errors).toContain('Gli ordini si fanno nella parte burocratica');
   });
 });

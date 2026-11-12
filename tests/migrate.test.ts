@@ -30,9 +30,12 @@ function saveV1() {
 }
 
 describe('migrazione dei salvataggi', () => {
-  it('v1 → v2: arrivano griglia e piano, le pratiche restano come erano', () => {
+  it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(2);
+    expect(s.version).toBe(3);
+    expect(s.budget).toBe(defaultContent.site.budget);
+    expect(s.stock).toEqual({});
+    expect(s.orders).toEqual([]);
     expect(s.grid.placements.length).toBeGreaterThan(0);
     expect(s.plan.length).toBeGreaterThan(0);
     expect(s.pratiche.find((p) => p.id === 'assicurazione')?.status).toBe('approvata');
@@ -43,7 +46,7 @@ describe('migrazione dei salvataggi', () => {
     const s = migrate(saveV1(), defaultContent);
     expect(s.active).toEqual([]);
     expect(s.volunteers.find((v) => v.id === 'v5')).toMatchObject({ busy: false, hoursUsed: 0 });
-    expect(s.reports.at(-1)?.title).toBe('Il cantiere è stato riprogettato');
+    expect(s.reports.map((r) => r.title)).toEqual(['Il cantiere è stato riprogettato', 'Arriva il magazzino', 'Compiti interrotti']);
   });
 
   it('il salvataggio migrato si gioca: tick e compiti del piano funzionano', () => {
@@ -52,7 +55,20 @@ describe('migrazione dei salvataggi', () => {
     expect(sim.availableTasks().map((t) => t.id)).toContain('prep:bonifica:1');
   });
 
-  it('un salvataggio v2 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it('v2 → v3: il compito "Ordinare legno e viti" in corso si interrompe', () => {
+    const v2 = { ...Simulation.newGame(defaultContent, T0).state, version: 2 } as Record<string, unknown>;
+    delete v2.budget;
+    delete v2.stock;
+    delete v2.orders;
+    v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
+    (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
+    const s = migrate(v2, defaultContent);
+    expect(s.version).toBe(3);
+    expect(s.active).toEqual([]);
+    expect(s.volunteers.find((v) => v.id === 'v2')?.busy).toBe(false);
+  });
+
+  it('un salvataggio v3 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

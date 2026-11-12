@@ -264,6 +264,8 @@ Ogni task consuma materiali specifici (legno, ghiaia, viti, piantine, tubi, cavi
 
 **Pianificazione degli ordini.** Il giocatore deve ordinare in anticipo, in base al piano di cantiere: un ordine tardivo ferma la squadra nel weekend.
 
+**Regole del prototipo.** Si ordina dal fornitore nella parte burocratica, per un compito del piano alla volta e solo per i materiali che mancano in magazzino, anche per compiti non ancora sbloccati. Compilare l'ordine occupa un volontario per 1 ora (più veloce con la skill organizzazione). Si paga all'avvio e i materiali arrivano all'inizio del weekend della settimana dopo. Un lavoro parte solo se i suoi materiali sono in magazzino e li consuma all'avvio; le lavorazioni del terreno non ne usano, quindi il primo weekend si prepara il terreno mentre i materiali sono in viaggio. Il vecchio compito fisso "Ordinare legno e viti" non c'è più. Ritardi casuali, capienza del magazzino e le altre fonti verranno dopo.
+
 ## Burocrazia e istituzioni
 
 Tutte le pratiche nascono dal progetto e sono visibili da subito; si chiudono in due modi: a timer (richiesta + attesa della risposta) o con una richiesta diretta al dirigente (side-quest o mini-dungeon).

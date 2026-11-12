@@ -1,6 +1,7 @@
 {
   "id": "demo-torrente",
   "name": "Ex deposito sul torrente",
+  "budget": 450,
   "rows": [
     "eeeeeeeeeeeeee",
     "eeerreeeeeeeAe",

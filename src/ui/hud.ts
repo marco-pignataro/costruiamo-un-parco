@@ -4,7 +4,8 @@ import type { Simulation } from '../core/simulation';
 import type { PraticaStatus } from '../core/types';
 import { SHIRTS } from '../game/sprites';
 
-type Selection = { kind: 'lavoro' | 'richiesta'; id: string } | null;
+type Kind = 'lavoro' | 'richiesta' | 'ordine';
+type Selection = { kind: Kind; id: string } | null;
 
 const STATUS_LABEL: Record<PraticaStatus, string> = {
   'da-avviare': 'Da avviare',
@@ -64,7 +65,12 @@ export class Hud {
 
     const active = s.active
       .map((a) => {
-        const name = a.kind === 'lavoro' ? sim.taskDef(a.refId).name : `Richiesta: ${sim.praticaDef(a.refId).name}`;
+        const name =
+          a.kind === 'lavoro'
+            ? sim.taskDef(a.refId).name
+            : a.kind === 'ordine'
+              ? `Ordine: materiali per ${sim.taskDef(a.refId).name}`
+              : `Richiesta: ${sim.praticaDef(a.refId).name}`;
         const left = Math.max(0, (a.endsAt - now) / s.msPerHour);
         const pct = Math.min(100, ((now - a.startedAt) / (a.endsAt - a.startedAt)) * 100);
         const who = a.volunteerIds.map((id) => sim.volunteer(id).name).join(', ');
@@ -79,6 +85,13 @@ export class Hud {
         ? sim.allPratiche
             .filter((p) => sim.pratica(p.id).status === 'da-avviare')
             .map((p) => ({ kind: 'richiesta' as const, id: p.id, label: `Pratica: ${p.name} (richiesta ${p.requestHours} h)` }))
+        : []),
+      ...(s.phase === 'burocratica'
+        ? sim.orderableTasks().map((t) => ({
+            kind: 'ordine' as const,
+            id: t.id,
+            label: `Ordine: materiali per ${t.name} (${sim.orderCost(sim.missingMaterials(t))} €)`,
+          }))
         : []),
     ];
     if (this.selection && !options.some((o) => o.kind === this.selection!.kind && o.id === this.selection!.id)) {
@@ -101,10 +114,16 @@ export class Hud {
     let preview = '';
     if (this.selection) {
       const ids = [...this.team];
-      const p = this.selection.kind === 'lavoro' ? sim.previewTask(this.selection.id, ids) : sim.previewRequest(this.selection.id, ids);
+      const p =
+        this.selection.kind === 'lavoro'
+          ? sim.previewTask(this.selection.id, ids)
+          : this.selection.kind === 'ordine'
+            ? sim.previewOrder(this.selection.id, ids)
+            : sim.previewRequest(this.selection.id, ids);
+      const cost = 'costEur' in p && p.costEur !== undefined ? ` · spesa <strong>${p.costEur} €</strong>` : '';
       preview =
         p.hours !== undefined
-          ? `<p class="preview">Durata: <strong>${formatHours(p.hours)}</strong> · qualità <strong>${p.quality}</strong></p>`
+          ? `<p class="preview">Durata: <strong>${formatHours(p.hours)}</strong> · qualità <strong>${p.quality}</strong>${cost}</p>`
           : '';
       if (p.errors.length) preview += `<ul class="errors">${p.errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>`;
       preview += `<button data-act="start" ${p.errors.length ? 'disabled' : ''}>Avvia</button>`;
@@ -119,10 +138,26 @@ export class Hud {
       })
       .join('');
 
+    const inStock = Object.entries(s.stock).filter(([, q]) => q > 0);
+    const incoming = s.orders.filter((o) => o.status !== 'consegnato');
+    const stock =
+      (inStock.length
+        ? `<ul>${inStock.map(([id, q]) => `<li>${q} × ${esc(sim.materialName(id).toLowerCase())}</li>`).join('')}</ul>`
+        : '<p><small>Vuoto.</small></p>') +
+      (incoming.length
+        ? `<ul class="orders">${incoming
+            .map((o) => {
+              const when = o.status === 'in-preparazione' ? 'ordine in preparazione' : `arriva il weekend della settimana ${o.arrivesWeek}`;
+              return `<li><small>${esc(sim.taskDef(o.taskId).name)}: ${when}</small></li>`;
+            })
+            .join('')}</ul>`
+        : '');
+
     this.root.innerHTML = `
       <header>
         <h1>${esc(GAME_TITLE)}</h1>
         <p>Settimana ${s.week} · ${phaseName}</p>
+        <p>In cassa: <strong>${s.budget} €</strong> · Progetto realizzato: <strong>${Math.round(sim.projectProgress * 100)}%</strong></p>
         <div class="bar session"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div>
         <small>Sessione: ${formatHours(used)} su ${limit} h</small>
         <button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I giorni rimanenti passano comunque e le attese avanzano">
@@ -138,6 +173,7 @@ export class Hud {
         ${preview}
       </section>
       <section><h2>In corso</h2><ul class="active">${active || '<li><small>Nessun compito in corso: il tempo di sessione è fermo.</small></li>'}</ul></section>
+      <section><h2>Magazzino</h2>${stock}</section>
       <section><h2>Registro delle pratiche</h2><ul class="pratiche">${pratiche}</ul></section>
       <footer>
         <a class="donate" href="${ASSOCIATION.donationUrl}" target="_blank" rel="noopener">Sostieni ${esc(ASSOCIATION.name)}</a>
@@ -176,7 +212,7 @@ export class Hud {
       const cut = el.value.indexOf(':');
       const kind = el.value.slice(0, cut);
       const id = el.value.slice(cut + 1);
-      this.selection = el.value ? { kind: kind as 'lavoro' | 'richiesta', id } : null;
+      this.selection = el.value ? { kind: kind as Kind, id } : null;
       this.team.clear();
     } else if (el.dataset.vol) {
       if (el.checked) this.team.add(el.dataset.vol);
@@ -195,6 +231,7 @@ export class Hud {
         case 'start':
           if (!this.selection) return;
           if (this.selection.kind === 'lavoro') this.sim.startTask(this.selection.id, [...this.team], now);
+          else if (this.selection.kind === 'ordine') this.sim.startOrder(this.selection.id, [...this.team], now);
           else this.sim.startRequest(this.selection.id, [...this.team], now);
           this.selection = null;
           this.team.clear();

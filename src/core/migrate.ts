@@ -1,26 +1,59 @@
 import type { Content } from './content';
 import { gridFromSite } from './grid';
 import { gamePratiche, generatePlan } from './plan';
-import type { GameState, PraticaState } from './types';
+import type { ActiveTask, GameState, PraticaState, Report, Volunteer } from './types';
+
+type AnyState = Record<string, unknown> & { version?: number };
 
 /**
- * Porta un salvataggio alla versione corrente di GameState.
- * v1 → v2: arrivano griglia e piano di cantiere. I compiti operativi di v1
- * (scritti a mano) non esistono più: quelli in corso si interrompono e le ore
- * tornano ai volontari; le pratiche mantengono il loro stato.
+ * Porta un salvataggio alla versione corrente di GameState, un passo alla volta.
+ * Alla fine i compiti in corso che non esistono più nei contenuti si
+ * interrompono e restituiscono le ore ai volontari.
  */
 export function migrate(raw: unknown, c: Content): GameState {
-  const s = raw as { version?: number } & Record<string, unknown>;
-  if (s.version === 2) return s as unknown as GameState;
-  if (s.version !== 1) throw new Error(`Salvataggio non riconosciuto (versione ${String(s.version)})`);
+  let s = raw as AnyState;
+  const start = s.version;
+  if (start === 3) return s as unknown as GameState;
+  if (start !== 1 && start !== 2) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (s.version === 1) s = v1to2(s, c);
+  if (s.version === 2) s = v2to3(s, c);
+  return dropUnknownActive(s as unknown as GameState, c);
+}
 
-  const v1 = s as unknown as Omit<GameState, 'version' | 'grid' | 'plan'> & { version: 1 };
+/** v1 → v2: arrivano griglia e piano di cantiere; le pratiche mantengono il loro stato. */
+function v1to2(s: AnyState, c: Content): AnyState {
   const grid = gridFromSite(c.site, c);
   const plan = generatePlan(grid, c);
-  const known = new Set(c.tasks.map((t) => t.id));
+  const old = new Map((s.pratiche as PraticaState[]).map((p) => [p.id, p]));
+  const pratiche: PraticaState[] = gamePratiche(c, plan.pratiche).map(
+    (id) => old.get(id) ?? { id, status: 'da-avviare', waitRemainingH: 0 },
+  );
+  const out = { ...s, version: 2, grid, plan: plan.tasks, pratiche };
+  addReport(out, 'Il cantiere è stato riprogettato', [
+    'I lavori del weekend ora nascono dal progetto del parco, con le loro dipendenze.',
+    'Le pratiche mantengono il loro stato.',
+  ]);
+  return out;
+}
 
-  const dropped = v1.active.filter((a) => a.kind === 'lavoro' && !known.has(a.refId));
-  const volunteers = v1.volunteers.map((v) => ({ ...v }));
+/** v2 → v3: arrivano cassa, magazzino e ordini. */
+function v2to3(s: AnyState, c: Content): AnyState {
+  const out = { ...s, version: 3, budget: c.site.budget, stock: {}, orders: [] };
+  addReport(out, 'Arriva il magazzino', [
+    `In cassa: ${c.site.budget} €.`,
+    'I lavori che usano materiali partono solo se i materiali sono in magazzino: ordinali nella parte burocratica.',
+  ]);
+  return out;
+}
+
+function dropUnknownActive(s: GameState, c: Content): GameState {
+  const known = (a: ActiveTask) =>
+    a.kind === 'richiesta'
+      ? c.pratiche.some((p) => p.id === a.refId)
+      : c.tasks.some((t) => t.id === a.refId) || s.plan.some((t) => t.id === a.refId);
+  const dropped = s.active.filter((a) => !known(a));
+  if (dropped.length === 0) return s;
+  const volunteers: Volunteer[] = s.volunteers.map((v) => ({ ...v }));
   for (const a of dropped) {
     for (const id of a.volunteerIds) {
       const v = volunteers.find((x) => x.id === id);
@@ -29,39 +62,18 @@ export function migrate(raw: unknown, c: Content): GameState {
       v.hoursUsed = Math.max(0, v.hoursUsed - a.hours);
     }
   }
+  const out = { ...s, volunteers, active: s.active.filter((a) => known(a)) };
+  addReport(out as unknown as AnyState, 'Compiti interrotti', [
+    `${dropped.length} compiti in corso non esistono più in questa versione del gioco.`,
+    'Le ore sono tornate ai volontari.',
+  ]);
+  return out;
+}
 
-  const old = new Map(v1.pratiche.map((p) => [p.id, p]));
-  const pratiche: PraticaState[] = gamePratiche(c, plan.pratiche).map(
-    (id) => old.get(id) ?? { id, status: 'da-avviare', waitRemainingH: 0 },
-  );
-
-  let nextId = v1.nextId;
-  const reports = [
-    ...v1.reports,
-    {
-      id: nextId++,
-      at: v1.lastTick,
-      title: 'Il cantiere è stato riprogettato',
-      lines: [
-        'I lavori del weekend ora nascono dal progetto del parco, con le loro dipendenze.',
-        dropped.length > 0
-          ? `Compiti interrotti: ${dropped.length}. Le ore sono tornate ai volontari.`
-          : 'Nessun compito in corso è stato interrotto.',
-        'Le pratiche mantengono il loro stato.',
-      ],
-      seen: false,
-    },
-  ];
-
-  return {
-    ...v1,
-    version: 2,
-    volunteers,
-    active: v1.active.filter((a) => !dropped.includes(a)),
-    pratiche,
-    reports,
-    nextId,
-    grid,
-    plan: plan.tasks,
-  };
+function addReport(s: AnyState, title: string, lines: string[]): void {
+  const reports = [...(s.reports as Report[])];
+  const id = s.nextId as number;
+  reports.push({ id, at: s.lastTick as number, title, lines, seen: false });
+  s.reports = reports;
+  s.nextId = id + 1;
 }

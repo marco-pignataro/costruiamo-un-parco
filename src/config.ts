@@ -24,6 +24,14 @@ export const HOURS_PER_WORKING_DAY = 4;
  */
 export const MAX_PLAN_TASK_HOURS = 12;
 
+/** Ordini al fornitore: un volontario li compila, poi la consegna arriva al weekend della settimana dopo. */
+export const ORDERS = {
+  hours: 1,
+  skill: 'organizzazione',
+  maxVolunteers: 1,
+  deliveryWeeks: 1,
+} as const;
+
 /** Efficienze della formula durata = ore complessive / somma efficienze. */
 export const EFFICIENCY = {
   base: 1,

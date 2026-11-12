@@ -1,4 +1,3 @@
 [
-  {"id": "ordine-materiali", "name": "Ordinare legno e viti", "phase": "burocratica", "hours": 3, "skill": "organizzazione", "maxVolunteers": 2, "requires": []},
   {"id": "raccolta-fondi", "name": "Organizzare una raccolta fondi", "phase": "burocratica", "hours": 8, "skill": "comunicazione", "maxVolunteers": 3, "requires": []}
 ]

@@ -53,13 +53,28 @@ export interface Volunteer {
 
 export interface ActiveTask {
   uid: number;
-  kind: 'lavoro' | 'richiesta';
+  /** lavoro: compito; richiesta: pratica a timer; ordine: ordine al fornitore per un compito del piano. */
+  kind: 'lavoro' | 'richiesta' | 'ordine';
   refId: string;
   volunteerIds: string[];
   startedAt: number;
   endsAt: number;
   hours: number;
   quality: Quality;
+}
+
+export type MaterialStock = Record<string, number>;
+
+export interface Order {
+  uid: number;
+  /** Compito del piano per cui si ordina. */
+  taskId: string;
+  materials: { id: string; qty: number }[];
+  costEur: number;
+  /** in-preparazione: un volontario lo sta compilando; in-consegna: inviato e pagato. */
+  status: 'in-preparazione' | 'in-consegna' | 'consegnato';
+  /** Settimana al cui weekend arriva la consegna (0 finché non è inviato). */
+  arrivesWeek: number;
 }
 
 export interface Report {
@@ -71,7 +86,7 @@ export interface Report {
 }
 
 export interface GameState {
-  version: 2;
+  version: 3;
   /** Millisecondi reali per un'ora di gioco (3.600.000 = tempo reale). */
   msPerHour: number;
   week: number;
@@ -88,6 +103,11 @@ export interface GameState {
   grid: ParkGrid;
   /** Piano di cantiere generato dal progetto: i compiti della parte operativa. */
   plan: PlanTask[];
+  /** Euro in cassa. */
+  budget: number;
+  /** Materiali in magazzino, per id. */
+  stock: MaterialStock;
+  orders: Order[];
 }
 
 // ---------- Progettazione del parco (Fase 4) ----------
@@ -149,6 +169,8 @@ export interface SiteDef {
   /** Un carattere per tile, vedi SURFACE_CHARS in grid.ts. */
   rows: string[];
   placements: { elementId: string; x: number; y: number }[];
+  /** Euro in cassa a inizio partita. */
+  budget: number;
 }
 
 /** Compito del piano di cantiere generato dal progetto. */

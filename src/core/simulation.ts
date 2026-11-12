@@ -1,9 +1,9 @@
-import { HOURS_PER_WORKING_DAY, SESSION_HOURS } from '../config';
+import { HOURS_PER_WORKING_DAY, ORDERS, SESSION_HOURS } from '../config';
 import type { Content } from './content';
 import { computeDuration, formatHours, type DurationResult } from './duration';
 import { gridFromSite } from './grid';
 import { gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, ElementDef, GameState, ParkGrid, PlanTask, PraticaDef, PraticaState, TaskDef, Volunteer } from './types';
+import type { ActiveTask, ElementDef, GameState, Order, ParkGrid, PlanTask, PraticaDef, PraticaState, TaskDef, Volunteer } from './types';
 
 const EPS = 1e-6;
 
@@ -31,7 +31,7 @@ export class Simulation {
       return { id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false };
     });
     const state: GameState = {
-      version: 2,
+      version: 3,
       msPerHour: 3_600_000 / timeScale,
       week: 1,
       phase: 'burocratica',
@@ -45,6 +45,9 @@ export class Simulation {
       nextId: 1,
       grid: g,
       plan: plan.tasks,
+      budget: content.site.budget,
+      stock: {},
+      orders: [],
     };
     return new Simulation(state, content);
   }
@@ -132,6 +135,62 @@ export class Simulation {
     return this.allTasks.some((t) => t.requires.includes(praticaId) && !this.state.completedTasks.includes(t.id));
   }
 
+  // ---------- materiali e ordini ----------
+
+  materialName(id: string): string {
+    return this.content.materials.find((m) => m.id === id)?.name ?? id;
+  }
+
+  /** Materiali del compito che non ci sono in magazzino. */
+  missingMaterials(t: TaskDef | PlanTask): { id: string; qty: number }[] {
+    if (!('materials' in t)) return [];
+    return t.materials
+      .map((m) => ({ id: m.id, qty: m.qty - (this.state.stock[m.id] ?? 0) }))
+      .filter((m) => m.qty > 0);
+  }
+
+  /** Ordine ancora aperto (in preparazione o in consegna) per un compito. */
+  openOrder(taskId: string): Order | undefined {
+    return this.state.orders.find((o) => o.taskId === taskId && o.status !== 'consegnato');
+  }
+
+  orderCost(materials: { id: string; qty: number }[]): number {
+    return materials.reduce((sum, m) => {
+      const def = this.content.materials.find((x) => x.id === m.id);
+      if (!def) throw new Error(`Materiale sconosciuto: ${m.id}`);
+      return sum + def.unitPrice * m.qty;
+    }, 0);
+  }
+
+  /**
+   * Compiti del piano per cui si può ordinare: non fatti, senza un ordine
+   * aperto e con materiali mancanti. Anche quelli non ancora sbloccati: si
+   * ordina in anticipo perché la consegna arriva il weekend dopo.
+   */
+  orderableTasks(): PlanTask[] {
+    const running = new Set(this.state.active.filter((a) => a.kind === 'lavoro').map((a) => a.refId));
+    return this.state.plan.filter(
+      (t) =>
+        !this.state.completedTasks.includes(t.id) &&
+        !running.has(t.id) &&
+        !this.openOrder(t.id) &&
+        this.missingMaterials(t).length > 0,
+    );
+  }
+
+  previewOrder(taskId: string, volunteerIds: string[]): Preview & { costEur?: number } {
+    const def = this.taskDef(taskId);
+    const errors: string[] = [];
+    if (this.state.phase !== 'burocratica') errors.push('Gli ordini si fanno nella parte burocratica');
+    if (this.openOrder(taskId)) errors.push('Ordine già fatto');
+    const missing = this.missingMaterials(def);
+    if (missing.length === 0) errors.push('I materiali ci sono già');
+    const costEur = this.orderCost(missing);
+    if (costEur > this.state.budget) errors.push(`Costa ${costEur} €, in cassa ce ne sono ${this.state.budget}`);
+    if (volunteerIds.length > ORDERS.maxVolunteers) errors.push(`Massimo ${ORDERS.maxVolunteers} volontario`);
+    return { ...this.previewTeam(ORDERS.hours, ORDERS.skill, volunteerIds, errors), costEur };
+  }
+
   /** Quota del progetto realizzata, da 0 a 1 (per elementi posati). */
   get projectProgress(): number {
     const g = this.state.grid;
@@ -143,6 +202,17 @@ export class Simulation {
     const errors: string[] = [];
     if (def.phase !== this.state.phase) errors.push(`Si fa nella parte ${def.phase}`);
     for (const m of this.missingPrerequisites(def)) errors.push(`Prima serve: ${m.name}`);
+    const missing = this.missingMaterials(def);
+    if (missing.length > 0) {
+      const order = this.openOrder(def.id);
+      const list = missing.map((m) => `${m.qty} × ${this.materialName(m.id).toLowerCase()}`).join(', ');
+      const when = !order
+        ? 'da ordinare'
+        : order.status === 'in-preparazione'
+          ? 'ordine in preparazione'
+          : `in consegna il weekend della settimana ${order.arrivesWeek}`;
+      errors.push(`Mancano i materiali: ${list} (${when})`);
+    }
     for (const r of def.requires) {
       if (this.pratica(r).status !== 'approvata') errors.push(`Serve la pratica "${this.praticaDef(r).name}"`);
     }
@@ -179,7 +249,20 @@ export class Simulation {
     this.tick(now);
     const p = this.previewTask(taskId, volunteerIds);
     if (p.errors.length) throw new Error(p.errors.join('; '));
+    const def = this.taskDef(taskId);
+    if ('materials' in def) for (const m of def.materials) this.state.stock[m.id] -= m.qty;
     return this.launch('lavoro', taskId, volunteerIds, p as DurationResult, now);
+  }
+
+  /** Avvia la compilazione di un ordine: si paga subito, la consegna parte quando il compito finisce. */
+  startOrder(taskId: string, volunteerIds: string[], now: number): ActiveTask {
+    this.tick(now);
+    const p = this.previewOrder(taskId, volunteerIds);
+    if (p.errors.length) throw new Error(p.errors.join('; '));
+    const materials = this.missingMaterials(this.taskDef(taskId));
+    this.state.budget -= p.costEur!;
+    this.state.orders.push({ uid: this.state.nextId++, taskId, materials, costEur: p.costEur!, status: 'in-preparazione', arrivesWeek: 0 });
+    return this.launch('ordine', taskId, volunteerIds, p as DurationResult, now);
   }
 
   startRequest(praticaId: string, volunteerIds: string[], now: number): ActiveTask {
@@ -291,12 +374,36 @@ export class Simulation {
       this.state.completedTasks.push(a.refId);
       if ('tiles' in def) this.applyToGrid(def);
       this.report(t, `Completato: ${def.name}`, [squad, time, `Qualità: ${a.quality}`]);
+    } else if (a.kind === 'ordine') {
+      const order = this.openOrder(a.refId);
+      if (order) {
+        order.status = 'in-consegna';
+        order.arrivesWeek = this.state.week + ORDERS.deliveryWeeks;
+        this.report(t, `Ordine inviato: ${this.taskDef(a.refId).name}`, [
+          squad,
+          `Spesa: ${order.costEur} €`,
+          `Consegna all'inizio del weekend della settimana ${order.arrivesWeek}`,
+        ]);
+      }
     } else {
       const p = this.pratica(a.refId);
       const def = this.praticaDef(a.refId);
       p.status = 'in-attesa';
       p.waitRemainingH = def.waitDays * HOURS_PER_WORKING_DAY;
       this.report(t, `Richiesta inviata: ${def.name}`, [squad, time, `Risposta attesa tra ${def.waitDays} giorni lavorativi`]);
+    }
+  }
+
+  /** All'inizio del weekend arrivano le consegne previste per questa settimana. */
+  private deliverOrders(t: number): void {
+    for (const o of this.state.orders) {
+      if (o.status !== 'in-consegna' || o.arrivesWeek > this.state.week) continue;
+      o.status = 'consegnato';
+      for (const m of o.materials) this.state.stock[m.id] = (this.state.stock[m.id] ?? 0) + m.qty;
+      this.report(t, `Consegna arrivata: ${this.taskDef(o.taskId).name}`, [
+        o.materials.map((m) => `${m.qty} × ${this.materialName(m.id).toLowerCase()}`).join(', '),
+        'I materiali sono in magazzino',
+      ]);
     }
   }
 
@@ -317,6 +424,7 @@ export class Simulation {
       if (skipped > EPS) this.progressWaits(skipped, t);
       s.phase = 'operativa';
       s.sessionUsedH = 0;
+      this.deliverOrders(t);
       this.report(t, 'Inizia il weekend', [
         manual ? `Parte burocratica chiusa in anticipo: passano ${formatHours(skipped)} di attese` : 'Parte burocratica completata',
         `Sessione operativa: ${SESSION_HOURS.operativa} ore`,
@@ -326,6 +434,7 @@ export class Simulation {
       this.report(t, `Fine della settimana ${s.week}`, [
         `Compiti completati finora: ${done}`,
         `Progetto realizzato: ${Math.round(this.projectProgress * 100)}%`,
+        `In cassa: ${s.budget} €`,
         'Le ore dei volontari ripartono da zero',
       ]);
       s.week += 1;
