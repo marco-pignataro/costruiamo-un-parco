@@ -1,17 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { defaultContent } from '../src/core/content';
 import { Simulation } from '../src/core/simulation';
+import { firstSite, startedGame } from './helpers';
 
 const H = 3_600_000; // tempo reale: 1 ora di gioco = 1 ora vera
 const T0 = Date.UTC(2026, 10, 16, 9, 0, 0);
 const at = (hours: number) => T0 + hours * H;
-/** Partita già in cantiere, con il progetto proposto del terreno di prova. */
-const newGame = () => {
-  const sim = Simulation.newGame(defaultContent, T0);
-  sim.confirmProject(T0);
-  sim.state.reports = [];
-  return sim;
-};
+const newGame = () => startedGame();
 
 describe('timer reali e recupero a gioco chiuso', () => {
   it('un compito finisce dopo le sue ore reali e produce un resoconto', () => {
@@ -115,12 +110,11 @@ describe('sessioni', () => {
 
   it('la sessione si chiude da sola a 20 ore', () => {
     // 4 compiti in fila da 5 ore: Graziella (14 h) e Sara (14 h) si alternano
-    const sim2 = Simulation.newGame(
+    const sim2 = startedGame(
       { ...defaultContent, tasks: [1, 2, 3, 4].map((i) => ({ id: `t${i}`, name: `T${i}`, phase: 'burocratica' as const, hours: 5, skill: null, maxVolunteers: 1, requires: [] })) },
       T0,
     );
     const who = ['v2', 'v7', 'v1', 'v3'];
-    sim2.confirmProject(T0);
     for (let i = 0; i < 4; i++) sim2.startTask(`t${i + 1}`, [who[i]], at(i * 5));
     sim2.tick(at(20));
     expect(sim2.state.phase).toBe('operativa');
@@ -138,7 +132,7 @@ describe('piano di cantiere nella partita', () => {
 
   it('i lavori del weekend nascono dal progetto del terreno di prova', () => {
     const sim = newGame();
-    expect(sim.state.version).toBe(4);
+    expect(sim.state.version).toBe(5);
     expect(sim.state.plan.length).toBeGreaterThan(0);
     expect(sim.state.plan.every((t) => t.phase === 'operativa')).toBe(true);
   });
@@ -185,8 +179,7 @@ describe('piano di cantiere nella partita', () => {
         { ...defaultContent.elements[4], id: 'telecamera', name: 'Telecamera', adjacentTo: null, pratiche: ['videosorveglianza'] },
       ],
     };
-    const sim = Simulation.newGame(content, T0);
-    sim.confirmProject(T0);
+    const sim = startedGame(content);
     const ids = sim.state.pratiche.map((p) => p.id);
     expect(ids).toContain('assicurazione');
     expect(ids).toContain('occupazione-suolo'); // non dipende dal progetto
@@ -199,7 +192,7 @@ describe('cassa, ordini e magazzino', () => {
 
   it('si parte con la cassa del terreno e il magazzino vuoto', () => {
     const sim = newGame();
-    expect(sim.state.budget).toBe(defaultContent.site.budget);
+    expect(sim.state.budget).toBe(firstSite.budget);
     expect(sim.state.stock).toEqual({});
   });
 
@@ -217,7 +210,7 @@ describe('cassa, ordini e magazzino', () => {
     const id = cestinoId(sim);
     expect(sim.orderableTasks().map((t) => t.id)).toContain(id);
     sim.startOrder(id, ['v2'], T0); // 1 / 1,1 h
-    expect(sim.state.budget).toBe(defaultContent.site.budget - 55);
+    expect(sim.state.budget).toBe(firstSite.budget - 55);
     expect(sim.orderableTasks().map((t) => t.id)).not.toContain(id);
     sim.tick(at(1));
     expect(sim.openOrder(id)).toMatchObject({ status: 'in-consegna', arrivesWeek: 2 });

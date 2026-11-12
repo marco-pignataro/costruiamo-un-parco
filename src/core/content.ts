@@ -1,35 +1,37 @@
 import archetypes from '../data/archetypes.json';
 import tasks from '../data/tasks.json';
 import pratiche from '../data/pratiche.json';
-import team from '../data/team.json';
+import candidates from '../data/candidates.json';
 import elements from '../data/elements.json';
 import materials from '../data/materials.json';
 import preparations from '../data/preparations.json';
-import site from '../data/site.json';
-import { gridFromSite, validateProject } from './grid';
-import type { Archetype, ElementDef, MaterialDef, PraticaDef, PrepDef, SiteDef, TaskDef } from './types';
+import sites from '../data/sites.json';
+import { GRID_MAX } from '../config';
+import { estimate, gridFromSite, validateProject } from './grid';
+import type { Archetype, CandidateDef, ElementDef, MaterialDef, PraticaDef, PrepDef, SiteDef, TaskDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
   tasks: TaskDef[];
   pratiche: PraticaDef[];
-  team: { id: string; name: string; archetypeId: string }[];
+  /** Persone reclutabili in Fase 2. */
+  candidates: CandidateDef[];
   elements: ElementDef[];
   materials: MaterialDef[];
   preparations: PrepDef[];
-  /** Terreno di prova con il progetto iniziale (finché non c'è l'editor). */
-  site: SiteDef;
+  /** Terreni tra cui scegliere in Fase 1, ognuno con il suo progetto proposto. */
+  sites: SiteDef[];
 }
 
 export const defaultContent: Content = {
   archetypes: archetypes as Archetype[],
   tasks: tasks as TaskDef[],
   pratiche: pratiche as PraticaDef[],
-  team,
+  candidates: candidates as CandidateDef[],
   elements: elements as ElementDef[],
   materials: materials as MaterialDef[],
   preparations: preparations as PrepDef[],
-  site,
+  sites: sites as SiteDef[],
 };
 
 /**
@@ -59,11 +61,22 @@ export function validateContent(c: Content): string[] {
     if (t.skill && !skills.has(t.skill)) errors.push(`${t.id}: skill sconosciuta ${t.skill}`);
     for (const p of t.requires) if (!has(c.pratiche, p)) errors.push(`${t.id}: pratica sconosciuta ${p}`);
   }
+  for (const m of c.candidates) if (!has(c.archetypes, m.archetypeId)) errors.push(`${m.id}: archetipo sconosciuto ${m.archetypeId}`);
+  if (new Set(c.candidates.map((m) => m.id)).size !== c.candidates.length) errors.push('Candidati con lo stesso id');
+  if (c.sites.length === 0) errors.push('Nessun terreno');
   if (errors.length === 0) {
-    try {
-      errors.push(...validateProject(gridFromSite(c.site, c), c).map((e) => `${c.site.id}: ${e}`));
-    } catch (err) {
-      errors.push((err as Error).message);
+    for (const site of c.sites) {
+      if (site.rows.length > GRID_MAX.height || site.rows[0].length > GRID_MAX.width) {
+        errors.push(`${site.id}: terreno più grande di ${GRID_MAX.width}×${GRID_MAX.height}`);
+      }
+      try {
+        const g = gridFromSite(site, c);
+        errors.push(...validateProject(g, c).map((e) => `${site.id}: ${e}`));
+        const cost = estimate(g, c).costEur;
+        if (cost > site.budget) errors.push(`${site.id}: il progetto proposto (${cost} €) supera la cassa (${site.budget} €)`);
+      } catch (err) {
+        errors.push((err as Error).message);
+      }
     }
   }
   return errors;

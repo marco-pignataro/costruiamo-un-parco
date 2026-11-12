@@ -123,6 +123,8 @@ Ogni partita parte da una mappa della città con 4-6 terreni disponibili: più u
 
 **Ambientazione.** Messina riconoscibile: lo Stretto, le colline, i torrenti, i quartieri e i monumenti fanno da sfondo. Terreni e fatti invece sono inventati: nessun terreno di gioco corrisponde a un luogo reale specifico.
 
+**Prototipo.** Tre terreni in `src/data/sites.json`: *Giardino dietro la scuola* (difficoltà 1, 350 €, 18 PV, ×1), *Ex deposito sul torrente* (2, 450 €, 22 PV, ×1,2) e *Collina sullo Stretto* (4, 650 €, 28 PV, ×1,6). Ogni scheda mostra descrizione, fattori e bonus; tipo di terra e sottosuolo restano "?" fino al sopralluogo. Cliccando "Guarda sulla mappa" il terreno compare nella scena con il suo progetto proposto; si può cambiare idea finché non si conferma. Per ora fattori e bonus sono solo descrittivi: avranno effetto con sopralluogo, eventi e punteggio.
+
 ## Fase 2 — Squadra di volontari
 
 Il giocatore spende i PV iniziali per comporre la squadra: i volontari base costano poco, gli specialisti costano di più ma sbloccano lavorazioni, riducono costi o velocizzano pratiche.
@@ -157,6 +159,8 @@ Il monte ore è settimanale e unico: si spende sia nella parte burocratica sia i
 - **Conflitti** tra tratti incompatibili assegnati allo stesso task.
 
 **Contromisure:** eventi sociali (grigliata, pizzata di fine cantiere), riconoscimenti pubblici, turni di riposo, acquisto di DPI.
+
+**Prototipo.** Si recluta da un elenco di 17 candidati (`src/data/candidates.json`) spendendo i PV del terreno; ogni volontario si può anche congedare e i PV tornano indietro, finché la squadra non è confermata. Presidente e segretario/a sono unici; servono almeno 3 volontari. I PV avanzati restano per il futuro (reclutamenti in corso di partita). Energia, morale, tratti e crescita non ci sono ancora.
 
 ## Fase 3 — Sopralluogo
 

@@ -40,6 +40,16 @@ export interface EditorTool {
 
 export const ERASER = 'gomma';
 
+interface SceneData {
+  sim: () => Simulation;
+  editor: EditorTool;
+  onEdit: () => void;
+}
+
+function layoutKeyOf(sim: Simulation): string {
+  return `${sim.state.siteId}|${sim.state.volunteers.map((v) => v.id).join(',')}`;
+}
+
 /**
  * Il parco visto dall'alto. La scena non decide nulla: legge lo stato
  * della simulazione (griglia, progetto, compiti in corso) e lo disegna.
@@ -61,19 +71,35 @@ export class ParkScene extends Phaser.Scene {
     super('park');
   }
 
-  init(data: { sim: () => Simulation; editor: EditorTool; onEdit: () => void }) {
+  private initData!: SceneData;
+  /** Terreno e squadra disegnati: se cambiano, la scena si ricrea. */
+  private layoutKey = '';
+
+  init(data: SceneData) {
+    this.initData = data;
     this.sim = data.sim;
     this.editor = data.editor;
     this.onEdit = data.onEdit;
   }
 
   create() {
+    // Anche dopo un restart: si riparte da zero.
+    this.ground = [];
+    this.trash = [];
+    this.elements.clear();
+    this.people.clear();
+    this.targets.clear();
+    this.placementsKey = '';
+    this.hover = [];
+    this.layoutKey = layoutKeyOf(this.sim());
+
     createTextures(this, VIEW.width, VIEW.sky);
     this.add.image(0, 0, 'stretto').setOrigin(0);
 
-    // La sede, a sinistra del terreno.
+    // La sede a sinistra; a destra, scurito, quello che sta fuori dal terreno.
     for (let y = VIEW.sky; y < VIEW.height; y += TILE) {
       for (let x = 0; x < GRID.x; x += TILE) this.add.image(x, y, 'terra').setOrigin(0);
+      for (let x = GRID.x; x < VIEW.width; x += TILE) this.add.image(x, y, 'cemento').setOrigin(0).setTint(0x6a6a6a);
     }
     this.add.image(DESK.x, DESK.y, 'scrivania');
 
@@ -189,6 +215,10 @@ export class ParkScene extends Phaser.Scene {
 
   private sync() {
     const sim = this.sim();
+    if (layoutKeyOf(sim) !== this.layoutKey) {
+      this.scene.restart(this.initData);
+      return;
+    }
     const g = sim.state.grid;
     g.surface.forEach((s, i) => {
       this.ground[i].setTexture(SURFACE_TEXTURE[s]);

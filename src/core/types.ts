@@ -7,6 +7,15 @@ export interface Archetype {
   skills: string[];
   weeklyHours: number;
   pvCost: number;
+  /** Al massimo uno in squadra (presidente, segretario/a). */
+  unique: boolean;
+}
+
+/** Persona che si può reclutare in Fase 2. */
+export interface CandidateDef {
+  id: string;
+  name: string;
+  archetypeId: string;
 }
 
 export interface TaskDef {
@@ -85,10 +94,18 @@ export interface Report {
   seen: boolean;
 }
 
+export type Stage = 'terreno' | 'squadra' | 'progettazione' | 'cantiere';
+
 export interface GameState {
-  version: 4;
-  /** progettazione: si disegna il parco (Fase 4); cantiere: turni settimanali (Fase 5). */
-  stage: 'progettazione' | 'cantiere';
+  version: 5;
+  /**
+   * terreno: scelta del terreno (Fase 1); squadra: reclutamento con i PV (Fase 2);
+   * progettazione: si disegna il parco (Fase 4); cantiere: turni settimanali (Fase 5).
+   */
+  stage: Stage;
+  siteId: string;
+  /** Punti volontariato non ancora spesi. */
+  pv: number;
   /** Millisecondi reali per un'ora di gioco (3.600.000 = tempo reale). */
   msPerHour: number;
   week: number;
@@ -166,10 +183,26 @@ export interface PrepDef {
   result: SurfaceId | null;
 }
 
-/** Terreno di partenza: superficie come righe di caratteri e progetto iniziale. */
+/** Fattore della scheda terreno; quelli nascosti si vedono come "?" fino al sopralluogo. */
+export interface SiteFactor {
+  label: string;
+  value: string;
+  hidden: boolean;
+}
+
+/** Terreno da scegliere in Fase 1: scheda, superficie come righe di caratteri e progetto proposto. */
 export interface SiteDef {
   id: string;
   name: string;
+  description: string;
+  /** Difficoltà da 1 a 5: più è alta, più cassa e PV iniziali. */
+  difficulty: number;
+  /** PV iniziali per comporre la squadra. */
+  pv: number;
+  /** Moltiplicatore del punteggio finale. */
+  scoreMultiplier: number;
+  bonus: string;
+  factors: SiteFactor[];
   /** Un carattere per tile, vedi SURFACE_CHARS in grid.ts. */
   rows: string[];
   placements: { elementId: string; x: number; y: number }[];

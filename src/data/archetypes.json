@@ -1,14 +1,14 @@
 [
-  { "id": "base", "name": "Volontario base", "skills": [], "weeklyHours": 6, "pvCost": 1 },
-  { "id": "studente", "name": "Studente", "skills": [], "weeklyHours": 6, "pvCost": 1 },
-  { "id": "giardiniere", "name": "Giardiniere", "skills": ["verde"], "weeklyHours": 10, "pvCost": 3 },
-  { "id": "falegname", "name": "Artigiano del legno", "skills": ["legno"], "weeklyHours": 10, "pvCost": 3 },
-  { "id": "fabbro", "name": "Fabbro", "skills": ["metallo"], "weeklyHours": 10, "pvCost": 3 },
-  { "id": "elettricista", "name": "Elettricista / idraulico", "skills": ["impianti"], "weeklyHours": 10, "pvCost": 4 },
-  { "id": "geometra", "name": "Geometra", "skills": ["progetto"], "weeklyHours": 10, "pvCost": 4 },
-  { "id": "carte", "name": "Esperto di carte", "skills": ["burocrazia"], "weeklyHours": 14, "pvCost": 4 },
-  { "id": "comunicatore", "name": "Comunicatore", "skills": ["comunicazione"], "weeklyHours": 14, "pvCost": 3 },
-  { "id": "coordinatore", "name": "Coordinatore", "skills": ["leadership"], "weeklyHours": 14, "pvCost": 5 },
-  { "id": "presidente", "name": "Presidente", "skills": ["rappresentanza"], "weeklyHours": 14, "pvCost": 6 },
-  { "id": "segretario", "name": "Segretario/a", "skills": ["organizzazione", "burocrazia"], "weeklyHours": 14, "pvCost": 5 }
+  {"id": "base", "name": "Volontario base", "skills": [], "weeklyHours": 6, "pvCost": 1, "unique": false},
+  {"id": "studente", "name": "Studente", "skills": [], "weeklyHours": 6, "pvCost": 1, "unique": false},
+  {"id": "giardiniere", "name": "Giardiniere", "skills": ["verde"], "weeklyHours": 10, "pvCost": 3, "unique": false},
+  {"id": "falegname", "name": "Artigiano del legno", "skills": ["legno"], "weeklyHours": 10, "pvCost": 3, "unique": false},
+  {"id": "fabbro", "name": "Fabbro", "skills": ["metallo"], "weeklyHours": 10, "pvCost": 3, "unique": false},
+  {"id": "elettricista", "name": "Elettricista / idraulico", "skills": ["impianti"], "weeklyHours": 10, "pvCost": 4, "unique": false},
+  {"id": "geometra", "name": "Geometra", "skills": ["progetto"], "weeklyHours": 10, "pvCost": 4, "unique": false},
+  {"id": "carte", "name": "Esperto di carte", "skills": ["burocrazia"], "weeklyHours": 14, "pvCost": 4, "unique": false},
+  {"id": "comunicatore", "name": "Comunicatore", "skills": ["comunicazione"], "weeklyHours": 14, "pvCost": 3, "unique": false},
+  {"id": "coordinatore", "name": "Coordinatore", "skills": ["leadership"], "weeklyHours": 14, "pvCost": 5, "unique": false},
+  {"id": "presidente", "name": "Presidente", "skills": ["rappresentanza"], "weeklyHours": 14, "pvCost": 6, "unique": true},
+  {"id": "segretario", "name": "Segretario/a", "skills": ["organizzazione", "burocrazia"], "weeklyHours": 14, "pvCost": 5, "unique": true}
 ]

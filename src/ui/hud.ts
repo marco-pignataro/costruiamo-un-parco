@@ -58,8 +58,11 @@ export class Hud {
       this.renderModal();
       return;
     }
-    if (this.sim.state.stage === 'progettazione') {
-      this.renderDesign();
+    const stage = this.sim.state.stage;
+    if (stage !== 'cantiere') {
+      if (stage === 'terreno') this.renderSites();
+      else if (stage === 'squadra') this.renderTeam();
+      else this.renderDesign();
       this.renderModal();
       return;
     }
@@ -200,6 +203,78 @@ export class Hud {
       </footer>`;
   }
 
+  /** Fase 1: schede dei terreni; quello selezionato si vede sulla mappa. */
+  private renderSites(): void {
+    const sim = this.sim;
+    const cards = sim.sites
+      .map((site) => {
+        const on = site.id === sim.state.siteId;
+        const stars = '★'.repeat(site.difficulty) + '☆'.repeat(5 - site.difficulty);
+        const factors = site.factors
+          .map((f) => `<li><span>${esc(f.label)}</span> <strong>${f.hidden ? '?' : esc(f.value)}</strong></li>`)
+          .join('');
+        const action = on
+          ? `<button data-act="confirm-site" class="confirm">Scegli questo terreno</button>`
+          : `<button data-site="${site.id}">Guarda sulla mappa</button>`;
+        return `<article class="site ${on ? 'on' : ''}">
+          <h3>${esc(site.name)}</h3>
+          <p><span class="stars" title="Difficoltà ${site.difficulty} su 5">${stars}</span></p>
+          <p><small>${esc(site.description)}</small></p>
+          <p>Cassa <strong>${site.budget} €</strong> · <strong>${site.pv} PV</strong> · punteggio ×${site.scoreMultiplier.toLocaleString('it-IT')}</p>
+          <ul class="factors">${factors}</ul>
+          <p><small><em>${esc(site.bonus)}</em></small></p>
+          ${action}
+        </article>`;
+      })
+      .join('');
+    this.root.innerHTML = `
+      <header>
+        <h1>${esc(GAME_TITLE)}</h1>
+        <p>Fase 1 · Scegli il terreno</p>
+        <small>Più un terreno è difficile, più cassa e punti volontariato dà, e più vale il punteggio finale. I "?" si scoprono con il sopralluogo.</small>
+      </header>
+      ${this.message ? `<p class="msg">${esc(this.message)}</p>` : ''}
+      <section class="sites">${cards}</section>
+      ${this.footer()}`;
+  }
+
+  /** Fase 2: reclutamento con i punti volontariato. */
+  private renderTeam(): void {
+    const sim = this.sim;
+    const s = sim.state;
+    const row = (name: string, archetypeId: string, button: string) => {
+      const a = sim.archetype(archetypeId);
+      const color = SHIRTS[a.id] ?? SHIRTS.base;
+      const skills = a.skills.length ? a.skills.join(', ') : 'braccia';
+      return `<li class="cand"><i style="background:${color}"></i>
+        <span><strong>${esc(name)}</strong> <small>${esc(a.name)}</small><br><small>${esc(skills)} · ${a.weeklyHours} h/sett · ${a.pvCost} PV</small></span>
+        ${button}</li>`;
+    };
+    const team = s.volunteers.map((v) => row(v.name, v.archetypeId, `<button data-dismiss="${v.id}">Congeda</button>`)).join('');
+    const pool = sim.candidates
+      .filter((m) => !s.volunteers.some((v) => v.id === m.id))
+      .map((m) => {
+        const errors = sim.recruitErrors(m.id);
+        return row(m.name, m.archetypeId, `<button data-recruit="${m.id}" ${errors.length ? `disabled title="${esc(errors.join('; '))}"` : ''}>Recluta</button>`);
+      })
+      .join('');
+    const problems = sim.teamProblems();
+    this.root.innerHTML = `
+      <header>
+        <h1>${esc(GAME_TITLE)}</h1>
+        <p>Fase 2 · Componi la squadra · ${esc(sim.siteName)}</p>
+        <p>Punti volontariato da spendere: <strong>${s.pv} PV</strong></p>
+        <small>Gli specialisti costano di più ma lavorano meglio e guidano fino a 2 volontari senza la loro skill. Presidente e segretario/a: uno solo.</small>
+      </header>
+      ${this.message ? `<p class="msg">${esc(this.message)}</p>` : ''}
+      <section><h2>La squadra (${s.volunteers.length})</h2><ul class="cands">${team || '<li><small>Ancora nessuno.</small></li>'}</ul></section>
+      <section><h2>Chi può unirsi</h2><ul class="cands">${pool}</ul></section>
+      <section>${problems.length ? `<ul class="errors">${problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+        <button data-act="confirm-team" class="confirm" ${problems.length ? 'disabled' : ''}>Conferma la squadra e progetta il parco</button>
+      </section>
+      ${this.footer()}`;
+  }
+
   /** Fase 4: strumenti dell'editor, preventivo live, gradimento previsto e conferma. */
   private renderDesign(): void {
     const sim = this.sim;
@@ -278,7 +353,22 @@ export class Hud {
   }
 
   private onClick(e: Event) {
-    const toolBtn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-tool]');
+    const target = e.target as HTMLElement;
+    const pick = target.closest<HTMLButtonElement>('button[data-site], button[data-recruit], button[data-dismiss]');
+    if (pick) {
+      try {
+        if (pick.dataset.site) this.sim.chooseSite(pick.dataset.site);
+        else if (pick.dataset.recruit) this.sim.recruit(pick.dataset.recruit);
+        else if (pick.dataset.dismiss) this.sim.dismiss(pick.dataset.dismiss);
+        this.message = '';
+      } catch (err) {
+        this.message = (err as Error).message;
+      }
+      this.actions.onChange();
+      this.render();
+      return;
+    }
+    const toolBtn = target.closest<HTMLButtonElement>('button[data-tool]');
     if (toolBtn) {
       const t = toolBtn.dataset.tool!;
       this.editor.tool = this.editor.tool === t ? null : t;
@@ -300,6 +390,12 @@ export class Hud {
           break;
         case 'close':
           this.sim.closeSession(now);
+          break;
+        case 'confirm-site':
+          this.sim.confirmSite();
+          break;
+        case 'confirm-team':
+          this.sim.confirmTeam();
           break;
         case 'confirm':
           if (!askConfirm('Confermare il progetto? Dopo non si potrà più modificare.')) return;

@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultContent as c } from '../src/core/content';
 import { createGrid, expectedAppeal, place } from '../src/core/grid';
-import { Simulation } from '../src/core/simulation';
-
-const T0 = Date.UTC(2026, 10, 16, 9, 0, 0);
+import { designGame, firstSite, T0 } from './helpers';
 
 describe('gradimento previsto', () => {
   it('un progetto vuoto su terreno spoglio vale zero', () => {
@@ -39,10 +37,10 @@ describe('gradimento previsto', () => {
 });
 
 describe('progettazione nella partita', () => {
-  it('una nuova partita parte in progettazione, con il progetto proposto', () => {
-    const sim = Simulation.newGame(c, T0);
+  it('dopo terreno e squadra si progetta, partendo dal progetto proposto', () => {
+    const sim = designGame();
     expect(sim.state.stage).toBe('progettazione');
-    expect(sim.state.grid.placements.length).toBe(c.site.placements.length);
+    expect(sim.state.grid.placements.length).toBe(firstSite.placements.length);
     expect(sim.state.plan).toEqual([]);
     expect(sim.state.pratiche).toEqual([]);
     expect(sim.availableTasks()).toEqual([]);
@@ -50,7 +48,7 @@ describe('progettazione nella partita', () => {
   });
 
   it('si posano e si tolgono elementi; il riepilogo si aggiorna', () => {
-    const sim = Simulation.newGame(c, T0);
+    const sim = designGame();
     const before = sim.designSummary();
     const uid = sim.placeElement('cestino', 12, 5); // accanto all'ultimo tratto di sentiero
     const after = sim.designSummary();
@@ -62,7 +60,7 @@ describe('progettazione nella partita', () => {
   });
 
   it('il progetto non si conferma con problemi: vuoto, regole violate o oltre la cassa', () => {
-    const sim = Simulation.newGame(c, T0);
+    const sim = designGame();
     for (const p of [...sim.state.grid.placements]) sim.removeElement(p.uid);
     expect(sim.designSummary().problems).toContain('Il progetto è vuoto');
     sim.placeElement('panchina', 0, 0);
@@ -73,7 +71,7 @@ describe('progettazione nella partita', () => {
   });
 
   it('la conferma genera piano e pratiche e apre il cantiere; dopo il progetto non si tocca', () => {
-    const sim = Simulation.newGame(c, T0);
+    const sim = designGame();
     sim.confirmProject(T0);
     expect(sim.state.stage).toBe('cantiere');
     expect(sim.state.plan.length).toBeGreaterThan(0);
@@ -84,7 +82,7 @@ describe('progettazione nella partita', () => {
   });
 
   it('in progettazione il tempo non consuma la sessione', () => {
-    const sim = Simulation.newGame(c, T0);
+    const sim = designGame();
     sim.tick(T0 + 48 * 3_600_000);
     expect(sim.state.sessionUsedH).toBe(0);
   });

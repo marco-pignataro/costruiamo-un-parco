@@ -32,7 +32,7 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | --- | --- |
 | `src/config.ts` | Titolo, associazione, ore di sessione, efficienze, ordini, lotti del piano, velocità di test |
 | `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `plan.ts` (piano di cantiere dal progetto), `migrate.ts` (salvataggi vecchi), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
-| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, squadra iniziale, elementi del parco, materiali, lavorazioni del terreno, terreno di prova (`site.json`) |
+| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), elementi del parco, materiali, lavorazioni del terreno, terreni con progetto proposto (`sites.json`) |
 | `src/game/` | `ParkScene.ts` (legge lo stato e disegna griglia, progetto e volontari; non decide nulla), `sprites.ts` (pixel art da griglie di caratteri) |
 | `src/ui/hud.ts` | Pannello di gestione HTML e modale dei resoconti |
 | `tests/` | Vitest sulla simulazione |
@@ -60,10 +60,11 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 
 - **Fatto:** prototipo 0.1 con il ciclo del turno settimanale, pratiche a timer, monte ore, resoconti in coda, salvataggio IndexedDB, 17 test, pubblicazione automatica.
 - **In corso:** prova di gioco di una settimana con Marco e alcuni soci (gate 1 della roadmap).
-- **Fase 4, fatto:** griglia a livelli (superficie, rischi, progetto, realizzato), catalogo di 5 elementi, 8 materiali e 5 lavorazioni del terreno; il piano di cantiere nasce dal progetto (`generatePlan`) con dipendenze per tile, lotti da max 12 ore e pratiche solo se servono. Cassa, magazzino e ordini al fornitore: un lavoro parte solo con i materiali in magazzino. `GameState` è alla versione 3 (griglia, piano, cassa, magazzino, ordini) con migrazione a catena dei salvataggi v1 e v2. Il progetto di partenza è quello di `site.json` (450 €); 51 test.
-- **Fase 4, editor fatto:** la partita parte in progettazione con il progetto proposto di `site.json`; si posano e tolgono elementi sulla griglia (tasto destro = gomma) con preventivo live, gradimento previsto (`expectedAppeal`) e controlli; la conferma genera piano e pratiche e apre il cantiere. `GameState` v4 (`stage`); 61 test.
+- **Fase 4, fatto:** griglia a livelli (superficie, rischi, progetto, realizzato), catalogo di 5 elementi, 8 materiali e 5 lavorazioni del terreno; il piano di cantiere nasce dal progetto (`generatePlan`) con dipendenze per tile, lotti da max 12 ore e pratiche solo se servono. Cassa, magazzino e ordini al fornitore: un lavoro parte solo con i materiali in magazzino. `GameState` è alla versione 3 (griglia, piano, cassa, magazzino, ordini) con migrazione a catena dei salvataggi v1 e v2. 
+- **Fase 4, editor fatto:** si progetta partendo dal progetto proposto del terreno scelto; si posano e tolgono elementi sulla griglia (tasto destro = gomma) con preventivo live, gradimento previsto (`expectedAppeal`) e controlli; la conferma genera piano e pratiche e apre il cantiere.
+- **Fase 1 e Fase 2 fatte:** la partita va terreno → squadra → progettazione → cantiere (`stage`). Tre terreni in `sites.json` (difficoltà 1, 2, 4) con cassa, PV, moltiplicatore, fattori (tipo di terra e sottosuolo "?" fino al sopralluogo) e bonus descritto; la squadra si recluta da 17 candidati spendendo i PV (presidente e segretario/a unici, minimo 3). `GameState` v5 con migrazione dalle versioni 1-4; 71 test. Fattori e bonus dei terreni e gli effetti di coordinatore, presidente e segretario/a sono ancora solo testo.
 - **Ancora fuori dalla Fase 4:** mappa dei rischi sovrapposta (arriva con il sopralluogo), regola di accessibilità, varianti in corso d'opera; ritardi casuali delle consegne, capienza del magazzino, altre fonti di materiali (recupero, donazioni, scambi); la raccolta fondi non porta ancora soldi.
-- **Poi, in ordine:** squadra con i PV (Fase 2) e scelta del terreno (Fase 1) → sopralluogo con insidie (Fase 3) → una side-quest a mini-puzzle, una raccolta fondi, inaugurazione e punteggio → MVP.
+- **Prossimo blocco:** sopralluogo con insidie (Fase 3) → poi una side-quest a mini-puzzle, una raccolta fondi, inaugurazione e punteggio → MVP.
 
 ## Pixel art: Aseprite + server MCP in WSL2
 

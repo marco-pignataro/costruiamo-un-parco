@@ -1,0 +1,19 @@
+[
+  {"id": "v1", "name": "Concetta", "archetypeId": "presidente"},
+  {"id": "v2", "name": "Graziella", "archetypeId": "segretario"},
+  {"id": "v3", "name": "Nino", "archetypeId": "falegname"},
+  {"id": "v4", "name": "Lucia", "archetypeId": "giardiniere"},
+  {"id": "v5", "name": "Turi", "archetypeId": "base"},
+  {"id": "v6", "name": "Peppe", "archetypeId": "base"},
+  {"id": "v7", "name": "Sara", "archetypeId": "comunicatore"},
+  {"id": "v8", "name": "Totò", "archetypeId": "studente"},
+  {"id": "v9", "name": "Giusi", "archetypeId": "studente"},
+  {"id": "v10", "name": "Ciccio", "archetypeId": "fabbro"},
+  {"id": "v11", "name": "Melo", "archetypeId": "elettricista"},
+  {"id": "v12", "name": "Rosaria", "archetypeId": "geometra"},
+  {"id": "v13", "name": "Enzo", "archetypeId": "carte"},
+  {"id": "v14", "name": "Agata", "archetypeId": "coordinatore"},
+  {"id": "v15", "name": "Ninni", "archetypeId": "base"},
+  {"id": "v16", "name": "Pippo", "archetypeId": "presidente"},
+  {"id": "v17", "name": "Mimma", "archetypeId": "giardiniere"}
+]

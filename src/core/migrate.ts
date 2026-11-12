@@ -13,17 +13,18 @@ type AnyState = Record<string, unknown> & { version?: number };
 export function migrate(raw: unknown, c: Content): GameState {
   let s = raw as AnyState;
   const start = s.version;
-  if (start === 4) return s as unknown as GameState;
-  if (start !== 1 && start !== 2 && start !== 3) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (start === 5) return s as unknown as GameState;
+  if (typeof start !== 'number' || start < 1 || start > 4) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
   if (s.version === 1) s = v1to2(s, c);
   if (s.version === 2) s = v2to3(s, c);
   if (s.version === 3) s = { ...s, version: 4, stage: 'cantiere' }; // v3 → v4: le partite esistenti sono già in cantiere
+  if (s.version === 4) s = { ...s, version: 5, siteId: legacySite(c).id, pv: 0 }; // v4 → v5: erano tutte sul terreno di prova
   return dropUnknownActive(s as unknown as GameState, c);
 }
 
 /** v1 → v2: arrivano griglia e piano di cantiere; le pratiche mantengono il loro stato. */
 function v1to2(s: AnyState, c: Content): AnyState {
-  const grid = gridFromSite(c.site, c);
+  const grid = gridFromSite(legacySite(c), c);
   const plan = generatePlan(grid, c);
   const old = new Map((s.pratiche as PraticaState[]).map((p) => [p.id, p]));
   const pratiche: PraticaState[] = gamePratiche(c, plan.pratiche).map(
@@ -39,9 +40,9 @@ function v1to2(s: AnyState, c: Content): AnyState {
 
 /** v2 → v3: arrivano cassa, magazzino e ordini. */
 function v2to3(s: AnyState, c: Content): AnyState {
-  const out = { ...s, version: 3, budget: c.site.budget, stock: {}, orders: [] };
+  const out = { ...s, version: 3, budget: legacySite(c).budget, stock: {}, orders: [] };
   addReport(out, 'Arriva il magazzino', [
-    `In cassa: ${c.site.budget} €.`,
+    `In cassa: ${legacySite(c).budget} €.`,
     'I lavori che usano materiali partono solo se i materiali sono in magazzino: ordinali nella parte burocratica.',
   ]);
   return out;
@@ -77,4 +78,9 @@ function addReport(s: AnyState, title: string, lines: string[]): void {
   reports.push({ id, at: s.lastTick as number, title, lines, seen: false });
   s.reports = reports;
   s.nextId = id + 1;
+}
+
+/** Prima della v5 esisteva un solo terreno: quello sul torrente. */
+function legacySite(c: Content) {
+  return c.sites.find((x) => x.id === 'demo-torrente') ?? c.sites[0];
 }

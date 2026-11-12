@@ -1,4 +1,4 @@
-import { HOURS_PER_WORKING_DAY, ORDERS, SESSION_HOURS } from '../config';
+import { HOURS_PER_WORKING_DAY, MIN_TEAM, ORDERS, SESSION_HOURS } from '../config';
 import type { Content } from './content';
 import { computeDuration, formatHours, type DurationResult } from './duration';
 import {
@@ -14,7 +14,7 @@ import {
   type PlaceCheck,
 } from './grid';
 import { gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, ElementDef, GameState, Order, ParkGrid, Placement, PlanTask, PraticaDef, PraticaState, TaskDef, Volunteer } from './types';
+import type { ActiveTask, Archetype, CandidateDef, ElementDef, GameState, Order, Placement, PlanTask, PraticaDef, SiteDef, PraticaState, TaskDef, Volunteer } from './types';
 
 const EPS = 1e-6;
 
@@ -32,38 +32,116 @@ export class Simulation {
     private readonly content: Content,
   ) {}
 
-  /**
-   * Nuova partita, in fase di progettazione. Senza griglia si parte dal
-   * terreno di prova, con il suo progetto proposto già posato e modificabile.
-   */
-  static newGame(content: Content, now: number, timeScale = 1, grid?: ParkGrid): Simulation {
-    const g = grid ?? gridFromSite(content.site, content);
-    const volunteers: Volunteer[] = content.team.map((m) => {
-      const a = content.archetypes.find((x) => x.id === m.archetypeId);
-      if (!a) throw new Error(`Archetipo sconosciuto: ${m.archetypeId}`);
-      return { id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false };
-    });
+  /** Nuova partita: si comincia scegliendo il terreno (Fase 1), il primo è già selezionato. */
+  static newGame(content: Content, now: number, timeScale = 1): Simulation {
+    const site = content.sites[0];
     const state: GameState = {
-      version: 4,
-      stage: 'progettazione',
+      version: 5,
+      stage: 'terreno',
+      siteId: site.id,
+      pv: site.pv,
       msPerHour: 3_600_000 / timeScale,
       week: 1,
       phase: 'burocratica',
       sessionUsedH: 0,
       lastTick: now,
-      volunteers,
+      volunteers: [],
       active: [],
       completedTasks: [],
       pratiche: [],
       reports: [],
       nextId: 1,
-      grid: g,
+      grid: gridFromSite(site, content),
       plan: [],
-      budget: content.site.budget,
+      budget: site.budget,
       stock: {},
       orders: [],
     };
     return new Simulation(state, content);
+  }
+
+  // ---------- Fase 1: scelta del terreno ----------
+
+  get sites(): SiteDef[] {
+    return this.content.sites;
+  }
+
+  get site(): SiteDef {
+    const s = this.content.sites.find((x) => x.id === this.state.siteId);
+    if (!s) throw new Error(`Terreno sconosciuto: ${this.state.siteId}`);
+    return s;
+  }
+
+  /** Seleziona un terreno da guardare: griglia, cassa e PV diventano i suoi. Si può cambiare idea. */
+  chooseSite(id: string): void {
+    if (this.state.stage !== 'terreno') throw new Error('Il terreno è già scelto');
+    const site = this.content.sites.find((x) => x.id === id);
+    if (!site) throw new Error(`Terreno sconosciuto: ${id}`);
+    this.state.siteId = site.id;
+    this.state.grid = gridFromSite(site, this.content);
+    this.state.budget = site.budget;
+    this.state.pv = site.pv;
+  }
+
+  confirmSite(): void {
+    if (this.state.stage !== 'terreno') throw new Error('Il terreno è già scelto');
+    this.state.stage = 'squadra';
+  }
+
+  // ---------- Fase 2: squadra con i PV ----------
+
+  get candidates(): CandidateDef[] {
+    return this.content.candidates;
+  }
+
+  archetype(id: string): Archetype {
+    const a = this.content.archetypes.find((x) => x.id === id);
+    if (!a) throw new Error(`Archetipo sconosciuto: ${id}`);
+    return a;
+  }
+
+  /** Perché un candidato non si può reclutare (vuoto = si può). */
+  recruitErrors(candidateId: string): string[] {
+    const s = this.state;
+    const m = this.content.candidates.find((x) => x.id === candidateId);
+    if (!m) return [`Candidato sconosciuto: ${candidateId}`];
+    const a = this.archetype(m.archetypeId);
+    const errors: string[] = [];
+    if (s.stage !== 'squadra') errors.push('La squadra si compone in Fase 2');
+    if (s.volunteers.some((v) => v.id === m.id)) errors.push(`${m.name} è già in squadra`);
+    if (a.pvCost > s.pv) errors.push(`Servono ${a.pvCost} PV, ne restano ${s.pv}`);
+    if (a.unique && s.volunteers.some((v) => v.archetypeId === a.id)) errors.push(`In squadra c'è già un ${a.name.toLowerCase()}`);
+    return errors;
+  }
+
+  recruit(candidateId: string): void {
+    const errors = this.recruitErrors(candidateId);
+    if (errors.length) throw new Error(errors.join('; '));
+    const m = this.content.candidates.find((x) => x.id === candidateId)!;
+    const a = this.archetype(m.archetypeId);
+    this.state.pv -= a.pvCost;
+    this.state.volunteers.push({ id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false });
+  }
+
+  /** Toglie un volontario dalla squadra e restituisce i suoi PV (solo in Fase 2). */
+  dismiss(volunteerId: string): void {
+    if (this.state.stage !== 'squadra') throw new Error('La squadra si compone in Fase 2');
+    const i = this.state.volunteers.findIndex((v) => v.id === volunteerId);
+    if (i < 0) throw new Error(`Non è in squadra: ${volunteerId}`);
+    this.state.pv += this.archetype(this.state.volunteers[i].archetypeId).pvCost;
+    this.state.volunteers.splice(i, 1);
+  }
+
+  teamProblems(): string[] {
+    const n = this.state.volunteers.length;
+    return n < MIN_TEAM ? [`Servono almeno ${MIN_TEAM} volontari (ora ${n})`] : [];
+  }
+
+  confirmTeam(): void {
+    if (this.state.stage !== 'squadra') throw new Error('La squadra è già confermata');
+    const problems = this.teamProblems();
+    if (problems.length) throw new Error(problems.join('; '));
+    this.state.stage = 'progettazione';
   }
 
   // ---------- lettura ----------
@@ -152,12 +230,20 @@ export class Simulation {
 
   // ---------- progettazione (Fase 4) ----------
 
+  private designError(): string | null {
+    const st = this.state.stage;
+    if (st === 'progettazione') return null;
+    return st === 'cantiere' ? 'Il progetto è già confermato' : 'Prima vanno scelti terreno e squadra';
+  }
+
   private requireDesign(): void {
-    if (this.state.stage !== 'progettazione') throw new Error('Il progetto è già confermato');
+    const e = this.designError();
+    if (e) throw new Error(e);
   }
 
   canPlace(elementId: string, x: number, y: number): PlaceCheck {
-    if (this.state.stage !== 'progettazione') return { ok: false, errors: ['Il progetto è già confermato'], risks: [] };
+    const e = this.designError();
+    if (e) return { ok: false, errors: [e], risks: [] };
     return canPlace(this.state.grid, this.content, elementId, x, y);
   }
 
@@ -176,7 +262,7 @@ export class Simulation {
   }
 
   get siteName(): string {
-    return this.content.site.name;
+    return this.site.name;
   }
 
   get catalog(): ElementDef[] {

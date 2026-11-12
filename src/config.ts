@@ -32,6 +32,12 @@ export const ORDERS = {
   deliveryWeeks: 1,
 } as const;
 
+/** Squadra minima per aprire il cantiere (sotto, in futuro, si perde). */
+export const MIN_TEAM = 3;
+
+/** Dimensione massima di un terreno in tile: tanto ci sta nella scena accanto alla sede. */
+export const GRID_MAX = { width: 14, height: 11 } as const;
+
 /** Gradimento previsto: bonus per ogni tipo di elemento diverso nel progetto (varietà). */
 export const APPEAL_VARIETY_BONUS = 5;
 

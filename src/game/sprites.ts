@@ -32,6 +32,11 @@ export const SHIRTS: Record<string, string> = {
   comunicatore: '#2980b9',
   base: '#2e9e5b',
   studente: '#16a085',
+  fabbro: '#7f8c8d',
+  elettricista: '#f1c40f',
+  geometra: '#e67e22',
+  carte: '#34495e',
+  coordinatore: '#e84393',
 };
 
 const VOLUNTEER = [

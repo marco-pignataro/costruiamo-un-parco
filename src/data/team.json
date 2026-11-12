@@ -1,9 +1,0 @@
-[
-  { "id": "v1", "name": "Concetta", "archetypeId": "presidente" },
-  { "id": "v2", "name": "Graziella", "archetypeId": "segretario" },
-  { "id": "v3", "name": "Nino", "archetypeId": "falegname" },
-  { "id": "v4", "name": "Lucia", "archetypeId": "giardiniere" },
-  { "id": "v5", "name": "Turi", "archetypeId": "base" },
-  { "id": "v6", "name": "Peppe", "archetypeId": "base" },
-  { "id": "v7", "name": "Sara", "archetypeId": "comunicatore" }
-]
