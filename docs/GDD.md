@@ -275,7 +275,7 @@ Tutte le pratiche nascono dal progetto e sono visibili da subito; si chiudono in
 - **Nessuna scorciatoia a pagamento:** per far avanzare un'attesa basta chiudere in anticipo la sessione infrasettimanale: i giorni rimanenti passano e si va al weekend. Il prezzo è rinunciare alle ore non usate per altre pratiche e ordini.
 - **Fiducia dell'ufficio:** pratiche consegnate corrette e side-quest completate accorciano le attese future presso quell'ufficio.
 
-**Tipo 2 — Richieste dirette ai dirigenti.** Non sono a timer: il dirigente concede la pratica se si supera una side-quest o un mini-dungeon negli uffici. Affrontarle occupa mezza giornata di lavoro: 4 ore di sessione infrasettimanale e 4 ore del monte settimanale di ogni volontario coinvolto, che per quel tempo non è disponibile per altro.
+**Tipo 2 — Richieste dirette ai dirigenti.** Non sono a timer: il dirigente concede la pratica se si supera una side-quest o un mini-dungeon negli uffici. Affrontarle occupa una giornata di lavoro: 4 ore di sessione infrasettimanale e 4 ore del monte settimanale di ogni volontario coinvolto, che per quel tempo non è disponibile per altro.
 
 **Side-quest (mini-puzzle).** Il funzionario chiede un favore legittimo e civico, mai tangenti, che si risolve con un breve puzzle. Esempi:
 
