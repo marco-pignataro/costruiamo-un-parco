@@ -1,0 +1,8 @@
+[
+  { "id": "ordine-materiali", "name": "Ordinare legno e viti", "phase": "burocratica", "hours": 3, "skill": "organizzazione", "maxVolunteers": 2, "requires": [] },
+  { "id": "raccolta-fondi", "name": "Organizzare una raccolta fondi", "phase": "burocratica", "hours": 8, "skill": "comunicazione", "maxVolunteers": 3, "requires": [] },
+  { "id": "raccolta-rifiuti", "name": "Raccogliere i rifiuti leggeri", "phase": "operativa", "hours": 12, "skill": null, "maxVolunteers": 6, "requires": ["assicurazione"] },
+  { "id": "sfalcio", "name": "Sfalciare l'erba alta", "phase": "operativa", "hours": 8, "skill": "verde", "maxVolunteers": 4, "requires": ["assicurazione"] },
+  { "id": "riparare-panchina", "name": "Riparare una panchina", "phase": "operativa", "hours": 10, "skill": "legno", "maxVolunteers": 3, "requires": ["assicurazione"] },
+  { "id": "staccionata", "name": "Montare la staccionata", "phase": "operativa", "hours": 16, "skill": "legno", "maxVolunteers": 4, "requires": ["assicurazione"] }
+]

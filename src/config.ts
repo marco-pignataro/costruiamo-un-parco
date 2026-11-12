@@ -1,0 +1,36 @@
+// Unico punto in cui vivono titolo e dati dell'associazione:
+// cambiando questi valori cambiano ovunque nel gioco.
+
+export const GAME_TITLE = 'Costrui-AMO: un Parco!';
+
+export const ASSOCIATION = {
+  name: 'Puli-AMO Messina',
+  donationUrl: 'https://www.puliamomessina.it/donazioni/',
+  taxCode5x1000: '97124820834',
+} as const;
+
+/** Ore di sessione: tempo reale con almeno un compito in corso. */
+export const SESSION_HOURS = {
+  burocratica: 20, // 5 giorni da 4 ore
+  operativa: 8, // 1 giorno da 8 ore
+} as const;
+
+/** Un giorno lavorativo di attesa = 4 ore di sessione infrasettimanale. */
+export const HOURS_PER_WORKING_DAY = 4;
+
+/** Efficienze della formula durata = ore complessive / somma efficienze. */
+export const EFFICIENCY = {
+  base: 1,
+  specialist: 1.1,
+  guided: 2, // volontario senza la skill, affiancato da uno specialista
+  maxGuidedPerSpecialist: 2,
+} as const;
+
+/**
+ * Velocità del tempo, solo per i test: ?velocita=60 fa durare un'ora di gioco
+ * un minuto reale. Si applica alle nuove partite. Di default 1 = tempo reale.
+ */
+export function readTimeScale(search: string = globalThis.location?.search ?? ''): number {
+  const v = Number(new URLSearchParams(search).get('velocita'));
+  return Number.isFinite(v) && v >= 1 ? v : 1;
+}

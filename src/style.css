@@ -1,0 +1,87 @@
+:root {
+  --bg: #1f2a24;
+  --panel: #f4f1e8;
+  --ink: #1f1f1f;
+  --muted: #5d5a52;
+  --accent: #2e9e5b;
+  --warn: #c0392b;
+  --line: #d8d2c2;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; }
+
+#app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  min-height: 100vh;
+}
+
+#game { min-height: 50vh; }
+#game canvas { image-rendering: pixelated; }
+
+#hud {
+  background: var(--panel);
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+}
+
+#hud h1 { font-size: 18px; margin: 0 0 4px; }
+#hud h2 { font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+#hud p { margin: 0 0 6px; }
+#hud section { border-top: 1px solid var(--line); padding-top: 12px; }
+#hud ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#hud small { color: var(--muted); }
+
+button, select {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: white;
+  cursor: pointer;
+}
+button[data-act="start"], button[data-ok] { background: var(--accent); color: white; border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+select { width: 100%; margin-bottom: 8px; }
+header button { margin-top: 8px; width: 100%; }
+
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 4px 0; }
+.bar span { display: block; height: 100%; background: var(--accent); transition: width 0.5s; }
+
+.vols { display: grid; gap: 4px; margin-bottom: 8px; }
+.vol { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; }
+.vol:hover { background: white; }
+.vol i { width: 10px; height: 10px; border-radius: 2px; }
+.vol.busy { opacity: 0.5; }
+.vol .hours { font-variant-numeric: tabular-nums; }
+
+.preview { margin: 4px 0; }
+.errors { color: var(--warn); margin-bottom: 8px !important; font-size: 13px; }
+.msg { color: var(--warn); }
+
+.pratiche em { color: var(--warn); font-style: normal; font-size: 12px; }
+.pratiche .st-approvata strong { color: var(--accent); }
+
+footer { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px; margin-top: auto; }
+footer .tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.donate { display: block; text-align: center; padding: 8px; border-radius: 6px; background: #c0392b; color: white; text-decoration: none; font-weight: 600; }
+
+#modal { position: fixed; inset: 0; background: rgb(0 0 0 / 0.55); display: grid; place-items: center; }
+#modal[hidden] { display: none; }
+#modal .card { background: var(--panel); padding: 20px; border-radius: 10px; width: min(420px, 90vw); display: grid; gap: 8px; }
+#modal h2 { margin: 0; font-size: 18px; }
+#modal ul { margin: 0; padding-left: 18px; }
+
+@media (max-width: 860px) {
+  #app { grid-template-columns: 1fr; }
+  #hud { max-height: none; }
+}
