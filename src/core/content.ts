@@ -4,7 +4,8 @@ import pratiche from '../data/pratiche.json';
 import team from '../data/team.json';
 import elements from '../data/elements.json';
 import materials from '../data/materials.json';
-import type { Archetype, ElementDef, MaterialDef, PraticaDef, TaskDef } from './types';
+import preparations from '../data/preparations.json';
+import type { Archetype, ElementDef, MaterialDef, PraticaDef, PrepDef, TaskDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
@@ -13,6 +14,7 @@ export interface Content {
   team: { id: string; name: string; archetypeId: string }[];
   elements: ElementDef[];
   materials: MaterialDef[];
+  preparations: PrepDef[];
 }
 
 export const defaultContent: Content = {
@@ -22,6 +24,7 @@ export const defaultContent: Content = {
   team,
   elements: elements as ElementDef[],
   materials: materials as MaterialDef[],
+  preparations: preparations as PrepDef[],
 };
 
 /**
@@ -39,6 +42,13 @@ export function validateContent(c: Content): string[] {
     for (const m of e.materials) if (!has(c.materials, m.id)) errors.push(`${e.id}: materiale sconosciuto ${m.id}`);
     for (const p of e.pratiche) if (!has(c.pratiche, p)) errors.push(`${e.id}: pratica sconosciuta ${p}`);
     if (e.adjacentTo && !has(c.elements, e.adjacentTo)) errors.push(`${e.id}: elemento adiacente sconosciuto ${e.adjacentTo}`);
+    for (const p of e.prep) if (!has(c.preparations, p)) errors.push(`${e.id}: lavorazione sconosciuta ${p}`);
+  }
+  for (const p of c.preparations) {
+    if (p.hoursPerTile <= 0) errors.push(`${p.id}: ore non valide`);
+    if (p.skill && !skills.has(p.skill)) errors.push(`${p.id}: skill sconosciuta ${p.skill}`);
+    for (const a of p.after) if (!has(c.preparations, a)) errors.push(`${p.id}: lavorazione sconosciuta ${a}`);
+    for (const x of p.pratiche) if (!has(c.pratiche, x)) errors.push(`${p.id}: pratica sconosciuta ${x}`);
   }
   for (const t of c.tasks) {
     if (t.skill && !skills.has(t.skill)) errors.push(`${t.id}: skill sconosciuta ${t.skill}`);

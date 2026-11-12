@@ -18,6 +18,12 @@ export const SESSION_HOURS = {
 /** Un giorno lavorativo di attesa = 4 ore di sessione infrasettimanale. */
 export const HOURS_PER_WORKING_DAY = 4;
 
+/**
+ * Il piano di cantiere divide lavorazioni e gruppi di elementi in lotti di al
+ * massimo queste ore complessive, così ogni compito sta in un weekend.
+ */
+export const MAX_PLAN_TASK_HOURS = 12;
+
 /** Efficienze della formula durata = ore complessive / somma efficienze. */
 export const EFFICIENCY = {
   base: 1,

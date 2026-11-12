@@ -1,0 +1,7 @@
+[
+  { "id": "bonifica", "name": "Bonifica dai rifiuti", "hoursPerTile": 3, "skill": null, "maxVolunteers": 6, "surfaces": ["rifiuti"], "after": [], "pratiche": ["assicurazione"] },
+  { "id": "rimozione-cemento", "name": "Rimozione del cemento", "hoursPerTile": 4, "skill": null, "maxVolunteers": 3, "surfaces": ["cemento"], "after": ["bonifica"], "pratiche": ["assicurazione"] },
+  { "id": "sfalcio", "name": "Sfalcio dell'erba alta", "hoursPerTile": 1, "skill": "verde", "maxVolunteers": 4, "surfaces": ["erba-alta"], "after": ["bonifica"], "pratiche": ["assicurazione"] },
+  { "id": "livellamento", "name": "Livellamento del terreno", "hoursPerTile": 1.5, "skill": "progetto", "maxVolunteers": 4, "surfaces": null, "after": ["bonifica", "rimozione-cemento", "sfalcio"], "pratiche": ["assicurazione"] },
+  { "id": "vangatura", "name": "Vangatura e concimazione", "hoursPerTile": 1, "skill": "verde", "maxVolunteers": 4, "surfaces": null, "after": ["bonifica", "rimozione-cemento", "sfalcio"], "pratiche": ["assicurazione"] }
+]

@@ -114,6 +114,37 @@ export interface ElementDef {
   pratiche: string[];
   /** Elemento che deve stare su una tile adiacente (es. panchina accanto al sentiero). */
   adjacentTo: string | null;
+  /** Lavorazioni del terreno che servono sotto l'elemento, oltre a quelle dovute alla superficie. */
+  prep: string[];
+  /** Più elementi uguali si raggruppano in un solo compito (es. tratti di sentiero). */
+  groupable: boolean;
+}
+
+/**
+ * Lavorazione preparatoria del terreno. Con `surfaces` scatta da sola sulle
+ * tile di quella superficie; con `surfaces: null` solo se l'elemento la chiede.
+ */
+export interface PrepDef {
+  id: string;
+  name: string;
+  hoursPerTile: number;
+  skill: string | null;
+  maxVolunteers: number;
+  surfaces: SurfaceId[] | null;
+  /** Lavorazioni che vanno fatte prima, sulle stesse tile. */
+  after: string[];
+  pratiche: string[];
+}
+
+/** Compito del piano di cantiere generato dal progetto. */
+export interface PlanTask extends TaskDef {
+  /** Compiti del piano da completare prima. */
+  after: string[];
+  materials: { id: string; qty: number }[];
+  /** Elementi del progetto che il compito realizza (vuoto per le lavorazioni del terreno). */
+  placements: number[];
+  /** Tile su cui lavora il compito, come indici della griglia. */
+  tiles: number[];
 }
 
 export interface Placement {
