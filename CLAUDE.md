@@ -20,7 +20,9 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 - **Turno settimanale in-game:** parte burocratica = 20 ore di sessione; parte operativa (weekend) = 8 ore. Le ore di sessione sono tempo reale con almeno un compito in corso (compiti paralleli contano una volta). Si chiudono da sole o a mano.
 - **Chiudere in anticipo la parte burocratica** fa passare i giorni rimanenti: le attese delle pratiche avanzano. Non esiste un modo di pagare per saltare le attese.
 - **Durate:** `durata = ore complessive / Σ efficienze`; base 1, specialista con la skill richiesta 1,1, volontario senza skill affiancato da uno specialista 2 (massimo 2 guidati per specialista). Qualità alta se c'è almeno uno specialista.
-- **Pratiche:** generate dal progetto e visibili da subito. Tipo 1 a timer: richiesta 1-2 ore che occupa il volontario, poi attesa in giorni lavorativi (1 giorno = 4 ore di sessione burocratica) con volontario libero. Tipo 2: richiesta diretta al dirigente con side-quest (mini-puzzle) o mini-dungeon (mini-platform), non a timer.
+- **Pratiche:** generate dal progetto e visibili da subito. Tipo 1 a timer: richiesta 1-2 ore che occupa il volontario, poi attesa in giorni lavorativi (1 giorno = 4 ore di sessione burocratica) con volontario libero. Tipo 2: richiesta diretta al dirigente con side-quest (mini-puzzle) o mini-dungeon (mini-platform), non a timer; occupa mezza giornata, cioè 4 ore di sessione e 4 ore del monte di chi la affronta.
+- **Presidente** (uno solo): bonus nelle richieste dirette e nella fiducia degli uffici. **Segretario/a** (uno solo): registro delle pratiche, meno errori, avvisi anticipati sulle pratiche bloccanti.
+- **Resoconto settimanale** a fine weekend (eventi, morale, bilancio), oltre ai resoconti dei singoli compiti.
 - **Monte ore settimanale** unico per volontario: 6 base/studente, 10 mestieri, 14 ruoli organizzativi (presidente, segretario/a, coordinatore, esperto di carte, comunicatore).
 - **Regola del prototipo:** un compito si avvia solo se finisce entro le ore residue della sessione e se ogni volontario ha abbastanza ore settimanali.
 
@@ -29,8 +31,8 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | Percorso | Contenuto |
 | --- | --- |
 | `src/config.ts` | Titolo, associazione, ore di sessione, efficienze, velocità di test |
-| `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `storage.ts`, `types.ts`, `content.ts` |
-| `src/data/*.json` | Contenuti: archetipi, compiti, pratiche, squadra iniziale |
+| `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
+| `src/data/*.json` | Contenuti: archetipi, compiti, pratiche, squadra iniziale, elementi del parco, materiali |
 | `src/game/` | `ParkScene.ts` (legge lo stato e lo disegna, non decide nulla), `sprites.ts` (pixel art da griglie di caratteri) |
 | `src/ui/hud.ts` | Pannello di gestione HTML e modale dei resoconti |
 | `tests/` | Vitest sulla simulazione |
@@ -58,9 +60,9 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 
 - **Fatto:** prototipo 0.1 con il ciclo del turno settimanale, pratiche a timer, monte ore, resoconti in coda, salvataggio IndexedDB, 17 test, pubblicazione automatica.
 - **In corso:** prova di gioco di una settimana con Marco e alcuni soci (gate 1 della roadmap).
+- **Fase 4, passi 1-2 fatti:** griglia a livelli (superficie, rischi, progetto, realizzato) e catalogo di 5 elementi e 8 materiali, con regole di posa, adiacenza e preventivo; 27 test. Non ancora dentro `GameState` né disegnati in Phaser.
 - **Prossimo blocco di sviluppo:** **Fase 4 — Progettazione del parco** su griglia con budget e materiali: il progetto disegnato genera compiti, dipendenze, pratiche, costi e materiali da ordinare (oggi sono scritti a mano in `tasks.json`).
 - **Poi, in ordine:** squadra con i PV (Fase 2) e scelta del terreno (Fase 1) → sopralluogo con insidie (Fase 3) → una side-quest a mini-puzzle, una raccolta fondi, inaugurazione e punteggio → MVP.
-- **Proposte non ancora confermate da Marco:** effetti di presidente e segretario/a; le richieste dirette non consumano ore di sessione; resoconto settimanale a fine weekend.
 
 ## Pixel art: Aseprite + server MCP in WSL2
 

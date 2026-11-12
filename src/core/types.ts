@@ -85,3 +85,57 @@ export interface GameState {
   reports: Report[];
   nextId: number;
 }
+
+// ---------- Progettazione del parco (Fase 4) ----------
+
+/** Cosa c'è oggi sulla tile. Gli alberi tutelati non si possono rimuovere. */
+export type SurfaceId = 'terra' | 'erba-alta' | 'rifiuti' | 'cemento' | 'albero-tutelato';
+
+export interface MaterialDef {
+  id: string;
+  name: string;
+  unit: string;
+  /** Prezzo dal fornitore, in euro per unità. */
+  unitPrice: number;
+}
+
+export interface ElementDef {
+  id: string;
+  name: string;
+  /** Ingombro in tile. */
+  w: number;
+  h: number;
+  /** Ore di lavoro complessive (1 volontario base). */
+  hours: number;
+  skill: string | null;
+  maxVolunteers: number;
+  materials: { id: string; qty: number }[];
+  /** Pratiche da approvare prima di costruirlo. */
+  pratiche: string[];
+  /** Elemento che deve stare su una tile adiacente (es. panchina accanto al sentiero). */
+  adjacentTo: string | null;
+}
+
+export interface Placement {
+  uid: number;
+  elementId: string;
+  x: number;
+  y: number;
+}
+
+/**
+ * Griglia condivisa a livelli, serializzabile in JSON. I livelli per tile sono
+ * array piatti indicizzati con y * width + x.
+ */
+export interface ParkGrid {
+  width: number;
+  height: number;
+  surface: SurfaceId[];
+  /** Insidia nota sulla tile (dal sopralluogo), oppure null. */
+  risk: (string | null)[];
+  /** Livello progetto: elementi posati dal giocatore. */
+  placements: Placement[];
+  /** Livello realizzato: uid degli elementi costruiti. */
+  built: number[];
+  nextUid: number;
+}

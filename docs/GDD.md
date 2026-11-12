@@ -139,8 +139,8 @@ Il giocatore spende i PV iniziali per comporre la squadra: i volontari base cost
 | Esperto di carte | Burocrazia | 4 | 14 | Pratiche più veloci, meno documenti sbagliati |
 | Comunicatore / social | Comunicazione | 3 | 14 | Raccolte fondi più efficaci, reputazione in crescita |
 | Coordinatore | Leadership | 5 | 14 | Alza il morale di tutta la squadra, riduce gli abbandoni |
-| Presidente | Rappresentanza | 6 | 14 | Uno solo in squadra; bonus nelle richieste dirette ai dirigenti e nella fiducia degli uffici (proposta) |
-| Segretario/a | Organizzazione | 5 | 14 | Uno solo in squadra; gestisce il registro delle pratiche, meno errori, avvisi anticipati sulle pratiche bloccanti (proposta) |
+| Presidente | Rappresentanza | 6 | 14 | Uno solo in squadra; bonus nelle richieste dirette ai dirigenti e nella fiducia degli uffici |
+| Segretario/a | Organizzazione | 5 | 14 | Uno solo in squadra; gestisce il registro delle pratiche, meno errori, avvisi anticipati sulle pratiche bloccanti |
 
 Il monte ore è settimanale e unico: si spende sia nella parte burocratica sia in quella operativa. I valori sono il punto di partenza, da bilanciare nel prototipo.
 
@@ -204,6 +204,8 @@ La progettazione è una modalità creativa su griglia: il disegno finale diventa
 - **Mappa dei rischi** sovrapposta: costruire su una zona critica è possibile, ma con malus o lavori aggiuntivi.
 - **Regole:** accessibilità (almeno un percorso senza barriere), distanze di sicurezza dei giochi, alberi tutelati non rimovibili.
 - **Indicatore di gradimento previsto:** varia con varietà delle aree, ombra, accessibilità, panorama. Alto gradimento = più reputazione e punteggio finale.
+
+**Catalogo dell'MVP (in `src/data/elements.json`).** Sentiero in ghiaia, panchina autocostruita (va accanto a un sentiero), aiuola di aromatiche 2×2, staccionata in legno, cestino per la differenziata (accanto a un sentiero). Ogni elemento ha ingombro in tile, ore complessive, skill, materiali e pratiche; il costo in euro del preventivo si ricava dai prezzi dei materiali (`src/data/materials.json`), senza un prezzo scritto a parte.
 
 **Dal disegno ai lavori.** Alla conferma, il progetto genera il **piano di cantiere**: ogni elemento diventa un task con materiali, ore-uomo, skill, pratiche necessarie e dipendenze (es. bonifica → livellamento → sentiero → panchina). Genera anche tutte le pratiche (vedi Burocrazia).
 
@@ -273,7 +275,7 @@ Tutte le pratiche nascono dal progetto e sono visibili da subito; si chiudono in
 - **Nessuna scorciatoia a pagamento:** per far avanzare un'attesa basta chiudere in anticipo la sessione infrasettimanale: i giorni rimanenti passano e si va al weekend. Il prezzo è rinunciare alle ore non usate per altre pratiche e ordini.
 - **Fiducia dell'ufficio:** pratiche consegnate corrette e side-quest completate accorciano le attese future presso quell'ufficio.
 
-**Tipo 2 — Richieste dirette ai dirigenti.** Non sono a timer: il dirigente concede la pratica se si supera una side-quest o un mini-dungeon negli uffici. *Proposta:* non consumano ore di sessione.
+**Tipo 2 — Richieste dirette ai dirigenti.** Non sono a timer: il dirigente concede la pratica se si supera una side-quest o un mini-dungeon negli uffici. Affrontarle occupa mezza giornata di lavoro: 4 ore di sessione infrasettimanale e 4 ore del monte settimanale di ogni volontario coinvolto, che per quel tempo non è disponibile per altro.
 
 **Side-quest (mini-puzzle).** Il funzionario chiede un favore legittimo e civico, mai tangenti, che si risolve con un breve puzzle. Esempi:
 
