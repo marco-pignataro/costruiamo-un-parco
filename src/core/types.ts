@@ -86,7 +86,9 @@ export interface Report {
 }
 
 export interface GameState {
-  version: 3;
+  version: 4;
+  /** progettazione: si disegna il parco (Fase 4); cantiere: turni settimanali (Fase 5). */
+  stage: 'progettazione' | 'cantiere';
   /** Millisecondi reali per un'ora di gioco (3.600.000 = tempo reale). */
   msPerHour: number;
   week: number;
@@ -142,6 +144,8 @@ export interface ElementDef {
   prep: string[];
   /** Più elementi uguali si raggruppano in un solo compito (es. tratti di sentiero). */
   groupable: boolean;
+  /** Punti di gradimento del primo esemplare; le copie successive valgono via via meno. */
+  appeal: number;
 }
 
 /**

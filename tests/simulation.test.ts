@@ -5,7 +5,13 @@ import { Simulation } from '../src/core/simulation';
 const H = 3_600_000; // tempo reale: 1 ora di gioco = 1 ora vera
 const T0 = Date.UTC(2026, 10, 16, 9, 0, 0);
 const at = (hours: number) => T0 + hours * H;
-const newGame = () => Simulation.newGame(defaultContent, T0);
+/** Partita già in cantiere, con il progetto proposto del terreno di prova. */
+const newGame = () => {
+  const sim = Simulation.newGame(defaultContent, T0);
+  sim.confirmProject(T0);
+  sim.state.reports = [];
+  return sim;
+};
 
 describe('timer reali e recupero a gioco chiuso', () => {
   it('un compito finisce dopo le sue ore reali e produce un resoconto', () => {
@@ -114,6 +120,7 @@ describe('sessioni', () => {
       T0,
     );
     const who = ['v2', 'v7', 'v1', 'v3'];
+    sim2.confirmProject(T0);
     for (let i = 0; i < 4; i++) sim2.startTask(`t${i + 1}`, [who[i]], at(i * 5));
     sim2.tick(at(20));
     expect(sim2.state.phase).toBe('operativa');
@@ -131,7 +138,7 @@ describe('piano di cantiere nella partita', () => {
 
   it('i lavori del weekend nascono dal progetto del terreno di prova', () => {
     const sim = newGame();
-    expect(sim.state.version).toBe(3);
+    expect(sim.state.version).toBe(4);
     expect(sim.state.plan.length).toBeGreaterThan(0);
     expect(sim.state.plan.every((t) => t.phase === 'operativa')).toBe(true);
   });
@@ -178,7 +185,9 @@ describe('piano di cantiere nella partita', () => {
         { ...defaultContent.elements[4], id: 'telecamera', name: 'Telecamera', adjacentTo: null, pratiche: ['videosorveglianza'] },
       ],
     };
-    const ids = Simulation.newGame(content, T0).state.pratiche.map((p) => p.id);
+    const sim = Simulation.newGame(content, T0);
+    sim.confirmProject(T0);
+    const ids = sim.state.pratiche.map((p) => p.id);
     expect(ids).toContain('assicurazione');
     expect(ids).toContain('occupazione-suolo'); // non dipende dal progetto
     expect(ids).not.toContain('videosorveglianza');

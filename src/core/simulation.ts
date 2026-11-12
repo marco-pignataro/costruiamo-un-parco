@@ -1,9 +1,20 @@
 import { HOURS_PER_WORKING_DAY, ORDERS, SESSION_HOURS } from '../config';
 import type { Content } from './content';
 import { computeDuration, formatHours, type DurationResult } from './duration';
-import { gridFromSite } from './grid';
+import {
+  canPlace,
+  estimate,
+  expectedAppeal,
+  gridFromSite,
+  place,
+  placementAt,
+  removePlacement,
+  validateProject,
+  type Estimate,
+  type PlaceCheck,
+} from './grid';
 import { gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, ElementDef, GameState, Order, ParkGrid, PlanTask, PraticaDef, PraticaState, TaskDef, Volunteer } from './types';
+import type { ActiveTask, ElementDef, GameState, Order, ParkGrid, Placement, PlanTask, PraticaDef, PraticaState, TaskDef, Volunteer } from './types';
 
 const EPS = 1e-6;
 
@@ -21,17 +32,20 @@ export class Simulation {
     private readonly content: Content,
   ) {}
 
-  /** Nuova partita. Senza griglia si parte dal terreno di prova con il suo progetto. */
+  /**
+   * Nuova partita, in fase di progettazione. Senza griglia si parte dal
+   * terreno di prova, con il suo progetto proposto già posato e modificabile.
+   */
   static newGame(content: Content, now: number, timeScale = 1, grid?: ParkGrid): Simulation {
     const g = grid ?? gridFromSite(content.site, content);
-    const plan = generatePlan(g, content);
     const volunteers: Volunteer[] = content.team.map((m) => {
       const a = content.archetypes.find((x) => x.id === m.archetypeId);
       if (!a) throw new Error(`Archetipo sconosciuto: ${m.archetypeId}`);
       return { id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false };
     });
     const state: GameState = {
-      version: 3,
+      version: 4,
+      stage: 'progettazione',
       msPerHour: 3_600_000 / timeScale,
       week: 1,
       phase: 'burocratica',
@@ -40,11 +54,11 @@ export class Simulation {
       volunteers,
       active: [],
       completedTasks: [],
-      pratiche: gamePratiche(content, plan.pratiche).map((id) => ({ id, status: 'da-avviare', waitRemainingH: 0 })),
+      pratiche: [],
       reports: [],
       nextId: 1,
       grid: g,
-      plan: plan.tasks,
+      plan: [],
       budget: content.site.budget,
       stock: {},
       orders: [],
@@ -113,6 +127,7 @@ export class Simulation {
    * in lista: il giocatore vede cosa gli manca.
    */
   availableTasks(): TaskDef[] {
+    if (this.state.stage !== 'cantiere') return [];
     const running = new Set(this.state.active.filter((a) => a.kind === 'lavoro').map((a) => a.refId));
     return this.allTasks.filter(
       (t) =>
@@ -133,6 +148,67 @@ export class Simulation {
   isBlocking(praticaId: string): boolean {
     if (this.pratica(praticaId).status === 'approvata') return false;
     return this.allTasks.some((t) => t.requires.includes(praticaId) && !this.state.completedTasks.includes(t.id));
+  }
+
+  // ---------- progettazione (Fase 4) ----------
+
+  private requireDesign(): void {
+    if (this.state.stage !== 'progettazione') throw new Error('Il progetto è già confermato');
+  }
+
+  canPlace(elementId: string, x: number, y: number): PlaceCheck {
+    if (this.state.stage !== 'progettazione') return { ok: false, errors: ['Il progetto è già confermato'], risks: [] };
+    return canPlace(this.state.grid, this.content, elementId, x, y);
+  }
+
+  placeElement(elementId: string, x: number, y: number): number {
+    this.requireDesign();
+    return place(this.state.grid, this.content, elementId, x, y);
+  }
+
+  removeElement(uid: number): void {
+    this.requireDesign();
+    removePlacement(this.state.grid, uid);
+  }
+
+  elementAt(x: number, y: number): Placement | undefined {
+    return placementAt(this.state.grid, this.content, x, y);
+  }
+
+  get siteName(): string {
+    return this.content.site.name;
+  }
+
+  get catalog(): ElementDef[] {
+    return this.content.elements;
+  }
+
+  /** Preventivo, gradimento e problemi del progetto, per l'editor. */
+  designSummary(): Estimate & { appeal: number; problems: string[] } {
+    const g = this.state.grid;
+    const est = estimate(g, this.content);
+    const problems = validateProject(g, this.content);
+    if (g.placements.length === 0) problems.push('Il progetto è vuoto');
+    if (est.costEur > this.state.budget) problems.push(`Il preventivo (${est.costEur} €) supera la cassa (${this.state.budget} €)`);
+    return { ...est, appeal: expectedAppeal(g, this.content), problems };
+  }
+
+  /** Conferma il progetto: nascono piano di cantiere e pratiche, si apre il cantiere. */
+  confirmProject(now: number): void {
+    this.requireDesign();
+    const { problems } = this.designSummary();
+    if (problems.length) throw new Error(problems.join('; '));
+    const plan = generatePlan(this.state.grid, this.content);
+    const s = this.state;
+    s.plan = plan.tasks;
+    s.pratiche = gamePratiche(this.content, plan.pratiche).map((id) => ({ id, status: 'da-avviare', waitRemainingH: 0 }));
+    s.stage = 'cantiere';
+    s.lastTick = Math.max(s.lastTick, now);
+    this.report(now, 'Progetto confermato', [
+      `Compiti nel piano di cantiere: ${plan.tasks.length}`,
+      `Pratiche da avviare: ${s.pratiche.length}`,
+      'Si comincia con la parte burocratica: pratiche e ordini dei materiali.',
+    ]);
   }
 
   // ---------- materiali e ordini ----------
@@ -230,6 +306,7 @@ export class Simulation {
   }
 
   private previewTeam(total: number, skill: string | null, ids: string[], errors: string[]): Preview {
+    if (this.state.stage !== 'cantiere') errors.unshift('Prima va confermato il progetto');
     if (ids.length === 0) return { errors: [...errors, 'Scegli almeno un volontario'] };
     const team = ids.map((id) => this.volunteer(id));
     const d = computeDuration(total, skill, team);
@@ -294,12 +371,13 @@ export class Simulation {
   }
 
   canCloseSession(): boolean {
-    return this.state.active.length === 0;
+    return this.state.stage === 'cantiere' && this.state.active.length === 0;
   }
 
   /** Chiusura manuale: i giorni rimanenti passano comunque, le attese avanzano. */
   closeSession(now: number): void {
     this.tick(now);
+    if (this.state.stage !== 'cantiere') throw new Error('Prima va confermato il progetto');
     if (!this.canCloseSession()) throw new Error('Ci sono compiti in corso');
     this.endSession(now, true);
   }

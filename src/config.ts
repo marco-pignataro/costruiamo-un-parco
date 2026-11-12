@@ -32,6 +32,9 @@ export const ORDERS = {
   deliveryWeeks: 1,
 } as const;
 
+/** Gradimento previsto: bonus per ogni tipo di elemento diverso nel progetto (varietà). */
+export const APPEAL_VARIETY_BONUS = 5;
+
 /** Efficienze della formula durata = ore complessive / somma efficienze. */
 export const EFFICIENCY = {
   base: 1,

@@ -85,3 +85,9 @@ footer .tools { display: flex; flex-wrap: wrap; gap: 6px; }
   #app { grid-template-columns: 1fr; }
   #hud { max-height: none; }
 }
+
+.tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.tool { display: grid; gap: 2px; text-align: left; padding: 6px 8px; }
+.tool small { font-size: 11px; }
+.tool.on { outline: 2px solid var(--accent); background: white; }
+button.confirm { width: 100%; background: var(--accent); color: white; border-color: var(--accent); }

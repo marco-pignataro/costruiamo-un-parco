@@ -29,10 +29,17 @@ function saveV1() {
   };
 }
 
+function confirmed() {
+  const sim = Simulation.newGame(defaultContent, T0);
+  sim.confirmProject(T0);
+  return sim;
+}
+
 describe('migrazione dei salvataggi', () => {
   it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(3);
+    expect(s.version).toBe(4);
+    expect(s.stage).toBe('cantiere');
     expect(s.budget).toBe(defaultContent.site.budget);
     expect(s.stock).toEqual({});
     expect(s.orders).toEqual([]);
@@ -56,19 +63,27 @@ describe('migrazione dei salvataggi', () => {
   });
 
   it('v2 → v3: il compito "Ordinare legno e viti" in corso si interrompe', () => {
-    const v2 = { ...Simulation.newGame(defaultContent, T0).state, version: 2 } as Record<string, unknown>;
+    const v2 = { ...confirmed().state, version: 2 } as Record<string, unknown>;
+    delete v2.stage;
     delete v2.budget;
     delete v2.stock;
     delete v2.orders;
     v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
     (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
     const s = migrate(v2, defaultContent);
-    expect(s.version).toBe(3);
+    expect(s.version).toBe(4);
+    expect(s.stage).toBe('cantiere');
     expect(s.active).toEqual([]);
     expect(s.volunteers.find((v) => v.id === 'v2')?.busy).toBe(false);
   });
 
-  it('un salvataggio v3 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it('v3 → v4: le partite esistenti sono già in cantiere', () => {
+    const v3 = { ...confirmed().state, version: 3 } as Record<string, unknown>;
+    delete v3.stage;
+    expect(migrate(v3, defaultContent)).toMatchObject({ version: 4, stage: 'cantiere' });
+  });
+
+  it('un salvataggio v4 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

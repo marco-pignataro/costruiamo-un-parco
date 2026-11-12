@@ -2,6 +2,7 @@ import { ASSOCIATION, GAME_TITLE } from '../config';
 import { formatHours } from '../core/duration';
 import type { Simulation } from '../core/simulation';
 import type { PraticaStatus } from '../core/types';
+import { ERASER, type EditorTool } from '../game/ParkScene';
 import { SHIRTS } from '../game/sprites';
 
 type Kind = 'lavoro' | 'richiesta' | 'ordine';
@@ -33,6 +34,7 @@ export class Hud {
     private readonly modal: HTMLElement,
     private readonly getSim: () => Simulation,
     private readonly actions: HudActions,
+    private readonly editor: EditorTool,
   ) {
     root.addEventListener('click', (e) => this.onClick(e));
     root.addEventListener('change', (e) => this.onInput(e));
@@ -53,6 +55,11 @@ export class Hud {
   render(): void {
     // Non ridisegnare mentre il giocatore sta usando il menu a tendina.
     if (this.root.contains(document.activeElement) && document.activeElement?.tagName === 'SELECT') {
+      this.renderModal();
+      return;
+    }
+    if (this.sim.state.stage === 'progettazione') {
+      this.renderDesign();
       this.renderModal();
       return;
     }
@@ -175,7 +182,13 @@ export class Hud {
       <section><h2>In corso</h2><ul class="active">${active || '<li><small>Nessun compito in corso: il tempo di sessione è fermo.</small></li>'}</ul></section>
       <section><h2>Magazzino</h2>${stock}</section>
       <section><h2>Registro delle pratiche</h2><ul class="pratiche">${pratiche}</ul></section>
-      <footer>
+      ${this.footer()}`;
+
+    this.renderModal();
+  }
+
+  private footer(): string {
+    return `<footer>
         <a class="donate" href="${ASSOCIATION.donationUrl}" target="_blank" rel="noopener">Sostieni ${esc(ASSOCIATION.name)}</a>
         <small>5x1000: codice fiscale ${ASSOCIATION.taxCode5x1000}</small>
         <div class="tools">
@@ -185,8 +198,50 @@ export class Hud {
         </div>
         <small>Prototipo. Per provare più in fretta: aggiungi <code>?velocita=60</code> all'indirizzo e avvia una nuova partita (1 ora = 1 minuto).</small>
       </footer>`;
+  }
 
-    this.renderModal();
+  /** Fase 4: strumenti dell'editor, preventivo live, gradimento previsto e conferma. */
+  private renderDesign(): void {
+    const sim = this.sim;
+    const s = sim.state;
+    const sum = sim.designSummary();
+    const tools = [
+      ...sim.catalog.map((e) => {
+        const skill = e.skill ? ` · ${e.skill}` : '';
+        return `<button class="tool ${this.editor.tool === e.id ? 'on' : ''}" data-tool="${e.id}">
+          <strong>${esc(e.name)}</strong><small>${e.w}×${e.h} · ${sim.orderCost(e.materials)} € · ${e.hours} h${esc(skill)}</small></button>`;
+      }),
+      `<button class="tool ${this.editor.tool === ERASER ? 'on' : ''}" data-tool="${ERASER}"><strong>Gomma</strong><small>toglie un elemento (anche tasto destro)</small></button>`,
+    ].join('');
+    const materials = sum.materials.map((m) => `${m.qty} × ${esc(sim.materialName(m.id).toLowerCase())}`).join(', ') || '—';
+    const pratiche = sum.pratiche.map((id) => esc(sim.praticaDef(id).name)).join(', ') || '—';
+    const problems = sum.problems.length
+      ? `<ul class="errors">${sum.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`
+      : '<p><small>Nessun problema: il progetto si può confermare.</small></p>';
+
+    this.root.innerHTML = `
+      <header>
+        <h1>${esc(GAME_TITLE)}</h1>
+        <p>Progettazione del parco · ${esc(sim.siteName)}</p>
+        <p>In cassa: <strong>${s.budget} €</strong></p>
+        <small>Scegli un elemento e clicca sul terreno per posarlo. Ogni elemento diventa un lavoro del cantiere.</small>
+      </header>
+      ${this.message ? `<p class="msg">${esc(this.message)}</p>` : ''}
+      <section><h2>Elementi</h2><div class="tools-grid">${tools}</div></section>
+      <section><h2>Preventivo</h2>
+        <p>Materiali: <strong>${sum.costEur} €</strong> · Lavoro: <strong>${sum.hours} h</strong> complessive (più la preparazione del terreno)</p>
+        <p><small>Skill utili: ${esc(sum.skills.join(', ') || '—')}</small></p>
+        <p><small>Da ordinare: ${materials}</small></p>
+        <p><small>Pratiche: ${pratiche}</small></p>
+      </section>
+      <section><h2>Gradimento previsto</h2>
+        <div class="bar"><span style="width:${sum.appeal}%"></span></div>
+        <small>${sum.appeal} su 100 · conta la varietà più della quantità</small>
+      </section>
+      <section><h2>Controlli</h2>${problems}
+        <button data-act="confirm" class="confirm" ${sum.problems.length ? 'disabled' : ''}>Conferma il progetto e apri il cantiere</button>
+      </section>
+      ${this.footer()}`;
   }
 
   private renderModal(): void {
@@ -223,6 +278,13 @@ export class Hud {
   }
 
   private onClick(e: Event) {
+    const toolBtn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-tool]');
+    if (toolBtn) {
+      const t = toolBtn.dataset.tool!;
+      this.editor.tool = this.editor.tool === t ? null : t;
+      this.render();
+      return;
+    }
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-act]');
     if (!btn) return;
     const now = Date.now();
@@ -238,6 +300,11 @@ export class Hud {
           break;
         case 'close':
           this.sim.closeSession(now);
+          break;
+        case 'confirm':
+          if (!askConfirm('Confermare il progetto? Dopo non si potrà più modificare.')) return;
+          this.sim.confirmProject(now);
+          this.editor.tool = null;
           break;
         case 'notify':
           void Notification.requestPermission();
@@ -259,5 +326,9 @@ export class Hud {
 }
 
 function confirmNewGame(): boolean {
-  return globalThis.confirm?.('Ricominciare da capo? Il salvataggio attuale verrà cancellato.') ?? true;
+  return askConfirm('Ricominciare da capo? Il salvataggio attuale verrà cancellato.');
+}
+
+function askConfirm(question: string): boolean {
+  return globalThis.confirm?.(question) ?? true;
 }

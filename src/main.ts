@@ -4,7 +4,7 @@ import { defaultContent } from './core/content';
 import { migrate } from './core/migrate';
 import { Simulation } from './core/simulation';
 import { browserStore, exportSave } from './core/storage';
-import { ParkScene, VIEW } from './game/ParkScene';
+import { ParkScene, VIEW, type EditorTool } from './game/ParkScene';
 import { Hud } from './ui/hud';
 import './style.css';
 
@@ -16,6 +16,7 @@ async function boot() {
 
   const save = () => void browserStore.save(sim.state);
   let notified = sim.state.reports.length;
+  const editor: EditorTool = { tool: null };
 
   const hud = new Hud(document.getElementById('hud')!, document.getElementById('modal')!, () => sim, {
     onChange: save,
@@ -31,7 +32,7 @@ async function boot() {
       a.download = 'costruiamo-un-parco-salvataggio.json';
       a.click();
     },
-  });
+  }, editor);
 
   new Phaser.Game({
     type: Phaser.AUTO,
@@ -44,7 +45,15 @@ async function boot() {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [],
     callbacks: {
-      postBoot: (game) => game.scene.add('park', ParkScene, true, { sim: () => sim }),
+      postBoot: (game) =>
+        game.scene.add('park', ParkScene, true, {
+          sim: () => sim,
+          editor,
+          onEdit: () => {
+            save();
+            hud.render();
+          },
+        }),
     },
   });
 

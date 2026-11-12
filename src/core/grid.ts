@@ -1,3 +1,4 @@
+import { APPEAL_VARIETY_BONUS } from '../config';
 import type { Content } from './content';
 import type { ElementDef, ParkGrid, Placement, SiteDef, SurfaceId } from './types';
 
@@ -182,4 +183,22 @@ export function gridFromSite(site: SiteDef, c: Content): ParkGrid {
   });
   for (const p of site.placements) place(g, c, p.elementId, p.x, p.y);
   return g;
+}
+
+/**
+ * Gradimento previsto, da 0 a 100. Ogni elemento vale i suoi punti, ma la
+ * k-esima copia dello stesso tipo vale 1/k (rendimenti decrescenti); ogni tipo
+ * diverso aggiunge un bonus di varietà. Gli alberi tutelati restano e piacciono.
+ */
+export function expectedAppeal(g: ParkGrid, c: Content): number {
+  const count = new Map<string, number>();
+  let points = 0;
+  for (const p of g.placements) {
+    const k = (count.get(p.elementId) ?? 0) + 1;
+    count.set(p.elementId, k);
+    points += elementDef(c, p.elementId).appeal / k;
+  }
+  points += count.size * APPEAL_VARIETY_BONUS;
+  points += g.surface.filter((s) => s === 'albero-tutelato').length * 2;
+  return Math.min(100, Math.round(points));
 }

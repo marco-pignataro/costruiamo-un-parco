@@ -30,8 +30,15 @@ const ELEMENT_LOOK: Record<string, { tile?: string; sprite?: string }> = {
   cestino: { sprite: 'cestino' },
 };
 
-/** Trasparenza degli elementi solo progettati, non ancora costruiti. */
+/** Trasparenza degli elementi solo progettati, non ancora costruiti (in cantiere). */
 const GHOST_ALPHA = 0.35;
+
+/** Strumento scelto nell'editor: un elemento del catalogo, la gomma o niente. Condiviso con l'HUD. */
+export interface EditorTool {
+  tool: string | null;
+}
+
+export const ERASER = 'gomma';
 
 /**
  * Il parco visto dall'alto. La scena non decide nulla: legge lo stato
@@ -44,13 +51,20 @@ export class ParkScene extends Phaser.Scene {
   private elements = new Map<number, Phaser.GameObjects.Image[]>();
   private people = new Map<string, Phaser.GameObjects.Image>();
   private targets = new Map<string, string>();
+  private placementsKey = '';
+  private editor!: EditorTool;
+  private onEdit!: () => void;
+  private hover: Phaser.GameObjects.Image[] = [];
+  private hoverFrame!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super('park');
   }
 
-  init(data: { sim: () => Simulation }) {
+  init(data: { sim: () => Simulation; editor: EditorTool; onEdit: () => void }) {
     this.sim = data.sim;
+    this.editor = data.editor;
+    this.onEdit = data.onEdit;
   }
 
   create() {
@@ -71,21 +85,10 @@ export class ParkScene extends Phaser.Scene {
       if (g.surface[i] === 'albero-tutelato') this.add.image(x + 8, y + TILE, 'albero').setOrigin(0.5, 1).setDepth(4);
     }
 
-    for (const p of g.placements) {
-      const def = this.sim().elementDef(p.elementId);
-      const look = ELEMENT_LOOK[p.elementId] ?? { sprite: 'rifiuto' };
-      const imgs: Phaser.GameObjects.Image[] = [];
-      const ox = GRID.x + p.x * TILE;
-      const oy = GRID.y + p.y * TILE;
-      if (look.tile) {
-        for (let dy = 0; dy < def.h; dy++) {
-          for (let dx = 0; dx < def.w; dx++) imgs.push(this.add.image(ox + dx * TILE, oy + dy * TILE, look.tile).setOrigin(0).setDepth(2));
-        }
-      } else {
-        imgs.push(this.add.image(ox + (def.w * TILE) / 2, oy + (def.h * TILE) / 2, look.sprite!).setDepth(3));
-      }
-      this.elements.set(p.uid, imgs);
-    }
+    this.hoverFrame = this.add.rectangle(0, 0, TILE, TILE).setOrigin(0).setStrokeStyle(1, 0xffffff).setDepth(20).setVisible(false);
+    this.input.mouse?.disableContextMenu();
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.showHover(p));
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.edit(p));
 
     this.sim().state.volunteers.forEach((v, i) => {
       const key = SHIRTS[v.archetypeId] ? `volontario-${v.archetypeId}` : 'volontario-base';
@@ -98,6 +101,92 @@ export class ParkScene extends Phaser.Scene {
     this.sync();
   }
 
+  /** Immagini di un elemento posato in (x, y), come tile ripetute o sprite al centro. */
+  private drawElement(elementId: string, x: number, y: number, depth: number): Phaser.GameObjects.Image[] {
+    const def = this.sim().elementDef(elementId);
+    const look = ELEMENT_LOOK[elementId] ?? { sprite: 'rifiuto' };
+    const ox = GRID.x + x * TILE;
+    const oy = GRID.y + y * TILE;
+    const imgs: Phaser.GameObjects.Image[] = [];
+    if (look.tile) {
+      for (let dy = 0; dy < def.h; dy++) {
+        for (let dx = 0; dx < def.w; dx++) imgs.push(this.add.image(ox + dx * TILE, oy + dy * TILE, look.tile).setOrigin(0).setDepth(depth));
+      }
+    } else {
+      imgs.push(this.add.image(ox + (def.w * TILE) / 2, oy + (def.h * TILE) / 2, look.sprite!).setDepth(depth + 1));
+    }
+    return imgs;
+  }
+
+  /** Ridisegna gli elementi del progetto solo quando cambiano. */
+  private syncPlacements() {
+    const g = this.sim().state.grid;
+    const key = g.placements.map((p) => `${p.uid}:${p.elementId}:${p.x},${p.y}`).join('|');
+    if (key === this.placementsKey) return;
+    this.placementsKey = key;
+    for (const imgs of this.elements.values()) imgs.forEach((i) => i.destroy());
+    this.elements.clear();
+    for (const p of g.placements) this.elements.set(p.uid, this.drawElement(p.elementId, p.x, p.y, 2));
+  }
+
+  /** Tile della griglia sotto il puntatore, se c'è. */
+  private tileAt(p: Phaser.Input.Pointer): { x: number; y: number } | null {
+    const g = this.sim().state.grid;
+    const x = Math.floor((p.worldX - GRID.x) / TILE);
+    const y = Math.floor((p.worldY - GRID.y) / TILE);
+    return x >= 0 && y >= 0 && x < g.width && y < g.height ? { x, y } : null;
+  }
+
+  /** Anteprima dello strumento sotto il puntatore: verde se si può posare, rossa se no. */
+  private showHover(p: Phaser.Input.Pointer) {
+    this.hover.forEach((i) => i.destroy());
+    this.hover = [];
+    const sim = this.sim();
+    const t = this.tileAt(p);
+    const tool = this.editor.tool;
+    if (!t || !tool || sim.state.stage !== 'progettazione') {
+      this.hoverFrame.setVisible(false);
+      return;
+    }
+    if (tool === ERASER) {
+      const target = sim.elementAt(t.x, t.y);
+      const def = target ? sim.elementDef(target.elementId) : null;
+      this.hoverFrame
+        .setPosition(GRID.x + (target?.x ?? t.x) * TILE, GRID.y + (target?.y ?? t.y) * TILE)
+        .setSize((def?.w ?? 1) * TILE, (def?.h ?? 1) * TILE)
+        .setStrokeStyle(1, target ? 0xe04a3a : 0xffffff)
+        .setVisible(true);
+      return;
+    }
+    const def = sim.elementDef(tool);
+    const ok = sim.canPlace(tool, t.x, t.y).ok;
+    this.hover = this.drawElement(tool, t.x, t.y, 15).map((i) => i.setAlpha(0.7).setTint(ok ? 0xb8f5b0 : 0xff8a80));
+    this.hoverFrame
+      .setPosition(GRID.x + t.x * TILE, GRID.y + t.y * TILE)
+      .setSize(def.w * TILE, def.h * TILE)
+      .setStrokeStyle(1, ok ? 0xffffff : 0xe04a3a)
+      .setVisible(true);
+  }
+
+  /** Clic: posa lo strumento scelto; gomma o tasto destro tolgono l'elemento. */
+  private edit(p: Phaser.Input.Pointer) {
+    const sim = this.sim();
+    const t = this.tileAt(p);
+    if (!t || sim.state.stage !== 'progettazione') return;
+    const erase = p.rightButtonDown() || this.editor.tool === ERASER;
+    if (erase) {
+      const target = sim.elementAt(t.x, t.y);
+      if (target) sim.removeElement(target.uid);
+    } else if (this.editor.tool && sim.canPlace(this.editor.tool, t.x, t.y).ok) {
+      sim.placeElement(this.editor.tool, t.x, t.y);
+    } else {
+      return;
+    }
+    this.syncPlacements();
+    this.showHover(p);
+    this.onEdit();
+  }
+
   private sync() {
     const sim = this.sim();
     const g = sim.state.grid;
@@ -105,8 +194,15 @@ export class ParkScene extends Phaser.Scene {
       this.ground[i].setTexture(SURFACE_TEXTURE[s]);
       this.trash[i].setVisible(s === 'rifiuti');
     });
+    this.syncPlacements();
     const built = new Set(g.built);
-    for (const [uid, imgs] of this.elements) imgs.forEach((img) => img.setAlpha(built.has(uid) ? 1 : GHOST_ALPHA));
+    const designing = sim.state.stage === 'progettazione';
+    if (!designing && this.hoverFrame.visible) {
+      this.hover.forEach((i) => i.destroy());
+      this.hover = [];
+      this.hoverFrame.setVisible(false);
+    }
+    for (const [uid, imgs] of this.elements) imgs.forEach((img) => img.setAlpha(designing || built.has(uid) ? 1 : GHOST_ALPHA));
 
     // Chi lavora va sulle tile del suo compito; pratiche e compiti d'ufficio alla scrivania.
     const where = new Map<string, { x: number; y: number }>();

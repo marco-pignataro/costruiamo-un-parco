@@ -13,10 +13,11 @@ type AnyState = Record<string, unknown> & { version?: number };
 export function migrate(raw: unknown, c: Content): GameState {
   let s = raw as AnyState;
   const start = s.version;
-  if (start === 3) return s as unknown as GameState;
-  if (start !== 1 && start !== 2) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (start === 4) return s as unknown as GameState;
+  if (start !== 1 && start !== 2 && start !== 3) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
   if (s.version === 1) s = v1to2(s, c);
   if (s.version === 2) s = v2to3(s, c);
+  if (s.version === 3) s = { ...s, version: 4, stage: 'cantiere' }; // v3 → v4: le partite esistenti sono già in cantiere
   return dropUnknownActive(s as unknown as GameState, c);
 }
 
