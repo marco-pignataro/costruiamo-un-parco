@@ -5,7 +5,9 @@ import team from '../data/team.json';
 import elements from '../data/elements.json';
 import materials from '../data/materials.json';
 import preparations from '../data/preparations.json';
-import type { Archetype, ElementDef, MaterialDef, PraticaDef, PrepDef, TaskDef } from './types';
+import site from '../data/site.json';
+import { gridFromSite, validateProject } from './grid';
+import type { Archetype, ElementDef, MaterialDef, PraticaDef, PrepDef, SiteDef, TaskDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
@@ -15,6 +17,8 @@ export interface Content {
   elements: ElementDef[];
   materials: MaterialDef[];
   preparations: PrepDef[];
+  /** Terreno di prova con il progetto iniziale (finché non c'è l'editor). */
+  site: SiteDef;
 }
 
 export const defaultContent: Content = {
@@ -25,6 +29,7 @@ export const defaultContent: Content = {
   elements: elements as ElementDef[],
   materials: materials as MaterialDef[],
   preparations: preparations as PrepDef[],
+  site,
 };
 
 /**
@@ -53,6 +58,13 @@ export function validateContent(c: Content): string[] {
   for (const t of c.tasks) {
     if (t.skill && !skills.has(t.skill)) errors.push(`${t.id}: skill sconosciuta ${t.skill}`);
     for (const p of t.requires) if (!has(c.pratiche, p)) errors.push(`${t.id}: pratica sconosciuta ${p}`);
+  }
+  if (errors.length === 0) {
+    try {
+      errors.push(...validateProject(gridFromSite(c.site, c), c).map((e) => `${c.site.id}: ${e}`));
+    } catch (err) {
+      errors.push((err as Error).message);
+    }
   }
   return errors;
 }

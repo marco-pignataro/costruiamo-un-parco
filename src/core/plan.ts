@@ -93,6 +93,7 @@ export function generatePlan(g: ParkGrid, c: Content): ConstructionPlan {
         materials: [],
         placements: [],
         tiles: lot,
+        prepId: prep.id,
       });
     });
     prepTaskAt.set(prep.id, at);
@@ -141,6 +142,7 @@ export function generatePlan(g: ParkGrid, c: Content): ConstructionPlan {
       materials: sumMaterials(t.placements.flatMap(() => t.e.materials)),
       placements: t.placements.map((p) => p.uid),
       tiles,
+      prepId: null,
     });
   }
 
@@ -223,4 +225,16 @@ export function checkPlan(plan: ConstructionPlan): string[] {
   }
   if (done.size < plan.tasks.length) errors.push('Ciclo nelle dipendenze del piano');
   return errors;
+}
+
+/**
+ * Pratiche della partita: quelle che il piano richiede, quelle dei compiti
+ * fissi e quelle che non dipendono dal progetto. Una pratica legata solo a
+ * elementi assenti dal progetto non nasce (niente telecamere, niente
+ * videosorveglianza).
+ */
+export function gamePratiche(c: Content, planPratiche: string[]): string[] {
+  const fromCatalog = new Set([...c.elements.flatMap((e) => e.pratiche), ...c.preparations.flatMap((p) => p.pratiche)]);
+  const needed = new Set([...planPratiche, ...c.tasks.flatMap((t) => t.requires)]);
+  return c.pratiche.filter((p) => needed.has(p.id) || !fromCatalog.has(p.id)).map((p) => p.id);
 }

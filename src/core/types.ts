@@ -71,7 +71,7 @@ export interface Report {
 }
 
 export interface GameState {
-  version: 1;
+  version: 2;
   /** Millisecondi reali per un'ora di gioco (3.600.000 = tempo reale). */
   msPerHour: number;
   week: number;
@@ -84,12 +84,16 @@ export interface GameState {
   pratiche: PraticaState[];
   reports: Report[];
   nextId: number;
+  /** Il terreno con il progetto: superficie, rischi, elementi posati e costruiti. */
+  grid: ParkGrid;
+  /** Piano di cantiere generato dal progetto: i compiti della parte operativa. */
+  plan: PlanTask[];
 }
 
 // ---------- Progettazione del parco (Fase 4) ----------
 
 /** Cosa c'è oggi sulla tile. Gli alberi tutelati non si possono rimuovere. */
-export type SurfaceId = 'terra' | 'erba-alta' | 'rifiuti' | 'cemento' | 'albero-tutelato';
+export type SurfaceId = 'terra' | 'erba' | 'erba-alta' | 'rifiuti' | 'cemento' | 'albero-tutelato';
 
 export interface MaterialDef {
   id: string;
@@ -134,6 +138,17 @@ export interface PrepDef {
   /** Lavorazioni che vanno fatte prima, sulle stesse tile. */
   after: string[];
   pratiche: string[];
+  /** Superficie delle tile a lavorazione finita (null = resta com'è). */
+  result: SurfaceId | null;
+}
+
+/** Terreno di partenza: superficie come righe di caratteri e progetto iniziale. */
+export interface SiteDef {
+  id: string;
+  name: string;
+  /** Un carattere per tile, vedi SURFACE_CHARS in grid.ts. */
+  rows: string[];
+  placements: { elementId: string; x: number; y: number }[];
 }
 
 /** Compito del piano di cantiere generato dal progetto. */
@@ -145,6 +160,8 @@ export interface PlanTask extends TaskDef {
   placements: number[];
   /** Tile su cui lavora il compito, come indici della griglia. */
   tiles: number[];
+  /** Lavorazione del terreno svolta, oppure null per gli elementi. */
+  prepId: string | null;
 }
 
 export interface Placement {

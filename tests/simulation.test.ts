@@ -51,7 +51,7 @@ describe('sessioni', () => {
     sim.startRequest('assicurazione', ['v2'], T0);
     sim.tick(at(2));
     sim.closeSession(at(2)); // weekend: 8 ore di sessione
-    const p = sim.previewTask('raccolta-rifiuti', ['v4']); // 12 ore da sola
+    const p = sim.previewTask('prep:bonifica:1', ['v4']); // 12 ore da sola
     expect(p.errors.join(' ')).toMatch(/alla sessione restano 8 h/);
   });
 
@@ -79,7 +79,9 @@ describe('sessioni', () => {
     sim.startRequest('assicurazione', ['v2'], T0);
     sim.tick(at(2));
     sim.closeSession(at(2));
-    const t = sim.startTask('riparare-panchina', ['v3', 'v5', 'v6'], at(3));
+    const panchina = sim.state.plan.find((t) => t.id.startsWith('el:panchina'))!;
+    sim.state.completedTasks.push(...sim.missingPrerequisites(panchina).map((t) => t.id));
+    const t = sim.startTask(panchina.id, ['v3', 'v5', 'v6'], at(3));
     expect(t.hours).toBeCloseTo(1.96, 2);
     expect(t.quality).toBe('alta');
   });
@@ -89,7 +91,7 @@ describe('sessioni', () => {
     sim.startRequest('assicurazione', ['v2'], T0);
     sim.tick(at(2));
     sim.closeSession(at(2));
-    sim.startTask('raccolta-rifiuti', ['v5', 'v6', 'v1', 'v7'], at(3)); // 12 / 4 = 3 h
+    sim.startTask('prep:bonifica:1', ['v5', 'v6', 'v1', 'v7'], at(3)); // 12 / 4 = 3 h
     sim.tick(at(7));
     expect(sim.volunteer('v5').hoursUsed).toBeCloseTo(3);
     sim.closeSession(at(7));
@@ -114,5 +116,69 @@ describe('sessioni', () => {
     for (let i = 0; i < 4; i++) sim2.startTask(`t${i + 1}`, [who[i]], at(i * 5));
     sim2.tick(at(20));
     expect(sim2.state.phase).toBe('operativa');
+  });
+});
+
+describe('piano di cantiere nella partita', () => {
+  const weekend = () => {
+    const sim = newGame();
+    sim.startRequest('assicurazione', ['v2'], T0);
+    sim.tick(at(2));
+    sim.closeSession(at(2));
+    return sim;
+  };
+
+  it('i lavori del weekend nascono dal progetto del terreno di prova', () => {
+    const sim = newGame();
+    expect(sim.state.version).toBe(2);
+    expect(sim.state.plan.length).toBeGreaterThan(0);
+    expect(sim.state.plan.every((t) => t.phase === 'operativa')).toBe(true);
+  });
+
+  it('si vedono solo i compiti con i prerequisiti completati', () => {
+    const sim = weekend();
+    const ids = sim.availableTasks().map((t) => t.id);
+    expect(ids).toContain('prep:bonifica:1');
+    expect(ids.some((id) => id.startsWith('el:'))).toBe(false);
+    const sentiero = sim.state.plan.find((t) => t.id === 'el:sentiero:1')!;
+    expect(sim.previewTask(sentiero.id, ['v5']).errors.join(' ')).toMatch(/Prima serve: Livellamento/);
+  });
+
+  it('una lavorazione finita cambia il terreno e sblocca i compiti successivi', () => {
+    const sim = weekend();
+    const bonifica = sim.state.plan.find((t) => t.id === 'prep:bonifica:1')!;
+    sim.startTask(bonifica.id, ['v5', 'v6', 'v1', 'v7'], at(3));
+    sim.tick(at(6));
+    expect(bonifica.tiles.every((i) => sim.state.grid.surface[i] === 'terra')).toBe(true);
+    // la vangatura dell'aiuola aspettava bonifica e sfalcio: lo sfalcio non serve sotto l'aiuola
+    expect(sim.availableTasks().map((t) => t.id)).toContain('prep:vangatura:1');
+  });
+
+  it('un elemento finito entra nel livello realizzato e fa salire la percentuale', () => {
+    const sim = weekend();
+    const cestino = sim.state.plan.find((t) => t.id.startsWith('el:cestino'))!;
+    sim.state.completedTasks.push(...sim.missingPrerequisites(cestino).map((t) => t.id));
+    sim.startTask(cestino.id, ['v5'], at(3));
+    sim.tick(at(5));
+    expect(sim.state.grid.built).toEqual(cestino.placements);
+    expect(sim.projectProgress).toBeCloseTo(1 / sim.state.grid.placements.length);
+  });
+
+  it('le pratiche legate a elementi assenti dal progetto non nascono', () => {
+    const content = {
+      ...defaultContent,
+      pratiche: [
+        ...defaultContent.pratiche,
+        { id: 'videosorveglianza', name: 'Videosorveglianza', office: 'Comune', requestHours: 1, requestSkill: null, waitDays: 5, unlocks: 'Telecamere' },
+      ],
+      elements: [
+        ...defaultContent.elements,
+        { ...defaultContent.elements[4], id: 'telecamera', name: 'Telecamera', adjacentTo: null, pratiche: ['videosorveglianza'] },
+      ],
+    };
+    const ids = Simulation.newGame(content, T0).state.pratiche.map((p) => p.id);
+    expect(ids).toContain('assicurazione');
+    expect(ids).toContain('occupazione-suolo'); // non dipende dal progetto
+    expect(ids).not.toContain('videosorveglianza');
   });
 });

@@ -172,7 +172,10 @@ export class Hud {
   private onInput(e: Event) {
     const el = e.target as HTMLInputElement;
     if (el.dataset.input === 'sel') {
-      const [kind, id] = el.value.split(':');
+      // gli id del piano contengono a loro volta ':' (es. prep:bonifica:1)
+      const cut = el.value.indexOf(':');
+      const kind = el.value.slice(0, cut);
+      const id = el.value.slice(cut + 1);
       this.selection = el.value ? { kind: kind as 'lavoro' | 'richiesta', id } : null;
       this.team.clear();
     } else if (el.dataset.vol) {

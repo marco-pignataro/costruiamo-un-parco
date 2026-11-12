@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_TITLE, readTimeScale } from './config';
 import { defaultContent } from './core/content';
+import { migrate } from './core/migrate';
 import { Simulation } from './core/simulation';
 import { browserStore, exportSave } from './core/storage';
 import { ParkScene, VIEW } from './game/ParkScene';
@@ -9,7 +10,7 @@ import './style.css';
 
 async function boot() {
   const saved = await browserStore.load();
-  let sim = saved ? new Simulation(saved, defaultContent) : Simulation.newGame(defaultContent, Date.now(), readTimeScale());
+  let sim = saved ? new Simulation(migrate(saved, defaultContent), defaultContent) : Simulation.newGame(defaultContent, Date.now(), readTimeScale());
   // Recupero di quello che è successo a gioco chiuso: i resoconti finiscono in coda.
   sim.tick(Date.now());
 

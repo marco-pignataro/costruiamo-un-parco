@@ -16,6 +16,11 @@ export const PALETTE: Record<string, string> = {
   g: '#9aa3ad', // metallo / plastica grigia
   r: '#e04a3a', // rosso
   y: '#e8c547', // giallo
+  v: '#2f7a2a', // verde foglia
+  V: '#1f5520', // verde scuro
+  t: '#6b4423', // tronco
+  m: '#8e5bb5', // fiori di lavanda
+  k: '#3b8f4a', // cestino della differenziata
 };
 
 /** Colori delle magliette per archetipo. */
@@ -84,6 +89,24 @@ const FENCE = [
   '.ll.....ll.....l',
   '.LL.....LL.....L',
 ];
+
+const TREE = [
+  '....vvvvvv......',
+  '..vvVvvvvvvv....',
+  '.vvvvvvVvvvvv...',
+  'vvVvvvvvvvvVvv..',
+  'vvvvvVvvvvvvvv..',
+  'vvvvvvvvVvvvvv..',
+  '.vVvvvvvvvvvv...',
+  '..vvvvvVvvvv....',
+  '....vvvvvv......',
+  '......tt........',
+  '......tt........',
+  '......tt........',
+  '.....tttt.......',
+];
+
+const BIN = ['.kkkk.', 'kkkkkk', '.kwwk.', '.kkkk.', '.kkkk.', '.kkkk.', '..kk..'];
 
 const DESK = [
   '..wwww..yy......',
@@ -172,6 +195,11 @@ export function createTextures(scene: Phaser.Scene, width: number, skyHeight: nu
   tile(scene, 'erba-alta', '#417a2a', ['#2f5e1e', '#5a9e3a', '#6b8f2a'], 0.5, 1);
   tile(scene, 'erba', '#5a9e3a', ['#4c8a31', '#7cbf4f'], 0.18, 2);
   tile(scene, 'terra', '#9a6b3f', ['#7a5130', '#b0814f'], 0.3, 3);
+  tile(scene, 'cemento', '#8d8d8a', ['#6f6f6c', '#a5a5a1', '#5d5a52'], 0.25, 4);
+  tile(scene, 'ghiaia', '#c9b99a', ['#a8977a', '#e0d4bb', '#8f8068'], 0.6, 5);
+  tile(scene, 'aiuola', '#6b4423', ['#2f7a2a', '#8e5bb5', '#4c8a31', '#5e3b1b'], 0.45, 6);
+  paint(scene, 'albero', TREE);
+  paint(scene, 'cestino', BIN);
   paint(scene, 'rifiuto', TRASH);
   paint(scene, 'panchina-rotta', BENCH_BROKEN);
   paint(scene, 'panchina', BENCH);

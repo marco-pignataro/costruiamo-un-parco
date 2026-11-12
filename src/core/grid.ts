@@ -1,5 +1,15 @@
 import type { Content } from './content';
-import type { ElementDef, ParkGrid, Placement, SurfaceId } from './types';
+import type { ElementDef, ParkGrid, Placement, SiteDef, SurfaceId } from './types';
+
+/** Caratteri delle righe di superficie nei JSON dei terreni. */
+export const SURFACE_CHARS: Record<string, SurfaceId> = {
+  t: 'terra',
+  p: 'erba',
+  e: 'erba-alta',
+  r: 'rifiuti',
+  c: 'cemento',
+  A: 'albero-tutelato',
+};
 
 /** Superfici su cui non si può costruire. */
 const BLOCKING_SURFACES: SurfaceId[] = ['albero-tutelato'];
@@ -155,4 +165,21 @@ export function estimate(g: ParkGrid, c: Content): Estimate {
     materials: [...qty].map(([id, q]) => ({ id, qty: q })),
     pratiche: [...pratiche],
   };
+}
+
+/** Griglia di un terreno di partenza, con il suo progetto iniziale già posato. */
+export function gridFromSite(site: SiteDef, c: Content): ParkGrid {
+  const height = site.rows.length;
+  const width = site.rows[0]?.length ?? 0;
+  const g = createGrid(width, height);
+  site.rows.forEach((row, y) => {
+    if (row.length !== width) throw new Error(`${site.id}: la riga ${y} non è lunga ${width}`);
+    [...row].forEach((ch, x) => {
+      const s = SURFACE_CHARS[ch];
+      if (!s) throw new Error(`${site.id}: carattere di superficie sconosciuto "${ch}"`);
+      setSurface(g, x, y, s);
+    });
+  });
+  for (const p of site.placements) place(g, c, p.elementId, p.x, p.y);
+  return g;
 }

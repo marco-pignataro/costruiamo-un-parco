@@ -1,7 +1,9 @@
 import { HOURS_PER_WORKING_DAY, SESSION_HOURS } from '../config';
 import type { Content } from './content';
 import { computeDuration, formatHours, type DurationResult } from './duration';
-import type { ActiveTask, GameState, PraticaDef, PraticaState, TaskDef, Volunteer } from './types';
+import { gridFromSite } from './grid';
+import { gamePratiche, generatePlan } from './plan';
+import type { ActiveTask, ElementDef, GameState, ParkGrid, PlanTask, PraticaDef, PraticaState, TaskDef, Volunteer } from './types';
 
 const EPS = 1e-6;
 
@@ -19,14 +21,17 @@ export class Simulation {
     private readonly content: Content,
   ) {}
 
-  static newGame(content: Content, now: number, timeScale = 1): Simulation {
+  /** Nuova partita. Senza griglia si parte dal terreno di prova con il suo progetto. */
+  static newGame(content: Content, now: number, timeScale = 1, grid?: ParkGrid): Simulation {
+    const g = grid ?? gridFromSite(content.site, content);
+    const plan = generatePlan(g, content);
     const volunteers: Volunteer[] = content.team.map((m) => {
       const a = content.archetypes.find((x) => x.id === m.archetypeId);
       if (!a) throw new Error(`Archetipo sconosciuto: ${m.archetypeId}`);
       return { id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false };
     });
     const state: GameState = {
-      version: 1,
+      version: 2,
       msPerHour: 3_600_000 / timeScale,
       week: 1,
       phase: 'burocratica',
@@ -35,9 +40,11 @@ export class Simulation {
       volunteers,
       active: [],
       completedTasks: [],
-      pratiche: content.pratiche.map((p) => ({ id: p.id, status: 'da-avviare', waitRemainingH: 0 })),
+      pratiche: gamePratiche(content, plan.pratiche).map((id) => ({ id, status: 'da-avviare', waitRemainingH: 0 })),
       reports: [],
       nextId: 1,
+      grid: g,
+      plan: plan.tasks,
     };
     return new Simulation(state, content);
   }
@@ -52,10 +59,21 @@ export class Simulation {
     return Math.max(0, this.sessionLimitH - this.state.sessionUsedH);
   }
 
-  taskDef(id: string): TaskDef {
-    const t = this.content.tasks.find((x) => x.id === id);
+  /** Compiti fissi (parte burocratica) più quelli del piano di cantiere. */
+  get allTasks(): (TaskDef | PlanTask)[] {
+    return [...this.content.tasks, ...this.state.plan];
+  }
+
+  taskDef(id: string): TaskDef | PlanTask {
+    const t = this.allTasks.find((x) => x.id === id);
     if (!t) throw new Error(`Compito sconosciuto: ${id}`);
     return t;
+  }
+
+  elementDef(id: string): ElementDef {
+    const e = this.content.elements.find((x) => x.id === id);
+    if (!e) throw new Error(`Elemento sconosciuto: ${id}`);
+    return e;
   }
 
   praticaDef(id: string): PraticaDef {
@@ -80,28 +98,51 @@ export class Simulation {
     return Math.max(0, v.weeklyHours - v.hoursUsed);
   }
 
-  /** Compiti della fase corrente non ancora fatti né in corso. */
+  /** Compiti del piano che devono finire prima di questo e non sono ancora fatti. */
+  missingPrerequisites(t: TaskDef | PlanTask): PlanTask[] {
+    if (!('after' in t)) return [];
+    return t.after.filter((id) => !this.state.completedTasks.includes(id)).map((id) => this.taskDef(id) as PlanTask);
+  }
+
+  /**
+   * Compiti della fase corrente non ancora fatti né in corso, con i
+   * prerequisiti del piano completati. Quelli bloccati da una pratica restano
+   * in lista: il giocatore vede cosa gli manca.
+   */
   availableTasks(): TaskDef[] {
     const running = new Set(this.state.active.filter((a) => a.kind === 'lavoro').map((a) => a.refId));
-    return this.content.tasks.filter(
-      (t) => t.phase === this.state.phase && !this.state.completedTasks.includes(t.id) && !running.has(t.id),
+    return this.allTasks.filter(
+      (t) =>
+        t.phase === this.state.phase &&
+        !this.state.completedTasks.includes(t.id) &&
+        !running.has(t.id) &&
+        this.missingPrerequisites(t).length === 0,
     );
   }
 
+  /** Le pratiche di questa partita, nell'ordine del catalogo. */
   get allPratiche(): PraticaDef[] {
-    return this.content.pratiche;
+    const ids = new Set(this.state.pratiche.map((p) => p.id));
+    return this.content.pratiche.filter((p) => ids.has(p.id));
   }
 
   /** Pratiche non approvate che bloccano un compito ancora da fare. */
   isBlocking(praticaId: string): boolean {
     if (this.pratica(praticaId).status === 'approvata') return false;
-    return this.content.tasks.some((t) => t.requires.includes(praticaId) && !this.state.completedTasks.includes(t.id));
+    return this.allTasks.some((t) => t.requires.includes(praticaId) && !this.state.completedTasks.includes(t.id));
+  }
+
+  /** Quota del progetto realizzata, da 0 a 1 (per elementi posati). */
+  get projectProgress(): number {
+    const g = this.state.grid;
+    return g.placements.length === 0 ? 0 : g.built.length / g.placements.length;
   }
 
   previewTask(taskId: string, volunteerIds: string[]): Preview {
     const def = this.taskDef(taskId);
     const errors: string[] = [];
     if (def.phase !== this.state.phase) errors.push(`Si fa nella parte ${def.phase}`);
+    for (const m of this.missingPrerequisites(def)) errors.push(`Prima serve: ${m.name}`);
     for (const r of def.requires) {
       if (this.pratica(r).status !== 'approvata') errors.push(`Serve la pratica "${this.praticaDef(r).name}"`);
     }
@@ -246,8 +287,10 @@ export class Simulation {
     const squad = `Squadra: ${names.join(', ')}`;
     const time = `Durata: ${formatHours(a.hours)}`;
     if (a.kind === 'lavoro') {
+      const def = this.taskDef(a.refId);
       this.state.completedTasks.push(a.refId);
-      this.report(t, `Completato: ${this.taskDef(a.refId).name}`, [squad, time, `Qualità: ${a.quality}`]);
+      if ('tiles' in def) this.applyToGrid(def);
+      this.report(t, `Completato: ${def.name}`, [squad, time, `Qualità: ${a.quality}`]);
     } else {
       const p = this.pratica(a.refId);
       const def = this.praticaDef(a.refId);
@@ -255,6 +298,16 @@ export class Simulation {
       p.waitRemainingH = def.waitDays * HOURS_PER_WORKING_DAY;
       this.report(t, `Richiesta inviata: ${def.name}`, [squad, time, `Risposta attesa tra ${def.waitDays} giorni lavorativi`]);
     }
+  }
+
+  /** Un compito del piano finito cambia il terreno o costruisce i suoi elementi. */
+  private applyToGrid(task: PlanTask): void {
+    const g = this.state.grid;
+    if (task.prepId) {
+      const result = this.content.preparations.find((p) => p.id === task.prepId)?.result;
+      if (result) for (const i of task.tiles) g.surface[i] = result;
+    }
+    for (const uid of task.placements) if (!g.built.includes(uid)) g.built.push(uid);
   }
 
   private endSession(t: number, manual: boolean): void {
@@ -270,7 +323,11 @@ export class Simulation {
       ]);
     } else {
       const done = s.completedTasks.length;
-      this.report(t, `Fine della settimana ${s.week}`, [`Compiti completati finora: ${done}`, 'Le ore dei volontari ripartono da zero']);
+      this.report(t, `Fine della settimana ${s.week}`, [
+        `Compiti completati finora: ${done}`,
+        `Progetto realizzato: ${Math.round(this.projectProgress * 100)}%`,
+        'Le ore dei volontari ripartono da zero',
+      ]);
       s.week += 1;
       s.phase = 'burocratica';
       s.sessionUsedH = 0;

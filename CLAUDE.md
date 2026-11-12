@@ -31,9 +31,9 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | Percorso | Contenuto |
 | --- | --- |
 | `src/config.ts` | Titolo, associazione, ore di sessione, efficienze, velocità di test |
-| `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
-| `src/data/*.json` | Contenuti: archetipi, compiti, pratiche, squadra iniziale, elementi del parco, materiali |
-| `src/game/` | `ParkScene.ts` (legge lo stato e lo disegna, non decide nulla), `sprites.ts` (pixel art da griglie di caratteri) |
+| `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `plan.ts` (piano di cantiere dal progetto), `migrate.ts` (salvataggi vecchi), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
+| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, squadra iniziale, elementi del parco, materiali, lavorazioni del terreno, terreno di prova (`site.json`) |
+| `src/game/` | `ParkScene.ts` (legge lo stato e disegna griglia, progetto e volontari; non decide nulla), `sprites.ts` (pixel art da griglie di caratteri) |
 | `src/ui/hud.ts` | Pannello di gestione HTML e modale dei resoconti |
 | `tests/` | Vitest sulla simulazione |
 | `.github/workflows/deploy.yml` | Test + build + pubblicazione su Pages a ogni push su `main` |
@@ -60,8 +60,8 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 
 - **Fatto:** prototipo 0.1 con il ciclo del turno settimanale, pratiche a timer, monte ore, resoconti in coda, salvataggio IndexedDB, 17 test, pubblicazione automatica.
 - **In corso:** prova di gioco di una settimana con Marco e alcuni soci (gate 1 della roadmap).
-- **Fase 4, passi 1-2 fatti:** griglia a livelli (superficie, rischi, progetto, realizzato) e catalogo di 5 elementi e 8 materiali, con regole di posa, adiacenza e preventivo; 27 test. Non ancora dentro `GameState` né disegnati in Phaser.
-- **Prossimo blocco di sviluppo:** **Fase 4 — Progettazione del parco** su griglia con budget e materiali: il progetto disegnato genera compiti, dipendenze, pratiche, costi e materiali da ordinare (oggi sono scritti a mano in `tasks.json`).
+- **Fase 4, fatto:** griglia a livelli (superficie, rischi, progetto, realizzato), catalogo di 5 elementi, 8 materiali e 5 lavorazioni del terreno; il piano di cantiere nasce dal progetto (`generatePlan`) con dipendenze per tile, lotti da max 12 ore e pratiche solo se servono. `GameState` è alla versione 2 (griglia + piano) con migrazione dei salvataggi v1. Il progetto di partenza è quello di `site.json`; 44 test.
+- **Fase 4, da fare:** budget e materiali da ordinare (un compito non parte senza materiali in magazzino), poi l'editor su griglia in Phaser con preventivo live e gradimento previsto.
 - **Poi, in ordine:** squadra con i PV (Fase 2) e scelta del terreno (Fase 1) → sopralluogo con insidie (Fase 3) → una side-quest a mini-puzzle, una raccolta fondi, inaugurazione e punteggio → MVP.
 
 ## Pixel art: Aseprite + server MCP in WSL2

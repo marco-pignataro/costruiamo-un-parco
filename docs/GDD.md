@@ -209,6 +209,8 @@ La progettazione è una modalità creativa su griglia: il disegno finale diventa
 
 **Dal disegno ai lavori.** Alla conferma, il progetto genera il **piano di cantiere**: ogni elemento diventa un task con materiali, ore-uomo, skill, pratiche necessarie e dipendenze (es. bonifica → livellamento → sentiero → panchina). Genera anche tutte le pratiche (vedi Burocrazia).
 
+**Come nasce il piano (prototipo).** Sotto ogni elemento nascono le lavorazioni del terreno: alcune dalla superficie (rifiuti → bonifica, cemento → rimozione, erba alta → sfalcio), altre perché l'elemento le chiede (sentieri e panchine → livellamento, aiuole → vangatura). Le dipendenze seguono le tile: un compito aspetta solo le lavorazioni sotto di lui e, per panchine e cestini, il sentiero accanto. Lavorazioni e tratti di sentiero o staccionata si raggruppano in lotti di al massimo 12 ore complessive, così ogni compito sta in un weekend. Una lavorazione finita cambia la superficie (dopo la bonifica c'è terra, dopo lo sfalcio prato). Le pratiche legate a elementi assenti dal progetto non nascono; quelle non legate al progetto (es. occupazione di suolo pubblico) ci sono sempre. Finché non c'è l'editor, la partita parte da un terreno di prova con un progetto già disegnato.
+
 **Varianti in corso d'opera.** Il progetto si può modificare durante il cantiere, ma ogni variante costa tempo e può richiedere una nuova autorizzazione. Riproduce un dilemma reale: adattarsi o tenere la rotta.
 
 ## Fase 5 — Cantiere
