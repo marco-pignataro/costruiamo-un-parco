@@ -6,6 +6,8 @@ Gioco gratuito. Per sostenere l'associazione: [puliamomessina.it/donazioni](http
 
 Il titolo è provvisorio: si cambia solo in `src/config.ts` (`GAME_TITLE`).
 
+Il design completo è in [`docs/GDD.md`](docs/GDD.md); le istruzioni per lavorare con Claude Code sono in [`CLAUDE.md`](CLAUDE.md).
+
 ## Stato: prototipo 0.1
 
 Il prototipo contiene il ciclo di base del turno settimanale:
