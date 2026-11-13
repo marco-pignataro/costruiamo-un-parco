@@ -34,6 +34,7 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `plan.ts` (piano di cantiere dal progetto), `migrate.ts` (salvataggi vecchi), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
 | `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), richieste dirette (`sidequests.json`), elementi del parco, materiali, lavorazioni del terreno e messa in sicurezza, insidie (`hazards.json`), terreni con progetto proposto e punti sospetti (`sites.json`) |
 | `src/game/` | `iso.ts` (geometria isometrica pura: tile ↔ schermo, profondità, livelli di zoom; testata), `camera.ts` (zoom a due livelli e trascinamento, comune alle scene), `ParkScene.ts` (legge lo stato e disegna in isometrico griglia, progetto e volontari; non decide nulla), `sprites.ts` (pixel art da griglie di caratteri, rombi 32×16) |
+| `src/ui/activities.ts`, `src/ui/mapSelection.ts` | Elenco delle attività avviabili con le loro tile (condiviso da HUD e scena) e regole pure del punta e clicca; testati |
 | `src/ui/hud.ts` | HUD HTML ai bordi dello schermo (schede in alto, a sinistra, a destra, in basso), modale centrale delle attività (`openActivity`, da riusare per il punta e clicca), mini-puzzle, finale, resoconti |
 | `tests/` | Vitest sulla simulazione |
 | `.github/workflows/deploy.yml` | Test + build + pubblicazione su Pages a ogni push su `main` |
@@ -66,7 +67,8 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 - **Deciso il 13/11/2026 (GDD, "Interfaccia e scene"):** visuale isometrica; HUD ai bordi al posto del pannello laterale; zoom a due livelli e trascinamento; punta e clicca con modale centrale; scena della città (mini Messina con sede, uffici e fornitore) nella parte burocratica e scena del parco nel weekend, senza switch.
 - **Punto 1 fatto:** motore isometrico (`iso.ts`, `camera.ts`) e scena del parco in isometrico; editor con clic sul rombo. La scrivania sul marciapiede è provvisoria, sparisce con la scena della città.
 - **Punto 2 fatto:** HUD ai bordi al posto del pannello laterale, pannelli laterali richiudibili, modale centrale per avviare ogni attività, pulsante di zoom (anche tasto Z); la visuale intera si adatta allo spazio libero tra i pannelli (`View` e `Insets` in `camera.ts`).
-- **Prossimo passo, in ordine:** 3) punta e clicca al parco; 4) scena della città con pathfinding e cambio scena automatico; 5) prova di gioco del gate 2 e bilanciamento. Poi: fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
+- **Punto 3 fatto:** punta e clicca al parco (volontario → attività, attività → etichetta → modale, clic a vuoto deseleziona), ombre sulle aree interagibili e sotto i volontari, etichetta HTML che segue la mappa. In sviluppo `window.__view` espone la telecamera per le prove automatiche.
+- **Prossimo passo, in ordine:** 4) scena della città con pathfinding e cambio scena automatico; 5) prova di gioco del gate 2 e bilanciamento. Poi: fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
 
 ## Pixel art: Aseprite + server MCP in WSL2
 

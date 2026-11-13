@@ -168,3 +168,24 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
   #hud { font-size: 13px; }
   #hud-top .brand small { display: none; }
 }
+
+/* etichetta sopra il volontario o l'attività selezionati sulla mappa */
+.map-label {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.3);
+  text-align: center;
+  white-space: nowrap;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+.map-label[hidden] { display: none; }
+.map-label small { color: var(--muted); font-size: 11px; }
+.map-label em { color: var(--warn); font-style: normal; font-size: 12px; }

@@ -411,7 +411,9 @@ In basso a destra c'è anche il menu della partita (notifiche, esporta salvatagg
 
 La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque risoluzione; la pixel art resta nella scena. La visuale intera si adatta allo spazio libero tra i pannelli; il tasto Z fa lo stesso del pulsante di zoom.
 
-**Prototipo.** Ogni attività avviabile ha una voce nella lista "Da fare" a destra, con il primo motivo per cui è bloccata; cliccandola si apre la modale centrale. La modale si chiude con Annulla, con Esc o cliccando fuori.
+**Prototipo del punta e clicca (parco).** Sono interagibili i lavori del piano disponibili (sulle loro tile) e, nel sopralluogo, i punti sospetti; anche quelli bloccati, che nell'etichetta dicono perché. Le loro tile hanno un'ombra leggera e un bordo in rilievo; sotto il puntatore il bordo si schiarisce. I volontari hanno un'ombra sotto i piedi e, selezionati, un anello bianco con un'etichetta (nome, ruolo, "al lavoro" se impegnati). Se più attività stanno sulla stessa tile vince la prima della lista "Da fare". Nella parte burocratica al parco non c'è niente da cliccare: pratiche, ordini e raccolta fondi si avviano dalla HUD finché non arriva la città. Le regole dei clic stanno in `src/ui/mapSelection.ts`, l'elenco delle attività e le loro tile in `src/ui/activities.ts`.
+
+**Prototipo della HUD.** Ogni attività avviabile ha una voce nella lista "Da fare" a destra, con il primo motivo per cui è bloccata; cliccandola si apre la modale centrale. La modale si chiude con Annulla, con Esc o cliccando fuori.
 
 **Zoom e trascinamento.** Il pulsante di zoom alterna due soli livelli: la visuale intera della scena e un ingrandimento fisso, non regolabile. Da ingranditi la mappa si sposta cliccando e trascinando, entro i bordi della scena.
 

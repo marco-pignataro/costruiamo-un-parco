@@ -6,6 +6,7 @@ import { Simulation } from './core/simulation';
 import { browserStore, exportSave } from './core/storage';
 import { NO_INSETS, type View } from './game/camera';
 import { ParkScene, type EditorTool } from './game/ParkScene';
+import type { Kind } from './ui/activities';
 import { Hud } from './ui/hud';
 import './style.css';
 
@@ -19,6 +20,8 @@ async function boot() {
   let notified = sim.state.reports.length;
   const editor: EditorTool = { tool: null };
   const view: View = { camera: null, insets: NO_INSETS };
+  // Solo in sviluppo: le prove automatiche nel browser leggono la telecamera da qui.
+  if (import.meta.env.DEV) Object.assign(window, { __view: view });
 
   const hud = new Hud(document.getElementById('hud')!, document.getElementById('dialog')!, document.getElementById('modal')!, () => sim, {
     onChange: save,
@@ -61,6 +64,7 @@ async function boot() {
             save();
             hud.render();
           },
+          onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => hud.openActivity(kind, id, volunteerIds),
         }),
     },
   });

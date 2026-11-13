@@ -65,6 +65,12 @@ export class IsoCamera {
     });
   }
 
+  /** Punto dello schermo (pixel CSS) dove si vede un punto del mondo. */
+  toScreen(x: number, y: number): { x: number; y: number } {
+    const cam = this.scene.cameras.main;
+    return { x: (x - cam.worldView.x) * cam.zoom, y: (y - cam.worldView.y) * cam.zoom };
+  }
+
   get isZoomed(): boolean {
     return this.zoomed;
   }

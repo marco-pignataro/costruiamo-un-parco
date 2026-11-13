@@ -1,8 +1,10 @@
 import * as Phaser from 'phaser';
 import type { Simulation } from '../core/simulation';
+import { type Activity, type Kind, activityTiles, listActivities } from '../ui/activities';
+import { type ActivityRef, type MapHit, type MapSelection, clickMap } from '../ui/mapSelection';
 import type { PlanTask, SurfaceId } from '../core/types';
 import { IsoCamera, type View } from './camera';
-import { LAYER, type Point, type Rect, areaBounds, depthOf, footprintCenter, footprintCorners, tileCenter, worldToTile } from './iso';
+import { LAYER, type Point, type Rect, areaBounds, depthOf, footprintCenter, footprintCorners, gridToWorld, tileCenter, worldToTile } from './iso';
 import { SHIRTS, backdrop, createTextures } from './sprites';
 
 /** Tile di contorno attorno al terreno (marciapiede e bordo del parco). */
@@ -48,6 +50,8 @@ interface SceneData {
   editor: EditorTool;
   view: View;
   onEdit: () => void;
+  /** Punta e clicca: apre la modale centrale dell'attività con dei volontari già scelti. */
+  onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => void;
 }
 
 function layoutKeyOf(sim: Simulation): string {
@@ -76,6 +80,20 @@ export class ParkScene extends Phaser.Scene {
   /** Scrivania provvisoria per i compiti d'ufficio, finché non c'è la scena della città. */
   private desk: Point = { x: 0, y: 0 };
 
+  // Punta e clicca
+  private selection: MapSelection = null;
+  /** Attività che stanno sulla mappa, per tile: la prima della lista vince. */
+  private activityAt = new Map<number, Activity>();
+  private interactKey = '';
+  /** Ombra sotto i bordi delle aree con un'attività. */
+  private marks!: Phaser.GameObjects.Graphics;
+  /** Evidenziazione dell'attività sotto il puntatore o selezionata. */
+  private focus!: Phaser.GameObjects.Graphics;
+  /** Ombre sotto i volontari e anello di quello selezionato. */
+  private shadows!: Phaser.GameObjects.Graphics;
+  private hovered: ActivityRef | null = null;
+  private label!: HTMLDivElement;
+
   constructor() {
     super('park');
   }
@@ -102,6 +120,10 @@ export class ParkScene extends Phaser.Scene {
     this.targets.clear();
     this.placementsKey = '';
     this.hover = [];
+    this.selection = null;
+    this.hovered = null;
+    this.activityAt.clear();
+    this.interactKey = '';
     this.layoutKey = layoutKeyOf(this.sim());
     createTextures(this);
 
@@ -149,15 +171,30 @@ export class ParkScene extends Phaser.Scene {
     this.add.image(this.desk.x, this.desk.y, 'scrivania').setOrigin(0.5, 1).setDepth(depthOf(this.desk.y));
 
     this.hoverFrame = this.add.graphics().setDepth(LAYER.ui);
+    this.marks = this.add.graphics().setDepth(LAYER.overlay + 0.5);
+    this.focus = this.add.graphics().setDepth(LAYER.overlay + 0.6);
+    this.shadows = this.add.graphics().setDepth(LAYER.overlay + 0.7);
+    this.label = document.createElement('div');
+    this.label.className = 'map-label';
+    this.label.hidden = true;
+    document.body.append(this.label);
+    this.events.once('shutdown', () => this.label.remove());
     this.input.mouse?.disableContextMenu();
     this.camera = new IsoCamera(this, world, this.initData.view.insets);
     this.initData.view.camera = this.camera;
     this.events.once('shutdown', () => {
       if (this.initData.view.camera === this.camera) this.initData.view.camera = null;
     });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.showHover(p));
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (!this.camera.wasDrag()) this.edit(p);
+    this.input.on('pointermove', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      const stage = this.sim().state.stage;
+      if (stage === 'progettazione') this.showHover(p);
+      else if (stage === 'cantiere' || stage === 'sopralluogo') this.pointAt(p, over);
+    });
+    this.input.on('pointerup', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      if (this.camera.wasDrag()) return;
+      const stage = this.sim().state.stage;
+      if (stage === 'progettazione') this.edit(p);
+      else if ((stage === 'cantiere' || stage === 'sopralluogo') && p.leftButtonReleased()) this.pick(p, over);
     });
 
     // In attesa: sul marciapiede davanti, a sinistra del terreno.
@@ -166,6 +203,8 @@ export class ParkScene extends Phaser.Scene {
       const c = tileCenter(i % g.width, g.height + Math.floor(i / g.width));
       const img = this.add.image(c.x, c.y + FOOT, key).setOrigin(0.5, 1).setDepth(depthOf(c.y + FOOT));
       img.setData('home', { x: img.x, y: img.y });
+      img.setData('volunteer', v.id);
+      img.setInteractive({ useHandCursor: true });
       this.people.set(v.id, img);
     });
 
@@ -282,6 +321,158 @@ export class ParkScene extends Phaser.Scene {
     this.onEdit();
   }
 
+  // ---------- punta e clicca ----------
+
+  /** Cosa c'è sotto il puntatore: prima i volontari (stanno sopra), poi le tile con un'attività. */
+  private hitAt(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): MapHit {
+    const person = over.find((o) => o.getData('volunteer'));
+    if (person) return { volunteer: person.getData('volunteer') as string };
+    const t = this.tileAt(p);
+    const a = t ? this.activityAt.get(t.y * this.sim().state.grid.width + t.x) : undefined;
+    return a ? { activity: { kind: a.kind, id: a.id } } : null;
+  }
+
+  private pick(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) {
+    const r = clickMap(this.selection, this.hitAt(p, over));
+    this.selection = r.selection;
+    if (r.open) this.initData.onOpenActivity(r.open.activity.kind, r.open.activity.id, r.open.volunteerIds);
+    this.drawFocus();
+  }
+
+  private pointAt(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) {
+    const hit = this.hitAt(p, over);
+    const next = hit && 'activity' in hit ? hit.activity : null;
+    this.input.setDefaultCursor(hit ? 'pointer' : 'default');
+    if (next?.kind === this.hovered?.kind && next?.id === this.hovered?.id) return;
+    this.hovered = next;
+    this.drawFocus();
+  }
+
+  /** Lato del rombo della tile (x, y) verso la tile vicina (dx, dy): due vertici. */
+  private edge(x: number, y: number, dx: number, dy: number): [Point, Point] {
+    if (dy === -1) return [gridToWorld(x, y), gridToWorld(x + 1, y)];
+    if (dx === 1) return [gridToWorld(x + 1, y), gridToWorld(x + 1, y + 1)];
+    if (dy === 1) return [gridToWorld(x + 1, y + 1), gridToWorld(x, y + 1)];
+    return [gridToWorld(x, y + 1), gridToWorld(x, y)];
+  }
+
+  /** Contorno di un insieme di tile: solo i lati che non toccano un'altra tile dell'insieme. */
+  private outline(gfx: Phaser.GameObjects.Graphics, tiles: number[], width: number, dy: number) {
+    const set = new Set(tiles);
+    for (const i of tiles) {
+      const x = i % width;
+      const y = Math.floor(i / width);
+      for (const [nx, ny] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+        const n = x + nx >= 0 && x + nx < width ? (y + ny) * width + x + nx : -1;
+        if (set.has(n)) continue;
+        const [a, b] = this.edge(x, y, nx, ny);
+        gfx.lineBetween(a.x, a.y + dy, b.x, b.y + dy);
+      }
+    }
+  }
+
+  /** Ombra leggera sulle aree con un'attività: le distingue dallo sfondo. */
+  private drawMarks() {
+    const sim = this.sim();
+    const w = sim.state.grid.width;
+    this.marks.clear();
+    const groups = new Map<string, number[]>();
+    for (const [tile, a] of this.activityAt) {
+      const k = `${a.kind}:${a.id}`;
+      groups.set(k, [...(groups.get(k) ?? []), tile]);
+    }
+    for (const tiles of groups.values()) {
+      this.marks.fillStyle(0x000000, 0.1);
+      for (const i of tiles) {
+        const [a, b, c, d] = footprintCorners(i % w, Math.floor(i / w), 1, 1);
+        this.marks.fillPoints([a, b, c, d] as Phaser.Math.Vector2[], true);
+      }
+      this.marks.lineStyle(2, 0x000000, 0.35);
+      this.outline(this.marks, tiles, w, 1);
+      this.marks.lineStyle(1, 0xfff6d8, 0.55);
+      this.outline(this.marks, tiles, w, 0);
+    }
+  }
+
+  /** Bordo chiaro attorno all'attività selezionata o sotto il puntatore. */
+  private drawFocus() {
+    const sim = this.sim();
+    this.focus.clear();
+    const sel = this.selection && 'activity' in this.selection ? this.selection.activity : null;
+    for (const [ref, alpha] of [
+      [this.hovered, 0.6],
+      [sel, 1],
+    ] as [ActivityRef | null, number][]) {
+      if (!ref) continue;
+      const tiles = activityTiles(sim, ref);
+      this.focus.fillStyle(0xffffff, alpha * 0.18);
+      for (const i of tiles) {
+        const [a, b, c, d] = footprintCorners(i % sim.state.grid.width, Math.floor(i / sim.state.grid.width), 1, 1);
+        this.focus.fillPoints([a, b, c, d] as Phaser.Math.Vector2[], true);
+      }
+      this.focus.lineStyle(2, 0xffffff, alpha);
+      this.outline(this.focus, tiles, sim.state.grid.width, 0);
+    }
+  }
+
+  /** Attività sulla mappa: si ridisegnano le ombre solo quando cambiano. */
+  private syncActivities() {
+    const sim = this.sim();
+    const playing = sim.state.stage === 'cantiere' || sim.state.stage === 'sopralluogo';
+    if (!playing && this.selection) this.selection = null;
+    const acts = playing ? listActivities(sim) : [];
+    const at = new Map<number, Activity>();
+    for (const a of acts) for (const t of activityTiles(sim, a)) if (!at.has(t)) at.set(t, a);
+    const key = [...at].map(([t, a]) => `${t}=${a.kind}:${a.id}`).join('|');
+    if (key === this.interactKey) return;
+    this.interactKey = key;
+    this.activityAt = at;
+    const alive = (r: ActivityRef | null) => r !== null && [...at.values()].some((a) => a.kind === r.kind && a.id === r.id);
+    if (this.selection && 'activity' in this.selection && !alive(this.selection.activity)) this.selection = null;
+    if (!alive(this.hovered)) this.hovered = null;
+    this.drawMarks();
+    this.drawFocus();
+  }
+
+  /** Ogni fotogramma: ombre dei volontari, anello del selezionato, etichetta sopra la selezione. */
+  update() {
+    const sim = this.sim();
+    this.shadows.clear();
+    const selVol = this.selection && 'volunteer' in this.selection ? this.selection.volunteer : null;
+    for (const [id, img] of this.people) {
+      this.shadows.fillStyle(0x000000, 0.3).fillEllipse(img.x, img.getData('footY') ?? img.y, 10, 4);
+      if (id === selVol) this.shadows.lineStyle(1, 0xffffff, 1).strokeEllipse(img.x, img.getData('footY') ?? img.y, 14, 6);
+    }
+    let text = '';
+    let at: Point | null = null;
+    if (selVol) {
+      const v = sim.volunteer(selVol);
+      const img = this.people.get(selVol)!;
+      text = `<strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(sim.archetype(v.archetypeId).name)}${v.busy ? ' · al lavoro' : ''}<br><small>Clicca un'attività sulla mappa</small>`;
+      at = { x: img.x, y: img.y - img.height - 2 };
+    } else if (this.selection && 'activity' in this.selection) {
+      const ref = this.selection.activity;
+      const a = [...this.activityAt.values()].find((x) => x.kind === ref.kind && x.id === ref.id);
+      const tiles = activityTiles(sim, ref);
+      if (a && tiles.length) {
+        const w = sim.state.grid.width;
+        const top = tiles.map((i) => tileCenter(i % w, Math.floor(i / w))).reduce((m, c) => (c.y < m.y ? c : m));
+        text = `<strong>${escapeHtml(a.name)}</strong>${a.blockers.length ? `<br><em>${escapeHtml(a.blockers[0])}</em>` : ''}<br><small>Clicca di nuovo per organizzarla</small>`;
+        at = { x: top.x, y: top.y - 10 };
+      }
+    }
+    if (!at || this.scene.isPaused()) {
+      this.label.hidden = true;
+      return;
+    }
+    const cam = this.cameras.main;
+    const sx = (at.x - cam.worldView.x) * cam.zoom;
+    const sy = (at.y - cam.worldView.y) * cam.zoom;
+    if (this.label.innerHTML !== text) this.label.innerHTML = text;
+    this.label.style.transform = `translate(${Math.round(sx)}px, ${Math.round(sy)}px) translate(-50%, -100%)`;
+    this.label.hidden = false;
+  }
+
   private sync() {
     const sim = this.sim();
     if (layoutKeyOf(sim) !== this.layoutKey) {
@@ -301,6 +492,7 @@ export class ParkScene extends Phaser.Scene {
       if (st) mark.setTexture(st.status === 'analizzato' ? 'indizio-ok' : 'indizio');
     }
     this.syncPlacements();
+    this.syncActivities();
     const built = new Set(g.built);
     const designing = sim.state.stage === 'progettazione';
     if (!designing && (this.hover.length > 0 || this.editor.tool)) {
@@ -340,12 +532,20 @@ export class ParkScene extends Phaser.Scene {
         x: to.x,
         y: to.y,
         duration: Math.max(200, dist * 12),
-        onUpdate: () => img.setDepth(depthOf(img.y) + 0.2),
+        onUpdate: () => {
+          img.setDepth(depthOf(img.y) + 0.2);
+          img.setData('footY', img.y);
+        },
         onComplete: () => {
           img.setDepth(depthOf(to.y) + 0.2);
+          img.setData('footY', to.y);
           if (where.has(id)) this.tweens.add({ targets: img, y: to.y - 2, duration: 220, yoyo: true, repeat: -1 });
         },
       });
     }
   }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }
