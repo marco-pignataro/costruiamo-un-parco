@@ -29,7 +29,7 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
-Commit: da fare (prima prova del 13/11).
+Commit: 8775f4e (prima prova del 13/11).
 
 - [x] In fase di progettazione si può confermare il progetto e aprire il cantiere anche se il preventivo supera la cassa: i fondi mancanti si recuperano durante il gioco.
 - [x] In fase di progettazione il menu degli arredi del parco si chiama "Squadra" e il menu del preventivo "Attività", mentre dovrebbero essere rispettivamente "Arredi" e "Preventivo".
