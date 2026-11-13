@@ -8,9 +8,11 @@ import preparations from '../data/preparations.json';
 import hazards from '../data/hazards.json';
 import sites from '../data/sites.json';
 import sideQuests from '../data/sidequests.json';
+import city from '../data/city.json';
+import { validateCity } from './city';
 import { GRID_MAX } from '../config';
 import { estimate, gridFromSite, validateProject } from './grid';
-import type { Archetype, CandidateDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SideQuestDef, SiteDef, TaskDef } from './types';
+import type { Archetype, CandidateDef, CityDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SideQuestDef, SiteDef, TaskDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
@@ -26,6 +28,8 @@ export interface Content {
   hazards: HazardDef[];
   /** Mini-puzzle delle richieste dirette ai dirigenti. */
   sideQuests: SideQuestDef[];
+  /** La città della parte burocratica: strade, sede, uffici, fornitore, monumenti. */
+  city: CityDef;
 }
 
 export const defaultContent: Content = {
@@ -39,6 +43,7 @@ export const defaultContent: Content = {
   sites: sites as SiteDef[],
   hazards: hazards as HazardDef[],
   sideQuests: sideQuests as SideQuestDef[],
+  city: city as CityDef,
 };
 
 /**
@@ -115,5 +120,6 @@ export function validateContent(c: Content): string[] {
       }
     }
   }
+  errors.push(...validateCity(c.city, c.pratiche));
   return errors;
 }

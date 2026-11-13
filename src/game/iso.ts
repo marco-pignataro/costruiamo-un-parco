@@ -77,3 +77,33 @@ export function zoomLevels(viewW: number, viewH: number, worldW: number, worldH:
   const full = fit >= 1 ? Math.floor(fit) : fit;
   return { full, close: Math.max(2, Math.round(full * 2)) };
 }
+
+/** Il punto sta dentro il poligono (pari e dispari sui lati): serve a cliccare la sagoma di un edificio. */
+export function insidePolygon(pts: Point[], x: number, y: number): boolean {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const a = pts[i];
+    const b = pts[j];
+    if (a.y > y !== b.y > y && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Sagoma di un edificio a blocco alto `height` pixel sulla pianta x..x+w,
+ * y..y+h: base (sinistra, basso, destra) e tetto (destra, alto, sinistra).
+ */
+export function blockOutline(x: number, y: number, w: number, h: number, height: number): Point[] {
+  const [top, right, bottom, left] = footprintCorners(x, y, w, h);
+  const up = (p: Point) => ({ x: p.x, y: p.y - height });
+  return [left, bottom, right, up(right), up(top), up(left)];
+}
+
+/**
+ * Profondità di un edificio: quella della tile più avanti della sua pianta
+ * (l'angolo in basso). Chi sta su una tile davanti o di lato si disegna
+ * davanti, chi sta dietro (anche dietro un palazzo largo) resta coperto.
+ */
+export function blockDepth(x: number, y: number, w: number, h: number): number {
+  return depthOf(tileCenter(x + w - 1, y + h - 1).y);
+}

@@ -245,6 +245,9 @@ export function createTextures(scene: Phaser.Scene): void {
   isoTile(scene, 'ghiaia', '#c9b99a', ['#a8977a', '#e0d4bb', '#8f8068'], 0.6, 5);
   isoTile(scene, 'aiuola', '#6b4423', ['#2f7a2a', '#8e5bb5', '#4c8a31', '#5e3b1b'], 0.45, 6);
   isoTile(scene, 'marciapiede', '#b5aea0', ['#9d968a', '#c9c2b4'], 0.2, 8);
+  isoTile(scene, 'asfalto', '#55565c', ['#4a4b50', '#626369', '#5d5e64'], 0.3, 9);
+  isoTile(scene, 'lastricato', '#d2c3a0', ['#bfae88', '#e2d6ba', '#b8a782'], 0.35, 10);
+  isoTile(scene, 'mare', '#2f6fb0', ['#3d7fc0', '#5b9bd5', '#28629d'], 0.15, 11);
   solidDiamond(scene, 'rombo');
   paint(scene, 'albero', TREE);
   paint(scene, 'cestino', BIN);

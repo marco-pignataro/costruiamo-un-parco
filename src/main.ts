@@ -5,8 +5,9 @@ import { migrate } from './core/migrate';
 import { Simulation } from './core/simulation';
 import { browserStore, exportSave } from './core/storage';
 import { NO_INSETS, type View } from './game/camera';
+import { CityScene } from './game/CityScene';
 import { ParkScene, type EditorTool } from './game/ParkScene';
-import type { Kind } from './ui/activities';
+import { type Kind, sceneFor } from './ui/activities';
 import { Hud } from './ui/hud';
 import './style.css';
 
@@ -45,7 +46,20 @@ async function boot() {
     },
   }, editor);
 
-  new Phaser.Game({
+  const sceneData = {
+    sim: () => sim,
+    editor,
+    view,
+    onEdit: () => {
+      save();
+      hud.render();
+    },
+    onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => hud.openActivity(kind, id, volunteerIds),
+  };
+  // Parco o città, secondo la fase: il cambio avviene da solo, con una dissolvenza.
+  let current: 'city' | 'park' | null = null;
+  let switching = false;
+  const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
     pixelArt: true,
@@ -55,19 +69,28 @@ async function boot() {
     scale: { mode: Phaser.Scale.RESIZE },
     scene: [],
     callbacks: {
-      postBoot: (game) =>
-        game.scene.add('park', ParkScene, true, {
-          sim: () => sim,
-          editor,
-          view,
-          onEdit: () => {
-            save();
-            hud.render();
-          },
-          onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => hud.openActivity(kind, id, volunteerIds),
-        }),
+      postBoot: (g) => {
+        g.scene.add('park', ParkScene, false);
+        g.scene.add('city', CityScene, false);
+        current = sceneFor(sim);
+        g.scene.start(current, sceneData);
+      },
     },
   });
+
+  const syncScene = () => {
+    const want = sceneFor(sim);
+    if (!current || switching || want === current) return;
+    const from = game.scene.getScene(current);
+    switching = true;
+    from.cameras.main.fadeOut(250);
+    from.cameras.main.once('camerafadeoutcomplete', () => {
+      game.scene.stop(current!);
+      current = want;
+      game.scene.start(want, sceneData);
+      switching = false;
+    });
+  };
 
   const loop = () => {
     sim.tick(Date.now());
@@ -78,6 +101,7 @@ async function boot() {
     }
     notified = total;
     hud.render();
+    syncScene();
   };
   loop();
   setInterval(loop, 1000);

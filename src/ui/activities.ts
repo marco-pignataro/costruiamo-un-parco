@@ -1,4 +1,6 @@
+import { fornitore, officeBuilding, sede } from '../core/city';
 import type { Simulation } from '../core/simulation';
+import type { ActiveTask } from '../core/types';
 
 /** Tipi di attività che si avviano scegliendo dei volontari. */
 export type Kind = 'lavoro' | 'richiesta' | 'ordine' | 'analisi' | 'sidequest';
@@ -69,4 +71,31 @@ export function activityTiles(sim: Simulation, a: { kind: Kind; id: string }): n
   if (a.kind !== 'lavoro') return [];
   const def = sim.taskDef(a.id);
   return 'tiles' in def ? def.tiles : [];
+}
+
+/**
+ * Edificio della città dove si svolge un'attività: pratiche e richieste
+ * dirette nel loro ufficio, ordini dal fornitore, i lavori d'ufficio (es. la
+ * raccolta fondi online) alla sede. Null per i lavori al parco e le analisi.
+ */
+export function activityBuilding(sim: Simulation, a: { kind: Kind; id: string }): string | null {
+  const city = sim.city;
+  if (a.kind === 'richiesta' || a.kind === 'sidequest') return officeBuilding(city, sim.praticaDef(a.id).office)?.id ?? sede(city).id;
+  if (a.kind === 'ordine') return fornitore(city).id;
+  if (a.kind === 'lavoro') return activityTiles(sim, a).length ? null : sede(city).id;
+  return null;
+}
+
+/** Edificio della città dove lavora un compito in corso (null se si svolge al parco). */
+export function activeBuilding(sim: Simulation, a: ActiveTask): string | null {
+  return activityBuilding(sim, { kind: a.kind, id: a.refId });
+}
+
+/**
+ * Scena in cui si gioca adesso: la città nella parte burocratica del
+ * cantiere, il parco in tutto il resto (fasi preparatorie, weekend,
+ * inaugurazione). Non si passa dall'una all'altra a mano.
+ */
+export function sceneFor(sim: Simulation): 'city' | 'park' {
+  return sim.state.stage === 'cantiere' && sim.state.phase === 'burocratica' ? 'city' : 'park';
 }

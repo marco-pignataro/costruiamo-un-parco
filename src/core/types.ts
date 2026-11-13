@@ -306,6 +306,34 @@ export interface SiteFactor {
 }
 
 /** Terreno da scegliere in Fase 1: scheda, superficie come righe di caratteri e progetto proposto. */
+/** Edificio o monumento della città (scena della parte burocratica). */
+export interface CityBuilding {
+  id: string;
+  name: string;
+  /** sede e fornitore: uno solo; ufficio: dove si fanno le pratiche di `office`; palazzo e monumento: scenografia. */
+  kind: 'sede' | 'fornitore' | 'ufficio' | 'palazzo' | 'monumento';
+  /** Per gli uffici: il campo `office` delle pratiche che si fanno qui. */
+  office?: string;
+  /** Come si disegna (vedi CityScene). */
+  look: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Tile camminabile davanti all'ingresso, dove si fermano i volontari (non per i monumenti). */
+  door?: { x: number; y: number };
+}
+
+/**
+ * La piccola Messina della parte burocratica, uguale in ogni partita. Ogni
+ * carattere delle righe è una tile: ~ mare, = strada, . marciapiede,
+ * p piazza lastricata, , verde.
+ */
+export interface CityDef {
+  rows: string[];
+  buildings: CityBuilding[];
+}
+
 export interface SiteDef {
   id: string;
   name: string;

@@ -189,3 +189,9 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
 .map-label[hidden] { display: none; }
 .map-label small { color: var(--muted); font-size: 11px; }
 .map-label em { color: var(--warn); font-style: normal; font-size: 12px; }
+
+/* più attività nello stesso edificio: si sceglie dall'etichetta */
+.map-label.choices { pointer-events: auto; white-space: normal; width: 240px; text-align: left; }
+.map-label .choose { display: grid; gap: 4px; margin-top: 6px; }
+.map-label .choose button { display: grid; gap: 1px; text-align: left; padding: 4px 8px; font-size: 12px; }
+.map-label .choose em { font-size: 11px; }

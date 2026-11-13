@@ -50,3 +50,29 @@ describe('geometria isometrica', () => {
     expect(zoomLevels(300, 200, 420, 260).close).toBe(2);
   });
 });
+
+describe('edifici isometrici', () => {
+  it('un clic sul muro o sul tetto cade dentro la sagoma, uno accanto no', async () => {
+    const { blockOutline, insidePolygon, footprintCorners } = await import('../src/game/iso');
+    const sil = blockOutline(2, 5, 3, 2, 30);
+    const [top, , bottom] = footprintCorners(2, 5, 3, 2);
+    expect(insidePolygon(sil, bottom.x, bottom.y - 15)).toBe(true); // muro davanti
+    expect(insidePolygon(sil, top.x, top.y - 25)).toBe(true); // tetto
+    expect(insidePolygon(sil, top.x, top.y - 40)).toBe(false); // sopra il tetto
+  });
+
+  it("chi sta all'ingresso si vede davanti all'edificio, chi sta dietro no", async () => {
+    const { blockDepth, depthOf, tileCenter } = await import('../src/game/iso');
+    const d = blockDepth(2, 5, 3, 2);
+    const foot = (x: number, y: number) => depthOf(tileCenter(x, y).y + 3); // i piedi stanno 3 px sotto il centro
+    expect(foot(3, 7)).toBeGreaterThan(d); // ingresso, sotto
+    expect(foot(5, 6)).toBeGreaterThan(d); // a destra
+    expect(foot(3, 4)).toBeLessThan(d); // dietro
+  });
+
+  it('chi sta dietro un palazzo largo resta coperto anche se è più in basso del suo vertice sinistro', async () => {
+    const { blockDepth, depthOf, tileCenter } = await import('../src/game/iso');
+    // palazzo su x 18..20, y 8; la tile (19, 7) gli sta dietro
+    expect(depthOf(tileCenter(19, 7).y + 3)).toBeLessThan(blockDepth(18, 8, 3, 1));
+  });
+});

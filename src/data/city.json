@@ -1,0 +1,34 @@
+{
+  "rows": [
+    "~~~~~~~~~~~~~~~~~~~~.~~~",
+    "~~~~~~~~~~~~~~~~~~~~.~~~",
+    "........................",
+    "========================",
+    ".......=........=.......",
+    ".......=.pppppp.=.....,,",
+    ".......=.pppppp.=.....,,",
+    ".......=.pppppp.=.....,,",
+    ".......=.pppppp.=.......",
+    ".......=.pppppp.=.......",
+    "========================",
+    ".......=........=.......",
+    ",,.....=....,,,.=.......",
+    ",,.....=....,,,.=.......",
+    ",,.....=....,,,.=.......",
+    ",,.....=........=......."
+  ],
+  "buildings": [
+    {"id": "sede", "name": "Sede di Puli-AMO", "kind": "sede", "look": "sede", "x": 2, "y": 5, "w": 3, "h": 2, "door": {"x": 3, "y": 7}},
+    {"id": "fornitore", "name": "Ferramenta e vivaio", "kind": "fornitore", "look": "fornitore", "x": 2, "y": 12, "w": 3, "h": 2, "door": {"x": 3, "y": 14}},
+    {"id": "palazzo-ovest", "name": "Palazzo", "kind": "palazzo", "look": "palazzo-ocra", "x": 5, "y": 12, "w": 2, "h": 2, "door": {"x": 5, "y": 14}},
+    {"id": "duomo", "name": "Duomo", "kind": "monumento", "look": "duomo", "x": 9, "y": 5, "w": 4, "h": 2},
+    {"id": "campanile", "name": "Campanile", "kind": "monumento", "look": "campanile", "x": 13, "y": 5, "w": 1, "h": 1},
+    {"id": "fontana", "name": "Fontana di Orione", "kind": "monumento", "look": "fontana", "x": 11, "y": 8, "w": 2, "h": 1},
+    {"id": "madonnina", "name": "Madonnina del porto", "kind": "monumento", "look": "madonnina", "x": 20, "y": 0, "w": 1, "h": 1},
+    {"id": "palazzo-centro", "name": "Palazzo", "kind": "palazzo", "look": "palazzo-rosa", "x": 9, "y": 12, "w": 2, "h": 2, "door": {"x": 10, "y": 14}},
+    {"id": "assicurazione", "name": "Agenzia di assicurazioni", "kind": "ufficio", "office": "Assicurazione", "look": "ufficio", "x": 18, "y": 5, "w": 3, "h": 2, "door": {"x": 19, "y": 7}},
+    {"id": "palazzo-est", "name": "Palazzo", "kind": "palazzo", "look": "palazzo-ocra", "x": 21, "y": 5, "w": 2, "h": 2, "door": {"x": 21, "y": 7}},
+    {"id": "igiene", "name": "Ufficio Igiene Cittadina", "kind": "ufficio", "office": "Ufficio Igiene Cittadina", "look": "ufficio-verde", "x": 18, "y": 12, "w": 3, "h": 2, "door": {"x": 19, "y": 14}},
+    {"id": "palazzo-sud", "name": "Palazzo", "kind": "palazzo", "look": "palazzo-rosa", "x": 21, "y": 12, "w": 2, "h": 2, "door": {"x": 21, "y": 14}}
+  ]
+}

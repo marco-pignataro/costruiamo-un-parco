@@ -436,7 +436,9 @@ La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque r
 
 La mappa ha posto per 8-10 edifici, così regge le pratiche del GDD che arriveranno.
 
-**I volontari si muovono da soli.** Quando un compito parte, i volontari camminano fino al posto del compito (ufficio, fornitore, tile del parco) e lavorano lì; finito, tornano alla sede in città o al bordo del parco nel weekend. Il cammino è solo animazione e non consuma tempo di gioco: la posizione si ricava dallo stato (compito in corso → sul posto, altrimenti alla sede o al bordo del parco), quindi alla riapertura i volontari sono già dove devono essere. Il pathfinding sta in `src/game/`, non nella simulazione.
+**Prototipo della città.** Una griglia 24×16 in `src/data/city.json`: lo Stretto in alto con il molo della Madonnina, il lungomare, due strade che scendono e una che attraversa, la piazza del Duomo con il campanile e la Fontana di Orione, qualche giardino. Gli edifici sono 8: sede (tetto verde e bandierina), ferramenta e vivaio, Agenzia di assicurazioni, Ufficio Igiene Cittadina e quattro palazzi liberi per gli uffici futuri; ogni ufficio dichiara quale `office` delle pratiche ospita, e la validazione dei contenuti controlla che ogni pratica abbia il suo ufficio e che dalla sede si arrivi a ogni ingresso. Gli ingressi danno su un marciapiede libero, così chi aspetta davanti si vede. Gli edifici con un'attività hanno un'ombra leggera e un contorno chiaro; si cliccano sulla sagoma, muri e tetto compresi. Se un edificio ha più attività (il fornitore ne ha una per ogni ordine), l'etichetta le elenca e si sceglie lì; con un volontario già selezionato, resta scelto. Il passaggio tra le scene è una dissolvenza di un quarto di secondo.
+
+**I volontari si muovono da soli.** Quando un compito parte, i volontari camminano fino al posto del compito (ufficio, fornitore, tile del parco) e lavorano lì; finito, tornano alla sede in città o al bordo del parco nel weekend. Il cammino è solo animazione e non consuma tempo di gioco: la posizione si ricava dallo stato (compito in corso → sul posto, altrimenti alla sede o al bordo del parco), quindi alla riapertura i volontari sono già dove devono essere. Il percorso più breve sulle tile camminabili sta in `src/core/city.ts` (puro e testato), il cammino animato in `src/game/CityScene.ts`; la simulazione non ne dipende. Al parco i volontari vanno in linea retta, perché il terreno è tutto camminabile.
 
 ## Direzione artistica e audio
 
@@ -490,7 +492,7 @@ Decisione: gioco per browser, gratuito, sviluppato interamente con Claude in Typ
 - **Sistemi separati:** agenda dei compiti con dipendenze, economia, eventi, pratiche.
 - **Griglia condivisa:** la stessa mappa a tile serve per sopralluogo, progettazione e cantiere, con livelli diversi (superficie, rischi, progetto, realizzato).
 - **Due scene isometriche** (parco e città) su un motore comune: conversione griglia ↔ schermo, ordine di disegno per profondità, clic sulle tile, telecamera con zoom a due livelli.
-- **Pathfinding** sulle strade della città e sulle tile del parco per animare i volontari mentre il gioco è aperto; solo grafica, la simulazione non ne dipende.
+- **Pathfinding** sulle strade della città per animare i volontari mentre il gioco è aperto; solo grafica, la simulazione non ne dipende.
 - **Salvataggi** in IndexedDB, con export del salvataggio come file. Notifiche del browser quando un compito finisce con il gioco aperto in un'altra scheda; senza un server non arrivano a browser chiuso, per questo i resoconti vanno in coda alla riapertura.
 - **Titolo del gioco** in una sola costante `GAME_TITLE` nel file di configurazione.
 - **Localizzazione** predisposta (italiano, poi inglese).

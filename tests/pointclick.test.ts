@@ -1,36 +1,55 @@
 import { describe, expect, it } from 'vitest';
 import { activityTiles, listActivities } from '../src/ui/activities';
-import { clickMap } from '../src/ui/mapSelection';
+import { chooseActivity, clickMap } from '../src/ui/mapSelection';
 import { startedGame, surveyGame, T0 } from './helpers';
 
 const bonifica = { kind: 'lavoro' as const, id: 'prep:bonifica:1' };
 const sfalcio = { kind: 'lavoro' as const, id: 'prep:sfalcio:1' };
 
+const at = (ref: { kind: 'lavoro'; id: string }) => ({ place: `${ref.kind}:${ref.id}`, activities: [ref] });
+const ordine1 = { kind: 'ordine' as const, id: 'el:panchina:1' };
+const ordine2 = { kind: 'ordine' as const, id: 'el:cestino:1' };
+const fornitore = { place: 'fornitore', activities: [ordine1, ordine2] };
+
 describe('punta e clicca: regole dei clic', () => {
   it('volontario e poi elemento: si apre la modale con quel volontario', () => {
     const a = clickMap(null, { volunteer: 'v5' });
-    expect(a).toEqual({ selection: { volunteer: 'v5' } });
-    const b = clickMap(a.selection, { activity: bonifica });
+    expect(a).toEqual({ selection: { type: 'volontario', volunteer: 'v5' } });
+    const b = clickMap(a.selection, at(bonifica));
     expect(b).toEqual({ selection: null, open: { activity: bonifica, volunteerIds: ['v5'] } });
   });
 
   it("prima l'elemento mostra l'attività, il secondo clic apre la modale", () => {
-    const a = clickMap(null, { activity: bonifica });
-    expect(a).toEqual({ selection: { activity: bonifica } });
-    expect(clickMap(a.selection, { activity: bonifica })).toEqual({ selection: null, open: { activity: bonifica, volunteerIds: [] } });
+    const a = clickMap(null, at(bonifica));
+    expect(a.selection).toMatchObject({ type: 'luogo', place: 'lavoro:prep:bonifica:1' });
+    expect(a.open).toBeUndefined();
+    expect(clickMap(a.selection, at(bonifica))).toEqual({ selection: null, open: { activity: bonifica, volunteerIds: [] } });
   });
 
-  it("un clic su un altro elemento sposta la selezione senza aprire", () => {
-    expect(clickMap({ activity: bonifica }, { activity: sfalcio })).toEqual({ selection: { activity: sfalcio } });
+  it('un clic su un altro elemento sposta la selezione senza aprire', () => {
+    const a = clickMap(null, at(bonifica));
+    expect(clickMap(a.selection, at(sfalcio)).selection).toMatchObject({ type: 'luogo', activities: [sfalcio] });
   });
 
   it('dopo un elemento, un clic su un volontario seleziona il volontario', () => {
-    expect(clickMap({ activity: bonifica }, { volunteer: 'v1' })).toEqual({ selection: { volunteer: 'v1' } });
+    expect(clickMap(clickMap(null, at(bonifica)).selection, { volunteer: 'v1' })).toEqual({ selection: { type: 'volontario', volunteer: 'v1' } });
   });
 
   it('un clic su un punto non interagibile deseleziona', () => {
-    expect(clickMap({ volunteer: 'v5' }, null)).toEqual({ selection: null });
-    expect(clickMap({ activity: bonifica }, null)).toEqual({ selection: null });
+    expect(clickMap({ type: 'volontario', volunteer: 'v5' }, null)).toEqual({ selection: null });
+    expect(clickMap(clickMap(null, at(bonifica)).selection, null)).toEqual({ selection: null });
+  });
+
+  it("volontario e poi un edificio con più attività: si sceglie dall'elenco e il volontario resta", () => {
+    const a = clickMap({ type: 'volontario', volunteer: 'v2' }, fornitore);
+    expect(a.open).toBeUndefined();
+    expect(a.selection).toEqual({ type: 'luogo', place: 'fornitore', activities: [ordine1, ordine2], volunteer: 'v2' });
+    expect(chooseActivity(a.selection, ordine2)).toEqual({ selection: null, open: { activity: ordine2, volunteerIds: ['v2'] } });
+  });
+
+  it('un secondo clic su un edificio con più attività apre la prima', () => {
+    const a = clickMap(null, fornitore);
+    expect(clickMap(a.selection, fornitore).open).toEqual({ activity: ordine1, volunteerIds: [] });
   });
 });
 

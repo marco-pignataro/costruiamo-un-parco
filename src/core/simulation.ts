@@ -14,7 +14,7 @@ import {
   type PlaceCheck,
 } from './grid';
 import { emergencyTasks, gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, Volunteer } from './types';
+import type { ActiveTask, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, Volunteer, CityDef } from './types';
 
 const EPS = 1e-6;
 
@@ -70,6 +70,11 @@ export class Simulation {
 
   get sites(): SiteDef[] {
     return this.content.sites;
+  }
+
+  /** La città della parte burocratica. */
+  get city(): CityDef {
+    return this.content.city;
   }
 
   get site(): SiteDef {
