@@ -20,7 +20,7 @@ body { margin: 0; min-height: 100vh; }
   min-height: 100vh;
 }
 
-#game { min-height: 50vh; }
+#game { height: 100vh; min-height: 0; overflow: hidden; }
 #game canvas { image-rendering: pixelated; }
 
 #hud {
@@ -84,6 +84,7 @@ footer .tools { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 860px) {
   #app { grid-template-columns: 1fr; }
   #hud { max-height: none; }
+  #game { height: 60vh; }
 }
 
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }

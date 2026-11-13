@@ -1,4 +1,5 @@
 import type * as Phaser from 'phaser';
+import { ISO } from './iso';
 
 /**
  * Pixel art generata in codice: ogni sprite è una griglia di caratteri,
@@ -152,26 +153,58 @@ function rng(seed: number) {
   return () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 
-function tile(scene: Phaser.Scene, key: string, base: string, dots: string[], density: number, seed: number): void {
+/** Le righe di pixel coperte dal rombo isometrico: per ogni riga, la colonna iniziale e la larghezza. */
+function diamondRows(): { x: number; w: number }[] {
+  const rows: { x: number; w: number }[] = [];
+  for (let r = 0; r < ISO.h; r++) {
+    const half = r < ISO.h / 2 ? 2 * (r + 1) : 2 * (ISO.h - r);
+    rows.push({ x: ISO.w / 2 - half, w: half * 2 });
+  }
+  return rows;
+}
+
+/** Tile isometrica: un rombo di colore base con puntini sparsi, sempre uguale (seme fisso). */
+function isoTile(scene: Phaser.Scene, key: string, base: string, dots: string[], density: number, seed: number): void {
   if (scene.textures.exists(key)) return;
-  const tex = scene.textures.createCanvas(key, 16, 16);
+  const tex = scene.textures.createCanvas(key, ISO.w, ISO.h);
   if (!tex) return;
   const ctx = tex.getContext();
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, 16, 16);
+  const rows = diamondRows();
+  rows.forEach((r, y) => {
+    ctx.fillStyle = base;
+    ctx.fillRect(r.x, y, r.w, 1);
+  });
   const rand = rng(seed);
-  for (let i = 0; i < 256 * density; i++) {
+  for (let i = 0; i < ISO.w * ISO.h * 0.5 * density; i++) {
+    const y = Math.floor(rand() * ISO.h);
+    const r = rows[y];
+    const x = r.x + Math.floor(rand() * r.w);
     ctx.fillStyle = dots[Math.floor(rand() * dots.length)];
-    ctx.fillRect(Math.floor(rand() * 16), Math.floor(rand() * 16), 1, rand() < 0.5 ? 1 : 2);
+    ctx.fillRect(x, y, x + 1 < r.x + r.w && rand() < 0.5 ? 2 : 1, 1);
   }
   tex.refresh();
 }
 
-/** Lo Stretto sullo sfondo: cielo, costa calabra e mare. */
-function backdrop(scene: Phaser.Scene, w: number, h: number): void {
-  if (scene.textures.exists('stretto')) return;
-  const tex = scene.textures.createCanvas('stretto', w, h);
+/** Rombo bianco pieno: si colora con il tint (rischi, ombre, evidenziazioni). */
+function solidDiamond(scene: Phaser.Scene, key: string): void {
+  if (scene.textures.exists(key)) return;
+  const tex = scene.textures.createCanvas(key, ISO.w, ISO.h);
   if (!tex) return;
+  const ctx = tex.getContext();
+  ctx.fillStyle = '#ffffff';
+  diamondRows().forEach((r, y) => ctx.fillRect(r.x, y, r.w, 1));
+  tex.refresh();
+}
+
+/**
+ * Lo Stretto sullo sfondo: cielo, costa calabra e mare, largo quanto la scena.
+ * La chiave contiene la misura, perché i terreni hanno dimensioni diverse.
+ */
+export function backdrop(scene: Phaser.Scene, w: number, h: number): string {
+  const key = `stretto-${w}x${h}`;
+  if (scene.textures.exists(key)) return key;
+  const tex = scene.textures.createCanvas(key, w, h);
+  if (!tex) return key;
   const ctx = tex.getContext();
   const sky = ['#cfeaf6', '#b8e0f2', '#a8d8f0'];
   sky.forEach((c, i) => {
@@ -179,7 +212,7 @@ function backdrop(scene: Phaser.Scene, w: number, h: number): void {
     ctx.fillRect(0, i * 6, w, 6);
   });
   ctx.fillStyle = '#a8d8f0';
-  ctx.fillRect(0, 18, w, h - 18);
+  ctx.fillRect(0, 18, w, 8);
   // colline calabre
   ctx.fillStyle = '#6f84a3';
   for (let x = 0; x < w; x++) {
@@ -191,23 +224,28 @@ function backdrop(scene: Phaser.Scene, w: number, h: number): void {
   ctx.fillRect(0, 26, w, h - 26);
   ctx.fillStyle = '#5b9bd5';
   const rand = rng(7);
-  for (let i = 0; i < 60; i++) ctx.fillRect(Math.floor(rand() * w), 27 + Math.floor(rand() * (h - 28)), 3, 1);
-  // un traghetto
-  ctx.fillStyle = '#f4f1e8';
-  ctx.fillRect(250, 29, 14, 3);
-  ctx.fillStyle = '#e04a3a';
-  ctx.fillRect(255, 27, 3, 2);
+  for (let i = 0; i < (w * (h - 26)) / 160; i++) ctx.fillRect(Math.floor(rand() * w), 27 + Math.floor(rand() * (h - 28)), 3, 1);
+  // due traghetti
+  for (const [fx, fy] of [[Math.round(w * 0.65), 30], [Math.round(w * 0.2), 40]]) {
+    if (fy + 3 > h) continue;
+    ctx.fillStyle = '#f4f1e8';
+    ctx.fillRect(fx, fy + 2, 14, 3);
+    ctx.fillStyle = '#e04a3a';
+    ctx.fillRect(fx + 5, fy, 3, 2);
+  }
   tex.refresh();
+  return key;
 }
 
-export function createTextures(scene: Phaser.Scene, width: number, skyHeight: number): void {
-  backdrop(scene, width, skyHeight);
-  tile(scene, 'erba-alta', '#417a2a', ['#2f5e1e', '#5a9e3a', '#6b8f2a'], 0.5, 1);
-  tile(scene, 'erba', '#5a9e3a', ['#4c8a31', '#7cbf4f'], 0.18, 2);
-  tile(scene, 'terra', '#9a6b3f', ['#7a5130', '#b0814f'], 0.3, 3);
-  tile(scene, 'cemento', '#8d8d8a', ['#6f6f6c', '#a5a5a1', '#5d5a52'], 0.25, 4);
-  tile(scene, 'ghiaia', '#c9b99a', ['#a8977a', '#e0d4bb', '#8f8068'], 0.6, 5);
-  tile(scene, 'aiuola', '#6b4423', ['#2f7a2a', '#8e5bb5', '#4c8a31', '#5e3b1b'], 0.45, 6);
+export function createTextures(scene: Phaser.Scene): void {
+  isoTile(scene, 'erba-alta', '#417a2a', ['#2f5e1e', '#5a9e3a', '#6b8f2a'], 0.5, 1);
+  isoTile(scene, 'erba', '#5a9e3a', ['#4c8a31', '#7cbf4f'], 0.18, 2);
+  isoTile(scene, 'terra', '#9a6b3f', ['#7a5130', '#b0814f'], 0.3, 3);
+  isoTile(scene, 'cemento', '#8d8d8a', ['#6f6f6c', '#a5a5a1', '#5d5a52'], 0.25, 4);
+  isoTile(scene, 'ghiaia', '#c9b99a', ['#a8977a', '#e0d4bb', '#8f8068'], 0.6, 5);
+  isoTile(scene, 'aiuola', '#6b4423', ['#2f7a2a', '#8e5bb5', '#4c8a31', '#5e3b1b'], 0.45, 6);
+  isoTile(scene, 'marciapiede', '#b5aea0', ['#9d968a', '#c9c2b4'], 0.2, 8);
+  solidDiamond(scene, 'rombo');
   paint(scene, 'albero', TREE);
   paint(scene, 'cestino', BIN);
   paint(scene, 'indizio', CLUE);

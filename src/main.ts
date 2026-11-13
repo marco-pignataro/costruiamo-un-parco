@@ -4,7 +4,7 @@ import { defaultContent } from './core/content';
 import { migrate } from './core/migrate';
 import { Simulation } from './core/simulation';
 import { browserStore, exportSave } from './core/storage';
-import { ParkScene, VIEW, type EditorTool } from './game/ParkScene';
+import { ParkScene, type EditorTool } from './game/ParkScene';
 import { Hud } from './ui/hud';
 import './style.css';
 
@@ -37,12 +37,11 @@ async function boot() {
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
-    width: VIEW.width,
-    height: VIEW.height,
     pixelArt: true,
     backgroundColor: '#1b1b1b',
     title: GAME_TITLE,
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    // La tela riempie il riquadro di gioco; la scena sceglie lo zoom (visuale intera o ingrandimento).
+    scale: { mode: Phaser.Scale.RESIZE },
     scene: [],
     callbacks: {
       postBoot: (game) =>

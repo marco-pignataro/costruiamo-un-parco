@@ -33,7 +33,7 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | `src/config.ts` | Titolo, associazione, ore di sessione, efficienze, ordini, lotti del piano, velocità di test |
 | `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `plan.ts` (piano di cantiere dal progetto), `migrate.ts` (salvataggi vecchi), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
 | `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), richieste dirette (`sidequests.json`), elementi del parco, materiali, lavorazioni del terreno e messa in sicurezza, insidie (`hazards.json`), terreni con progetto proposto e punti sospetti (`sites.json`) |
-| `src/game/` | `ParkScene.ts` (legge lo stato e disegna griglia, progetto e volontari; non decide nulla), `sprites.ts` (pixel art da griglie di caratteri) |
+| `src/game/` | `iso.ts` (geometria isometrica pura: tile ↔ schermo, profondità, livelli di zoom; testata), `camera.ts` (zoom a due livelli e trascinamento, comune alle scene), `ParkScene.ts` (legge lo stato e disegna in isometrico griglia, progetto e volontari; non decide nulla), `sprites.ts` (pixel art da griglie di caratteri, rombi 32×16) |
 | `src/ui/hud.ts` | Pannello di gestione HTML e modale dei resoconti |
 | `tests/` | Vitest sulla simulazione |
 | `.github/workflows/deploy.yml` | Test + build + pubblicazione su Pages a ogni push su `main` |
@@ -64,7 +64,8 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 - **Ancora solo testo:** fattori e bonus dei terreni, effetti di coordinatore e segretario/a (salvo la raccolta fondi), morale, tratti, crescita, fiducia degli uffici, condizioni di sconfitta.
 - **Ancora fuori:** mappa dei rischi come livello attivabile, regola di accessibilità, varianti in corso d'opera, ritardi delle consegne, capienza del magazzino, altre fonti di materiali, mini-dungeon, eventi casuali, secondo sopralluogo.
 - **Deciso il 13/11/2026 (GDD, "Interfaccia e scene"):** visuale isometrica; HUD ai bordi al posto del pannello laterale; zoom a due livelli e trascinamento; punta e clicca con modale centrale; scena della città (mini Messina con sede, uffici e fornitore) nella parte burocratica e scena del parco nel weekend, senza switch.
-- **Prossimo passo, in ordine:** 1) motore isometrico comune alle due scene; 2) HUD ai bordi con zoom e trascinamento; 3) punta e clicca al parco; 4) scena della città con pathfinding e cambio scena automatico; 5) prova di gioco del gate 2 e bilanciamento. Poi: fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
+- **Punto 1 fatto:** motore isometrico (`iso.ts`, `camera.ts`) e scena del parco in isometrico; editor con clic sul rombo; zoom provvisorio con il tasto Z finché il pulsante non arriva nella HUD. La scrivania sul marciapiede è provvisoria, sparisce con la scena della città.
+- **Prossimo passo, in ordine:** 2) HUD ai bordi con zoom e trascinamento; 3) punta e clicca al parco; 4) scena della città con pathfinding e cambio scena automatico; 5) prova di gioco del gate 2 e bilanciamento. Poi: fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
 
 ## Pixel art: Aseprite + server MCP in WSL2
 
