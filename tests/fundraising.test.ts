@@ -37,15 +37,25 @@ describe('raccolte fondi', () => {
     expect(sim.fundraisingYield('raccolta-fondi', 'base')).toBe(180);
   });
 
-  it("l'evento in piazza si fa nel weekend e serve il permesso di occupazione del suolo", () => {
+  it('presidente e segretario/a fanno rendere di più la raccolta online', () => {
     const sim = startedGame();
-    sim.closeSession(T0); // al weekend
-    expect(sim.previewTask('evento-piazza', ['v7', 'v5', 'v6']).errors.join(' ')).toMatch(/Occupazione di suolo pubblico/);
-    sim.pratica('occupazione-suolo').status = 'approvata';
-    const t = sim.startTask('evento-piazza', ['v7', 'v5', 'v6'], T0); // 12 / (1,1 + 2 + 2)
-    expect(t.hours).toBeCloseTo(2.35, 2);
+    expect(sim.fundraisingYield('raccolta-fondi', 'alta', ['v7'])).toBe(180); // 120 × 1,5
+    expect(sim.fundraisingYield('raccolta-fondi', 'alta', ['v7', 'v1'])).toBe(225); // × 1,25
+    expect(sim.fundraisingYield('raccolta-fondi', 'alta', ['v7', 'v1', 'v2'])).toBe(280); // × 1,25 ≈ 281
+    expect(sim.fundraisingYield('raccolta-fondi', 'base', ['v1', 'v2'])).toBe(190); // 187,5
+  });
+
+  it('il resoconto usa la squadra che ha lavorato', () => {
+    const sim = startedGame();
     const before = sim.state.budget;
-    sim.tick(at(3));
-    expect(sim.state.budget).toBe(before + 375); // 250 × 1,5
+    sim.startTask('raccolta-fondi', ['v7', 'v1', 'v2'], T0);
+    sim.tick(at(8));
+    expect(sim.state.budget).toBe(before + 280);
+  });
+
+  it("non c'è più l'evento in piazza", () => {
+    const sim = startedGame();
+    expect(sim.state.pratiche.map((p) => p.id)).not.toContain('occupazione-suolo');
+    expect(() => sim.taskDef('evento-piazza')).toThrow();
   });
 });

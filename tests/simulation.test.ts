@@ -134,7 +134,7 @@ describe('piano di cantiere nella partita', () => {
 
   it('i lavori del weekend nascono dal progetto del terreno di prova', () => {
     const sim = newGame();
-    expect(sim.state.version).toBe(7);
+    expect(sim.state.version).toBe(8);
     expect(sim.state.plan.length).toBeGreaterThan(0);
     expect(sim.state.plan.every((t) => t.phase === 'operativa')).toBe(true);
   });
@@ -175,6 +175,7 @@ describe('piano di cantiere nella partita', () => {
       pratiche: [
         ...defaultContent.pratiche,
         { id: 'videosorveglianza', name: 'Videosorveglianza', office: 'Comune', requestHours: 1, requestSkill: null, waitDays: 5, unlocks: 'Telecamere' },
+        { id: 'patto', name: 'Patto di collaborazione', office: 'Comune', requestHours: 1, requestSkill: null, waitDays: 5, unlocks: 'Inizio lavori' },
       ],
       elements: [
         ...defaultContent.elements,
@@ -184,7 +185,7 @@ describe('piano di cantiere nella partita', () => {
     const sim = startedGame(content);
     const ids = sim.state.pratiche.map((p) => p.id);
     expect(ids).toContain('assicurazione');
-    expect(ids).toContain('occupazione-suolo'); // non dipende dal progetto
+    expect(ids).toContain('patto'); // non dipende dal progetto
     expect(ids).not.toContain('videosorveglianza');
   });
 });

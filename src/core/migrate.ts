@@ -13,14 +13,15 @@ type AnyState = Record<string, unknown> & { version?: number };
 export function migrate(raw: unknown, c: Content): GameState {
   let s = raw as AnyState;
   const start = s.version;
-  if (start === 7) return s as unknown as GameState;
-  if (typeof start !== 'number' || start < 1 || start > 6) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (start === 8) return s as unknown as GameState;
+  if (typeof start !== 'number' || start < 1 || start > 7) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
   if (s.version === 1) s = v1to2(s, c);
   if (s.version === 2) s = v2to3(s, c);
   if (s.version === 3) s = { ...s, version: 4, stage: 'cantiere' }; // v3 → v4: le partite esistenti sono già in cantiere
   if (s.version === 4) s = { ...s, version: 5, siteId: legacySite(c).id, pv: 0 }; // v4 → v5: erano tutte sul terreno di prova
   if (s.version === 5) s = { ...s, version: 6, survey: [], hiddenHazards: [], rng: ((s.lastTick as number) >>> 0) || 1 }; // v5 → v6: niente insidie per le partite già avviate
   if (s.version === 6) s = v6to7(s);
+  if (s.version === 7) s = v7to8(s);
   return dropUnknownActive(s as unknown as GameState, c);
 }
 
@@ -58,8 +59,25 @@ function v6to7(s: AnyState): AnyState {
   const out = { ...s, version: 7, fundraising: [], taskQuality: {}, finale: null };
   if (s.stage === 'cantiere') {
     addReport(out, 'Novità nel cantiere', [
-      'Le raccolte fondi ora portano soldi in cassa: online nella parte burocratica, in piazza nel weekend.',
+      'Le raccolte fondi ora portano soldi in cassa.',
       'Con almeno il 70% del progetto realizzato si può inaugurare il parco e ottenere il punteggio finale.',
+    ]);
+  }
+  return out;
+}
+
+/**
+ * v7 → v8: niente più evento in piazza né pratica di occupazione del suolo,
+ * che serviva solo a quello. La pratica sparisce dal registro; l'evento in
+ * corso si interrompe più sotto (dropUnknownActive).
+ */
+function v7to8(s: AnyState): AnyState {
+  const pratiche = (s.pratiche as PraticaState[]).filter((p) => p.id !== 'occupazione-suolo');
+  const out = { ...s, version: 8, pratiche };
+  if (s.stage === 'cantiere') {
+    addReport(out, 'Cambia la raccolta fondi', [
+      "L'evento in piazza non c'è più, e con lui la pratica di occupazione del suolo.",
+      'Resta la raccolta online: rende di più con il comunicatore, il presidente e il segretario/a.',
     ]);
   }
   return out;

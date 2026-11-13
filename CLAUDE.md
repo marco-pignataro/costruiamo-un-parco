@@ -32,7 +32,7 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | --- | --- |
 | `src/config.ts` | Titolo, associazione, ore di sessione, efficienze, ordini, lotti del piano, velocità di test |
 | `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `plan.ts` (piano di cantiere dal progetto), `migrate.ts` (salvataggi vecchi), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
-| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), elementi del parco, materiali, lavorazioni del terreno e messa in sicurezza, insidie (`hazards.json`), terreni con progetto proposto e punti sospetti (`sites.json`) |
+| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), richieste dirette (`sidequests.json`), elementi del parco, materiali, lavorazioni del terreno e messa in sicurezza, insidie (`hazards.json`), terreni con progetto proposto e punti sospetti (`sites.json`) |
 | `src/game/` | `ParkScene.ts` (legge lo stato e disegna griglia, progetto e volontari; non decide nulla), `sprites.ts` (pixel art da griglie di caratteri) |
 | `src/ui/hud.ts` | Pannello di gestione HTML e modale dei resoconti |
 | `tests/` | Vitest sulla simulazione |
@@ -59,11 +59,12 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 ## A che punto siamo (13/11/2026)
 
 - **Fatto, Fasi 1-5 in versione minima:** terreno (3 terreni) → squadra con i PV (17 candidati) → sopralluogo con insidie → progettazione su griglia con preventivo → cantiere con piano generato dal progetto, pratiche, ordini, magazzino e imprevisti.
-- **Fatto per l'MVP:** raccolte fondi ripetibili che portano soldi (online nella parte burocratica, in piazza nel weekend con la pratica di occupazione del suolo), con bonus di qualità e di progresso e rendimenti decrescenti; prima richiesta diretta a un dirigente ("Ritiro dei rifiuti raccolti", mini-puzzle di smistamento, presidente = un errore in più) che sblocca la bonifica; inaugurazione dal 70% del progetto con punteggio in cinque voci × moltiplicatore del terreno. Il pulsante donazioni sta solo nel menu iniziale (scelta del terreno) e nella schermata finale.
-- **Stato tecnico:** `GameState` v7 (raccolte fondi, qualità dei compiti, punteggio finale) con migrazione dalle versioni 1-6; 99 test.
-- **Ancora solo testo:** fattori e bonus dei terreni, effetti di coordinatore e segretario/a, morale, tratti, crescita, fiducia degli uffici, condizioni di sconfitta.
+- **Fatto per l'MVP:** raccolta fondi online ripetibile che porta soldi, con bonus di comunicatore, presidente, segretario/a e progresso e rendimenti decrescenti; prima richiesta diretta a un dirigente ("Ritiro dei rifiuti raccolti", mini-puzzle di smistamento, presidente = un errore in più) che sblocca la bonifica; inaugurazione dal 70% del progetto con punteggio in cinque voci × moltiplicatore del terreno. Il pulsante donazioni sta solo nel menu iniziale (scelta del terreno) e nella schermata finale.
+- **Stato tecnico:** `GameState` v8 (tolti evento in piazza e pratica di occupazione del suolo; la raccolta online rende di più con comunicatore, presidente e segretario/a) con migrazione dalle versioni 1-7; 102 test.
+- **Ancora solo testo:** fattori e bonus dei terreni, effetti di coordinatore e segretario/a (salvo la raccolta fondi), morale, tratti, crescita, fiducia degli uffici, condizioni di sconfitta.
 - **Ancora fuori:** mappa dei rischi come livello attivabile, regola di accessibilità, varianti in corso d'opera, ritardi delle consegne, capienza del magazzino, altre fonti di materiali, mini-dungeon, eventi casuali, secondo sopralluogo.
-- **Prossimo passo:** prova di gioco dell'MVP con qualcuno che non conosce il progetto (gate 2: finisce una partita senza aiuto) e bilanciamento di cassa, ore e punteggio sui risultati. Poi, in ordine di impatto: dare effetto a fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
+- **Deciso il 13/11/2026 (GDD, "Interfaccia e scene"):** visuale isometrica; HUD ai bordi al posto del pannello laterale; zoom a due livelli e trascinamento; punta e clicca con modale centrale; scena della città (mini Messina con sede, uffici e fornitore) nella parte burocratica e scena del parco nel weekend, senza switch.
+- **Prossimo passo, in ordine:** 1) motore isometrico comune alle due scene; 2) HUD ai bordi con zoom e trascinamento; 3) punta e clicca al parco; 4) scena della città con pathfinding e cambio scena automatico; 5) prova di gioco del gate 2 e bilanciamento. Poi: fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
 
 ## Pixel art: Aseprite + server MCP in WSL2
 
@@ -76,4 +77,4 @@ Si fa una volta sola sul computer di Marco. Strada consigliata: **Aseprite compi
 
 Alternativa: compilare Aseprite su Windows (Visual Studio Community) e puntare `ASEPRITE_PATH` a `/mnt/c/...`. È più fragile, perché l'eseguibile Windows non capisce i percorsi Linux che il server MCP gli passa.
 
-Palette e stile: vedi "Direzione artistica e audio" nel GDD (384×216, tile 16×16, personaggi 16×24, circa 32 colori ispirati a Messina).
+Palette e stile: vedi "Direzione artistica e audio" nel GDD (isometrico, tile 32×16, personaggi 16×24, circa 32 colori ispirati a Messina).

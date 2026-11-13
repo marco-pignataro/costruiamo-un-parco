@@ -46,7 +46,18 @@ export const GRID_MAX = { width: 14, height: 11 } as const;
  * × decay^(raccolte uguali nelle ultime windowWeeks settimane), arrotondati a roundTo.
  * Il parco che cresce convince di più; chiedere troppo spesso rende meno.
  */
-export const FUNDRAISING = { qualityBonus: 1.5, progressBonus: 0.5, decay: 0.5, windowWeeks: 3, roundTo: 5 } as const;
+export const FUNDRAISING = {
+  /** Qualità alta: c'è il comunicatore. */
+  qualityBonus: 1.5,
+  /** Il presidente firma l'appello: più credibilità. */
+  presidentBonus: 1.25,
+  /** Il segretario/a cura il rendiconto ai donatori: più fiducia. */
+  secretaryBonus: 1.25,
+  progressBonus: 0.5,
+  decay: 0.5,
+  windowWeeks: 3,
+  roundTo: 5,
+} as const;
 
 /** Richiesta diretta al dirigente (Tipo 2): una giornata, al massimo 2 volontari. */
 export const SIDE_QUEST = { hours: 4, maxVolunteers: 2 } as const;

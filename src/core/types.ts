@@ -168,7 +168,7 @@ export interface HiddenHazard {
 }
 
 export interface GameState {
-  version: 7;
+  version: 8;
   /**
    * terreno: scelta del terreno (Fase 1); squadra: reclutamento con i PV (Fase 2);
    * sopralluogo: analisi dei punti sospetti (Fase 3); progettazione: si disegna

@@ -36,7 +36,7 @@ export class Simulation {
   static newGame(content: Content, now: number, timeScale = 1): Simulation {
     const site = content.sites[0];
     const state: GameState = {
-      version: 7,
+      version: 8,
       stage: 'terreno',
       siteId: site.id,
       pv: site.pv,
@@ -597,15 +597,21 @@ export class Simulation {
 
   // ---------- raccolte fondi ----------
 
-  /** Euro che porterebbe adesso una raccolta fondi, con la qualità data. */
-  fundraisingYield(taskId: string, quality: Quality): number {
+  /**
+   * Euro che porterebbe adesso una raccolta fondi, con la qualità e la squadra
+   * date: comunicatore (qualità alta), presidente e segretario/a la fanno rendere di più.
+   */
+  fundraisingYield(taskId: string, quality: Quality, volunteerIds: string[] = []): number {
     const def = this.taskDef(taskId);
     if (!def.fundraisingEur) return 0;
     const s = this.state;
+    const has = (archetype: string) => volunteerIds.some((id) => this.volunteer(id).archetypeId === archetype);
     const recent = s.fundraising.filter((f) => f.taskId === taskId && f.week > s.week - FUNDRAISING.windowWeeks).length;
     const eur =
       def.fundraisingEur *
       (quality === 'alta' ? FUNDRAISING.qualityBonus : 1) *
+      (has('presidente') ? FUNDRAISING.presidentBonus : 1) *
+      (has('segretario') ? FUNDRAISING.secretaryBonus : 1) *
       (1 + this.projectProgress * FUNDRAISING.progressBonus) *
       FUNDRAISING.decay ** recent;
     return Math.round(eur / FUNDRAISING.roundTo) * FUNDRAISING.roundTo;
@@ -819,7 +825,7 @@ export class Simulation {
       }
       const lines = [squad, time, `Qualità: ${a.quality}`];
       if (def.fundraisingEur) {
-        const eur = this.fundraisingYield(def.id, a.quality);
+        const eur = this.fundraisingYield(def.id, a.quality, a.volunteerIds);
         this.state.budget += eur;
         this.state.fundraising.push({ taskId: def.id, week: this.state.week, eur });
         lines.push(`Raccolti: ${eur} € (in cassa ${this.state.budget} €)`);

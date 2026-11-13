@@ -53,8 +53,8 @@ Le scelte fatte nelle fasi 1-4 (terreno, squadra, rischi scoperti, progetto) dec
 
 Ogni turno è una settimana di gioco divisa in due parti, ma i compiti scorrono in tempo reale: è un gioco a timer da riaprire più volte al giorno. Il giocatore non muove i volontari: decide *chi* fa *cosa* e *con quali strumenti*, poi i volontari lavorano sia a gioco aperto sia a gioco chiuso.
 
-1. **Parte burocratica (infrasettimanale).** Vale 5 giorni da 4 ore, cioè 20 ore di sessione. Si scelgono volontari e strumenti d'ufficio (telefono, computer, PEC, marche da bollo, modulistica) e si assegnano a pratiche, ordini di materiali, contatti con sponsor, raccolte fondi. Le 20 ore sono tempo reale con almeno un compito in corso (compiti paralleli contano una volta). La sessione si chiude da sola a 20 ore, oppure manualmente: in quel caso i giorni rimanenti passano comunque e le attese delle pratiche avanzano.
-2. **Parte operativa (weekend).** Si scelgono i volontari e gli attrezzi (pale, carriole, decespugliatori, DPI, mezzi a noleggio) e si assegnano ai compiti di cantiere. Vale 1 giorno da 8 ore: si chiude da sola a 8 ore di attività, oppure manualmente.
+1. **Parte burocratica (infrasettimanale).** Si gioca nella scena della città (vedi Interfaccia e scene). Vale 5 giorni da 4 ore, cioè 20 ore di sessione. Si scelgono volontari e strumenti d'ufficio (telefono, computer, PEC, marche da bollo, modulistica) e si assegnano a pratiche, ordini di materiali, contatti con sponsor, raccolte fondi online. Le 20 ore sono tempo reale con almeno un compito in corso (compiti paralleli contano una volta). La sessione si chiude da sola a 20 ore, oppure manualmente: in quel caso i giorni rimanenti passano comunque e le attese delle pratiche avanzano.
+2. **Parte operativa (weekend).** Si gioca nella scena del parco. Si scelgono i volontari e gli attrezzi (pale, carriole, decespugliatori, DPI, mezzi a noleggio) e si assegnano ai compiti di cantiere. Vale 1 giorno da 8 ore: si chiude da sola a 8 ore di attività, oppure manualmente.
 3. **Esecuzione in tempo reale.** Ogni compito ha un timer reale: un compito da 5 ore finisce 5 ore dopo, anche a gioco chiuso. Nel frattempo si possono assegnare altri compiti ai volontari liberi.
 4. **Resoconto del compito.** A fine compito appare un resoconto in una finestra modale: subito se il gioco è aperto; alla riapertura, in coda con gli altri resoconti, se il gioco era chiuso.
 5. **Fine della settimana.** Dopo la parte operativa arriva il resoconto settimanale (eventi, morale, bilancio) e si apre la parte burocratica della settimana dopo.
@@ -219,7 +219,7 @@ La progettazione è una modalità creativa su griglia: il disegno finale diventa
 
 **Gradimento previsto (prototipo).** Ogni elemento ha dei punti (aiuola 8, panchina 6, cestino 3, sentiero e staccionata 1); la k-esima copia dello stesso tipo vale 1/k, ogni tipo diverso aggiunge 5 punti di varietà e ogni albero tutelato 2. Massimo 100. Ombra, accessibilità e panorama arriveranno con i nuovi elementi e terreni.
 
-**Come nasce il piano (prototipo).** Sotto ogni elemento nascono le lavorazioni del terreno: alcune dalla superficie (rifiuti → bonifica, cemento → rimozione, erba alta → sfalcio), altre perché l'elemento le chiede (sentieri e panchine → livellamento, aiuole → vangatura). Le dipendenze seguono le tile: un compito aspetta solo le lavorazioni sotto di lui e, per panchine e cestini, il sentiero accanto. Lavorazioni e tratti di sentiero o staccionata si raggruppano in lotti di al massimo 12 ore complessive, così ogni compito sta in un weekend. Una lavorazione finita cambia la superficie (dopo la bonifica c'è terra, dopo lo sfalcio prato). Le pratiche legate a elementi assenti dal progetto non nascono; quelle non legate al progetto (es. occupazione di suolo pubblico) ci sono sempre.
+**Come nasce il piano (prototipo).** Sotto ogni elemento nascono le lavorazioni del terreno: alcune dalla superficie (rifiuti → bonifica, cemento → rimozione, erba alta → sfalcio), altre perché l'elemento le chiede (sentieri e panchine → livellamento, aiuole → vangatura). Le dipendenze seguono le tile: un compito aspetta solo le lavorazioni sotto di lui e, per panchine e cestini, il sentiero accanto. Lavorazioni e tratti di sentiero o staccionata si raggruppano in lotti di al massimo 12 ore complessive, così ogni compito sta in un weekend. Una lavorazione finita cambia la superficie (dopo la bonifica c'è terra, dopo lo sfalcio prato). Le pratiche legate a elementi assenti dal progetto non nascono; quelle non legate al progetto (es. il patto di collaborazione) ci sono sempre.
 
 **Varianti in corso d'opera.** Il progetto si può modificare durante il cantiere, ma ogni variante costa tempo e può richiedere una nuova autorizzazione. Riproduce un dilemma reale: adattarsi o tenere la rotta.
 
@@ -319,7 +319,6 @@ Tutte le pratiche nascono dal progetto e sono visibili da subito; si chiudono in
 | Punti luce | Ufficio illuminazione | Side-quest | — | Illuminazione, apertura serale |
 | Videosorveglianza | Comune / Polizia Municipale | A timer | 1-2 settimane | Telecamere |
 | Certificazione giochi | Tecnico abilitato | A timer | 5-10 giorni | Area bimbi aperta al pubblico |
-| Occupazione suolo pubblico | Comune | A timer | 5 giorni | Eventi di raccolta fondi in piazza |
 
 **Tono e nomi.** Tutti gli enti hanno nomi di fantasia (es. "Ufficio Verde e Decoro", "Ente Acque Cittadine", "Sovrintendenza ai Beni Antichi"); nessun ente o funzionario reale è riconoscibile. La colonna "Ente" indica solo il tipo di ufficio.
 
@@ -327,12 +326,11 @@ Tutte le pratiche nascono dal progetto e sono visibili da subito; si chiudono in
 
 ## Raccolte fondi
 
-Quando il budget scende, il giocatore può avviare raccolte fondi: ognuna costa volontari e tempo sottratti al cantiere, e rende in base alla reputazione.
+Quando il budget scende, il giocatore può avviare raccolte fondi: ognuna costa volontari e tempo sottratti al cantiere, e rende in base alla reputazione. Non ci sono raccolte fondi in città né nel weekend: si raccoglie online, nella parte burocratica, e i ruoli organizzativi fanno la differenza.
 
 | Tipo | Costo | Resa | Tempi | Condizioni |
 | --- | --- | --- | --- | --- |
-| Evento in piazza | 3-5 volontari per un weekend | Media, immediata | 1 settimana | Permesso di occupazione suolo |
-| Crowdfunding online | Comunicatore impegnato | Variabile, legata alla reputazione | 3-4 settimane | Foto del cantiere, obiettivo chiaro |
+| Crowdfunding online | Comunicatore, presidente e segretario/a impegnati | Variabile, legata alla reputazione | 3-4 settimane | Foto del cantiere, obiettivo chiaro |
 | Sponsor locale | Una side-quest | Alta, a volte in materiali | Variabile | Contropartita: targa o logo nel parco |
 | Bando | Mini-gioco di scrittura del progetto | Molto alta | Esito dopo 6-8 settimane | Finestre di scadenza fisse, rischio di bocciatura |
 | 5x1000 | Nessuno | Bassa ma garantita | Una volta l'anno | Cresce con la reputazione |
@@ -342,14 +340,9 @@ Quando il budget scende, il giocatore può avviare raccolte fondi: ognuna costa 
 
 **Mini-gioco del bando (proposta).** Si compone la proposta scegliendo tra blocchi di testo (obiettivi, impatto, partner, budget) che devono rispettare i criteri del bando.
 
-**Prototipo.** Due raccolte, ripetibili quante volte si vuole (in `src/data/tasks.json`):
+**Prototipo.** Una sola raccolta, la *Raccolta fondi online* (in `src/data/tasks.json`): parte burocratica (con la scena della città si avvierà dalla sede dell'associazione), 8 ore complessive, al massimo 3 volontari, 120 € di base, ripetibile quante volte si vuole. L'evento in piazza e la pratica di occupazione del suolo, che serviva solo a quello, sono stati tolti (salvataggi v8).
 
-| Raccolta | Quando | Ore complessive | Max volontari | Serve | Euro di base |
-| --- | --- | --- | --- | --- | --- |
-| Raccolta fondi online | Parte burocratica | 8 | 3 | — | 120 |
-| Evento di raccolta fondi in piazza | Weekend | 12 | 5 | Pratica di occupazione di suolo pubblico | 250 |
-
-Euro raccolti = base × 1,5 se la qualità è alta (c'è il comunicatore) × (1 + 0,5 × quota del progetto realizzato) × 0,5 per ogni raccolta dello stesso tipo nelle ultime 3 settimane, arrotondati a 5 €. Il parco che cresce convince di più; chiedere spesso alle stesse persone rende meno. L'anteprima del compito mostra la cifra prevista; il resoconto settimanale riporta quanto si è raccolto.
+Euro raccolti = base × 1,5 se la qualità è alta (c'è il comunicatore) × 1,25 se c'è il presidente (firma l'appello) × 1,25 se c'è il segretario/a (cura il rendiconto ai donatori) × (1 + 0,5 × quota del progetto realizzato) × 0,5 per ogni raccolta nelle ultime 3 settimane, arrotondati a 5 €. Con tutti e tre si arriva a circa 280 € a parco vuoto. Il parco che cresce convince di più; chiedere spesso alle stesse persone rende meno. L'anteprima del compito mostra la cifra prevista; il resoconto settimanale riporta quanto si è raccolto.
 
 ## Eventi, rischi, vittoria e sconfitta
 
@@ -394,14 +387,59 @@ La schermata finale mostra le voci, il totale e il pulsante per sostenere l'asso
 
 **Dopo l'inaugurazione (proposta):** una modalità *manutenzione* senza fine, in cui il parco va curato, difeso dai vandalismi e animato con eventi.
 
+## Interfaccia e scene
+
+Il gioco si guarda su due scene isometriche e si comanda con una HUD ai bordi dello schermo e con il punta e clicca sulla mappa. Le due strade portano alle stesse azioni.
+
+**Due scene, legate alla fase.** Non c'è un pulsante per passare dall'una all'altra.
+
+| Scena | Quando | Cosa si fa |
+| --- | --- | --- |
+| Parco | Scelta del terreno, squadra, sopralluogo, progettazione, parte operativa (weekend) | Lavori del piano e imprevisti, analisi dei punti sospetti, editor del progetto |
+| Città | Parte burocratica (infrasettimanale) | Pratiche, richieste dirette, ordini, raccolta fondi online |
+
+A fine parte burocratica il gioco passa da solo al parco, con una breve transizione; a fine weekend torna in città. La squadra si recluta come oggi, dalla HUD con il terreno sullo sfondo, anche in futuro.
+
+**HUD ai bordi.** Niente pannello laterale: ogni blocco ha un suo posto fisso attorno alla mappa, che resta libera al centro. Disposizione di partenza, da rivedere in prova:
+
+- **In alto:** settimana, fase, ore di sessione usate e rimaste, cassa, PV, pulsante per chiudere la giornata o la sessione.
+- **A sinistra:** la squadra, con monte ore residuo e stato (libero, al lavoro, dove).
+- **A destra:** registro delle pratiche e ordini in consegna (in città), elenco dei lavori disponibili e bloccati (al parco).
+- **In basso:** compiti in corso con il loro timer, pulsante di zoom.
+
+La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque risoluzione; la pixel art resta nella scena.
+
+**Zoom e trascinamento.** Il pulsante di zoom alterna due soli livelli: la visuale intera della scena e un ingrandimento fisso, non regolabile. Da ingranditi la mappa si sposta cliccando e trascinando, entro i bordi della scena.
+
+**Punta e clicca.** Il giocatore assegna, non pilota.
+
+- **Elementi interagibili:** le tile, gli edifici e i punti con un'attività avviabile adesso hanno una leggera ombra che li stacca dallo sfondo.
+- **Prima il volontario:** cliccando un volontario compaiono nome e ruolo e resta selezionato; cliccando poi un elemento interagibile si apre la modale dell'attività con quel volontario già scelto.
+- **Prima l'elemento:** il primo clic mostra sopra l'elemento l'attività da fare; il secondo apre la modale.
+- **La modale** sta al centro dello schermo: dati dell'attività (ore, skill, materiali, pratiche, durata e qualità previste, euro se è una raccolta), elenco dei volontari da spuntare e pulsante per avviare. Gli errori di avvio sono gli stessi della HUD.
+- **Clic a vuoto:** cliccare un punto non interagibile della mappa toglie la selezione.
+- Le stesse attività restano avviabili anche dalla HUD.
+
+**La città.** Una piccola Messina, sempre la stessa in ogni partita (in `src/data/city.json`), con strade, piazze e lo Stretto. I monumenti (Duomo e campanile, Fontana di Orione, Madonnina del porto, traghetti sullo Stretto) fanno da scenografia; gli uffici stanno in edifici generici, mai in palazzi istituzionali reali riconoscibili.
+
+| Edificio | Attività |
+| --- | --- |
+| Sede dell'associazione | Raccolta fondi online; qui stanno i volontari liberi |
+| Un edificio per ogni ufficio (campo `office` delle pratiche) | Pratiche a timer e richieste dirette di quell'ufficio |
+| Fornitore (ferramenta e vivaio) | Ordini di materiali |
+
+La mappa ha posto per 8-10 edifici, così regge le pratiche del GDD che arriveranno.
+
+**I volontari si muovono da soli.** Quando un compito parte, i volontari camminano fino al posto del compito (ufficio, fornitore, tile del parco) e lavorano lì; finito, tornano alla sede in città o al bordo del parco nel weekend. Il cammino è solo animazione e non consuma tempo di gioco: la posizione si ricava dallo stato (compito in corso → sul posto, altrimenti alla sede o al bordo del parco), quindi alla riapertura i volontari sono già dove devono essere. Il pathfinding sta in `src/game/`, non nella simulazione.
+
 ## Direzione artistica e audio
 
-Pixel art top-down in prospettiva 3/4, palette ristretta ispirata ai colori di Messina, con la città riconoscibile sullo sfondo senza bisogno di didascalie.
+Pixel art isometrica (proiezione 2:1), palette ristretta ispirata ai colori di Messina, con la città riconoscibile sullo sfondo senza bisogno di didascalie.
 
 **Specifiche visive (proposta)**
 
-- **Risoluzione di base:** 384×216 scalata in modo intero (pixel perfect) fino al Full HD.
-- **Tile:** 16×16 px; personaggi 16×24 px con animazioni di lavoro (scavare, trasportare, martellare, piantare).
+- **Risoluzione:** la scena si scala in modo intero (pixel perfect); la HUD è HTML sovrapposto a risoluzione piena.
+- **Tile:** rombi isometrici da 32×16 px; la griglia logica della simulazione resta quadrata, cambia solo il disegno. Personaggi 16×24 px con animazioni di lavoro (scavare, trasportare, martellare, piantare).
 - **Palette:** circa 32 colori. Azzurro dello Stretto, verde della macchia mediterranea, ocra della terra, rosso dei coppi, grigio del cemento per i terreni degradati.
 - **Trasformazione visibile:** il terreno passa visivamente da grigio-marrone a verde man mano che il parco cresce. È il feedback emotivo principale.
 - **Volontari:** maglietta con i colori di Puli-AMO; ogni archetipo riconoscibile da un accessorio (cappello, cassetta attrezzi, tablet).
@@ -445,7 +483,8 @@ Decisione: gioco per browser, gratuito, sviluppato interamente con Claude in Typ
 - **Simulazione a turni:** i compiti hanno timer reali salvati come orari di inizio e fine; alla riapertura il gioco calcola cosa è finito mentre era chiuso e mette in coda i resoconti.
 - **Sistemi separati:** agenda dei compiti con dipendenze, economia, eventi, pratiche.
 - **Griglia condivisa:** la stessa mappa a tile serve per sopralluogo, progettazione e cantiere, con livelli diversi (superficie, rischi, progetto, realizzato).
-- **Pathfinding** automatico per animare i volontari al lavoro mentre il gioco è aperto.
+- **Due scene isometriche** (parco e città) su un motore comune: conversione griglia ↔ schermo, ordine di disegno per profondità, clic sulle tile, telecamera con zoom a due livelli.
+- **Pathfinding** sulle strade della città e sulle tile del parco per animare i volontari mentre il gioco è aperto; solo grafica, la simulazione non ne dipende.
 - **Salvataggi** in IndexedDB, con export del salvataggio come file. Notifiche del browser quando un compito finisce con il gioco aperto in un'altra scheda; senza un server non arrivano a browser chiuso, per questo i resoconti vanno in coda alla riapertura.
 - **Titolo del gioco** in una sola costante `GAME_TITLE` nel file di configurazione.
 - **Localizzazione** predisposta (italiano, poi inglese).
@@ -462,6 +501,14 @@ La priorità è arrivare presto a un MVP che contenga tutte e cinque le fasi in 
 | 3 · Produzione | Altri terreni, mini-dungeon, eventi casuali, varianti di progetto, arte definitiva, musica e audio, localizzazione | Ogni terreno si porta a termine, dal sopralluogo all'inaugurazione |
 | 4 · Beta e lancio | Test con soci, volontari e una classe; bilanciamento; pubblicazione web gratuita con donazione libera, QR code nel parco reale | — |
 
+**Dopo l'MVP: interfaccia definitiva, prima del gate 2.** Fare la prova con chi non conosce il progetto sull'interfaccia attuale vorrebbe dire provare qualcosa che sta per cambiare, quindi prima si fa:
+
+1. motore isometrico comune alle due scene;
+2. HUD ai bordi, zoom a due livelli e trascinamento;
+3. punta e clicca al parco;
+4. scena della città con edifici, pathfinding e cambio di scena automatico;
+5. prova di gioco del gate 2 e bilanciamento.
+
 Fuori dall'MVP restano il mini-dungeon, la modalità manutenzione e l'arte definitiva: sono le parti più costose e vanno costruite solo dopo che il ciclo del cantiere ha superato il gate 1.
 
 ## Decisioni prese
@@ -475,6 +522,9 @@ Fuori dall'MVP restano il mini-dungeon, la modalità manutenzione e l'arte defin
 | Terreni e fatti | Di fantasia, in una Messina riconoscibile |
 | Enti | Solo di fantasia |
 | Distribuzione | Gratuita, con donazione volontaria |
+| Visuale | Isometrica (tile 32×16); scena del parco nel weekend e nelle fasi preparatorie, scena della città nella parte burocratica, senza possibilità di passare dall'una all'altra |
+| Interfaccia | HUD ai bordi dello schermo, niente pannello laterale; zoom a due livelli (intero o ingrandimento fisso) e trascinamento; punta e clicca con modale centrale dell'attività |
+| Raccolte fondi | Solo online, nella parte burocratica; contano comunicatore, presidente e segretario/a |
 | Grafica e pixel art | Realizzata da Claude: Aseprite compilato gratis + server MCP; sprite in codice per il prototipo |
 | Side-quest e mini-dungeon | Side-quest come mini-puzzle; mini-dungeon come mini-platform negli uffici |
 | Durata della partita | Non fissata: dura quanto serve a completare il parco |

@@ -33,9 +33,9 @@ function saveV1() {
 const confirmed = () => startedGame();
 
 describe('migrazione dei salvataggi', () => {
-  it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano', () => {
+  it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano (salvo quelle tolte)', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(7);
+    expect(s.version).toBe(8);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.budget).toBe(firstSite.budget);
@@ -44,14 +44,14 @@ describe('migrazione dei salvataggi', () => {
     expect(s.grid.placements.length).toBeGreaterThan(0);
     expect(s.plan.length).toBeGreaterThan(0);
     expect(s.pratiche.find((p) => p.id === 'assicurazione')?.status).toBe('approvata');
-    expect(s.pratiche.find((p) => p.id === 'occupazione-suolo')?.waitRemainingH).toBe(6);
+    expect(s.pratiche.map((p) => p.id)).not.toContain('occupazione-suolo'); // tolta nella v8
   });
 
   it('i compiti operativi scomparsi si interrompono e restituiscono le ore', () => {
     const s = migrate(saveV1(), defaultContent);
     expect(s.active).toEqual([]);
     expect(s.volunteers.find((v) => v.id === 'v5')).toMatchObject({ busy: false, hoursUsed: 0 });
-    expect(s.reports.map((r) => r.title)).toEqual(['Il cantiere è stato riprogettato', 'Arriva il magazzino', 'Novità nel cantiere', 'Compiti interrotti']);
+    expect(s.reports.map((r) => r.title)).toEqual(['Il cantiere è stato riprogettato', 'Arriva il magazzino', 'Novità nel cantiere', 'Cambia la raccolta fondi', 'Compiti interrotti']);
   });
 
   it('il salvataggio migrato si gioca: tick e compiti del piano funzionano', () => {
@@ -74,7 +74,7 @@ describe('migrazione dei salvataggi', () => {
     v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
     (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
     const s = migrate(v2, defaultContent);
-    expect(s.version).toBe(7);
+    expect(s.version).toBe(8);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.active).toEqual([]);
@@ -89,10 +89,27 @@ describe('migrazione dei salvataggi', () => {
     delete v3.survey;
     delete v3.hiddenHazards;
     delete v3.rng;
-    expect(migrate(v3, defaultContent)).toMatchObject({ version: 7, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
+    expect(migrate(v3, defaultContent)).toMatchObject({ version: 8, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
   });
 
-  it('un salvataggio v7 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it("v7 → v8: sparisce la pratica di occupazione del suolo e l'evento in piazza in corso si interrompe", () => {
+    const sim = confirmed();
+    const v7 = structuredClone(sim.state) as unknown as Record<string, unknown>;
+    v7.version = 7;
+    v7.pratiche = [...sim.state.pratiche, { id: 'occupazione-suolo', status: 'approvata', waitRemainingH: 0 }];
+    v7.active = [{ uid: 99, kind: 'lavoro', refId: 'evento-piazza', volunteerIds: ['v7'], startedAt: T0, endsAt: T0 + 3 * 3_600_000, hours: 3, quality: 'alta' }];
+    const v = (v7.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((x) => x.id === 'v7')!;
+    v.busy = true;
+    v.hoursUsed = 3;
+    const s = migrate(v7, defaultContent);
+    expect(s.version).toBe(8);
+    expect(s.pratiche.map((p) => p.id)).not.toContain('occupazione-suolo');
+    expect(s.active).toEqual([]);
+    expect(s.volunteers.find((x) => x.id === 'v7')).toMatchObject({ busy: false, hoursUsed: 0 });
+    expect(s.reports.slice(-2).map((r) => r.title)).toEqual(['Cambia la raccolta fondi', 'Compiti interrotti']);
+  });
+
+  it('un salvataggio v8 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

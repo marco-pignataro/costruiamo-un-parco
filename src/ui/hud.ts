@@ -167,7 +167,7 @@ export class Hud {
                 : sim.previewRequest(this.selection.id, ids);
       const cost = 'costEur' in p && p.costEur !== undefined ? ` · spesa <strong>${p.costEur} €</strong>` : '';
       const def = this.selection.kind === 'lavoro' ? sim.taskDef(this.selection.id) : null;
-      const raise = def?.fundraisingEur && p.quality ? ` · raccolta prevista <strong>${sim.fundraisingYield(def.id, p.quality)} €</strong>` : '';
+      const raise = def?.fundraisingEur && p.quality ? ` · raccolta prevista <strong>${sim.fundraisingYield(def.id, p.quality, ids)} €</strong>` : '';
       if (this.selection.kind === 'sidequest') {
         const allowed = ids.length ? sim.sideQuestAllowedErrors(this.selection.id, ids) : sim.sideQuest(this.selection.id).allowedErrors;
         preview = `<p class="preview">Una giornata: <strong>4 h</strong> di sessione e 4 h a testa · errori ammessi <strong>${allowed}</strong> (uno in più con il presidente)</p>`;
