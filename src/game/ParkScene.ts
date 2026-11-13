@@ -6,7 +6,7 @@ import { MapLabel, drawPeopleShadows, selectionLabel } from './mapUi';
 import type { PlanTask, SurfaceId } from '../core/types';
 import { IsoCamera, type View } from './camera';
 import { LAYER, type Point, type Rect, areaBounds, depthOf, footprintCenter, footprintCorners, gridToWorld, tileCenter, worldToTile } from './iso';
-import { SHIRTS, backdrop, createTextures } from './sprites';
+import { backdrop, createTextures, inUniform, volunteerLook, volunteerTexture } from './sprites';
 
 /** Tile di contorno attorno al terreno (marciapiede e bordo del parco). */
 const MARGIN = 2;
@@ -39,9 +39,14 @@ const ELEMENT_LOOK: Record<string, { tile?: string; sprite?: string }> = {
 /** Trasparenza degli elementi solo progettati, non ancora costruiti (in cantiere). */
 const GHOST_ALPHA = 0.35;
 
-/** Strumento scelto nell'editor: un elemento del catalogo, la gomma o niente. Condiviso con l'HUD. */
+/**
+ * Strumento scelto nell'editor: un elemento del catalogo, la gomma o niente.
+ * `moving`: elemento già posato che si sta spostando (preso con un clic senza strumento).
+ * Condiviso con l'HUD.
+ */
 export interface EditorTool {
   tool: string | null;
+  moving: number | null;
 }
 
 export const ERASER = 'gomma';
@@ -53,7 +58,13 @@ interface SceneData {
   onEdit: () => void;
   /** Punta e clicca: apre la modale centrale dell'attività con dei volontari già scelti. */
   onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => void;
+  /** Secondo clic su un volontario: apre la sua scheda. */
+  onOpenProfile: (volunteerId: string) => void;
 }
+
+/** Trasparenza dell'elemento che si sta spostando, nel suo posto vecchio. */
+const MOVING_ALPHA = 0.35;
+
 
 function layoutKeyOf(sim: Simulation): string {
   return `${sim.state.siteId}|${sim.state.volunteers.map((v) => v.id).join(',')}`;
@@ -180,18 +191,18 @@ export class ParkScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       const stage = this.sim().state.stage;
       if (stage === 'progettazione') this.showHover(p);
-      else if (stage === 'cantiere' || stage === 'sopralluogo') this.pointAt(p, over);
+      else if (stage === 'cantiere' || stage === 'sopralluogo' || stage === 'squadra') this.pointAt(p, over);
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (this.camera.wasDrag()) return;
       const stage = this.sim().state.stage;
       if (stage === 'progettazione') this.edit(p);
-      else if ((stage === 'cantiere' || stage === 'sopralluogo') && p.leftButtonReleased()) this.pick(p, over);
+      else if ((stage === 'cantiere' || stage === 'sopralluogo' || stage === 'squadra') && p.leftButtonReleased()) this.pick(p, over);
     });
 
     // In attesa: sul marciapiede davanti, a sinistra del terreno.
     this.sim().state.volunteers.forEach((v, i) => {
-      const key = SHIRTS[v.archetypeId] ? `volontario-${v.archetypeId}` : 'volontario-base';
+      const key = volunteerTexture(this, volunteerLook(this.sim(), v, inUniform(this.sim())));
       const c = tileCenter(i % g.width, g.height + Math.floor(i / g.width));
       const img = this.add.image(c.x, c.y + FOOT, key).setOrigin(0.5, 1).setDepth(depthOf(c.y + FOOT));
       img.setData('home', { x: img.x, y: img.y });
@@ -279,6 +290,25 @@ export class ParkScene extends Phaser.Scene {
     const sim = this.sim();
     const t = this.tileAt(p);
     const tool = this.editor.tool;
+    const moving = this.movingPlacement();
+    if (t && moving && sim.state.stage === 'progettazione') {
+      const def = sim.elementDef(moving.elementId);
+      const ok = sim.canMoveElement(moving.uid, t.x, t.y).ok;
+      this.hover = this.drawElement(moving.elementId, t.x, t.y, true).map((i) => i.setAlpha(0.8).setTint(ok ? 0xb8f5b0 : 0xff8a80));
+      this.frame(t.x, t.y, def.w, def.h, ok ? 0xffffff : 0xe04a3a);
+      this.input.setDefaultCursor('grabbing');
+      return;
+    }
+    if (t && !tool && sim.state.stage === 'progettazione') {
+      // Senza strumento: un elemento sotto il puntatore si può prendere e spostare.
+      const target = sim.elementAt(t.x, t.y);
+      const def = target ? sim.elementDef(target.elementId) : null;
+      if (target && def) this.frame(target.x, target.y, def.w, def.h, 0xfff6d8);
+      else this.hoverFrame.clear();
+      this.input.setDefaultCursor(target ? 'grab' : 'default');
+      return;
+    }
+    this.input.setDefaultCursor('default');
     if (!t || !tool || sim.state.stage !== 'progettazione') {
       this.hoverFrame.clear();
       return;
@@ -295,12 +325,48 @@ export class ParkScene extends Phaser.Scene {
     this.frame(t.x, t.y, def.w, def.h, ok ? 0xffffff : 0xe04a3a);
   }
 
-  /** Clic: posa lo strumento scelto; gomma o tasto destro tolgono l'elemento. */
+  /** L'elemento che si sta spostando, se esiste ancora. */
+  private movingPlacement() {
+    const uid = this.editor.moving;
+    if (uid === null) return undefined;
+    const p = this.sim().state.grid.placements.find((q) => q.uid === uid);
+    if (!p) this.editor.moving = null;
+    return p;
+  }
+
+  /**
+   * Clic: posa lo strumento scelto; gomma o tasto destro tolgono l'elemento.
+   * Senza strumento, il clic su un elemento lo prende e il clic dopo lo posa
+   * altrove; tasto destro (o Esc) annulla lo spostamento.
+   */
   private edit(p: Phaser.Input.Pointer) {
     const sim = this.sim();
     const t = this.tileAt(p);
-    if (!t || sim.state.stage !== 'progettazione') return;
+    if (sim.state.stage !== 'progettazione') return;
+    const moving = this.movingPlacement();
+    if (moving) {
+      if (p.rightButtonReleased()) this.editor.moving = null;
+      else if (t && sim.canMoveElement(moving.uid, t.x, t.y).ok) {
+        sim.moveElement(moving.uid, t.x, t.y);
+        this.editor.moving = null;
+      } else return;
+      this.syncPlacements();
+      this.refreshElementAlpha();
+      this.showHover(p);
+      this.onEdit();
+      return;
+    }
+    if (!t) return;
     const erase = p.rightButtonReleased() || this.editor.tool === ERASER;
+    if (!erase && !this.editor.tool) {
+      const target = sim.elementAt(t.x, t.y);
+      if (!target) return;
+      this.editor.moving = target.uid;
+      this.refreshElementAlpha();
+      this.showHover(p);
+      this.onEdit();
+      return;
+    }
     if (erase) {
       const target = sim.elementAt(t.x, t.y);
       if (target) sim.removeElement(target.uid);
@@ -331,6 +397,7 @@ export class ParkScene extends Phaser.Scene {
 
   private apply(r: ReturnType<typeof clickMap>) {
     this.selection = r.selection;
+    if (r.profile) this.initData.onOpenProfile(r.profile);
     if (r.open) this.initData.onOpenActivity(r.open.activity.kind, r.open.activity.id, r.open.volunteerIds);
     this.drawFocus();
   }
@@ -483,7 +550,15 @@ export class ParkScene extends Phaser.Scene {
       this.hover = [];
       this.hoverFrame.clear();
     }
-    for (const [uid, imgs] of this.elements) imgs.forEach((img) => img.setAlpha(designing || built.has(uid) ? 1 : GHOST_ALPHA));
+    if (!designing) this.editor.moving = null;
+    this.refreshElementAlpha(built);
+
+    // Aspetto dei volontari: pelle e capelli scelti in Fase 2, divisa sul campo, davanti o di schiena.
+    const uniform = inUniform(sim);
+    for (const [id, img] of this.people) {
+      const key = volunteerTexture(this, volunteerLook(sim, sim.volunteer(id), uniform), img.getData('back') === true);
+      if (img.texture.key !== key) img.setTexture(key);
+    }
 
     // Chi lavora va sulle tile del suo compito; i compiti d'ufficio si vedono in città, qui si resta al bordo.
     const where = new Map<string, Point>();
@@ -507,6 +582,8 @@ export class ParkScene extends Phaser.Scene {
       this.targets.set(id, key);
       this.tweens.killTweensOf(img);
       const dist = Phaser.Math.Distance.Between(img.x, img.y, to.x, to.y);
+      // Chi cammina verso il fondo del parco si vede di schiena.
+      this.face(id, img, to.y < img.y - 0.5);
       this.tweens.add({
         targets: img,
         x: to.x,
@@ -517,6 +594,7 @@ export class ParkScene extends Phaser.Scene {
           img.setData('footY', img.y);
         },
         onComplete: () => {
+          this.face(id, img, false);
           img.setDepth(depthOf(to.y) + 0.2);
           img.setData('footY', to.y);
           if (where.has(id)) this.tweens.add({ targets: img, y: to.y - 2, duration: 220, yoyo: true, repeat: -1 });
@@ -524,5 +602,20 @@ export class ParkScene extends Phaser.Scene {
       });
     }
   }
-}
 
+  /** Volontario davanti o di schiena. */
+  private face(id: string, img: Phaser.GameObjects.Image, back: boolean) {
+    img.setData('back', back);
+    const sim = this.sim();
+    img.setTexture(volunteerTexture(this, volunteerLook(sim, sim.volunteer(id), inUniform(sim)), back));
+  }
+
+  /** Elementi solo progettati più chiari in cantiere; quello che si sta spostando, chiaro nel posto vecchio. */
+  private refreshElementAlpha(built = new Set(this.sim().state.grid.built)) {
+    const designing = this.sim().state.stage === 'progettazione';
+    for (const [uid, imgs] of this.elements) {
+      const alpha = uid === this.editor.moving ? MOVING_ALPHA : designing || built.has(uid) ? 1 : GHOST_ALPHA;
+      imgs.forEach((img) => img.setAlpha(alpha));
+    }
+  }
+}

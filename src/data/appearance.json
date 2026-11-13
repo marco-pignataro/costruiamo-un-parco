@@ -1,0 +1,18 @@
+{
+  "skin": [
+    {"id": "chiara", "name": "Chiara", "color": "#f2c9a5"},
+    {"id": "olivastra", "name": "Olivastra", "color": "#e8b48a"},
+    {"id": "ambrata", "name": "Ambrata", "color": "#c98e62"},
+    {"id": "bruna", "name": "Bruna", "color": "#9a6440"},
+    {"id": "scura", "name": "Scura", "color": "#6b4329"}
+  ],
+  "hair": [
+    {"id": "nero", "name": "Neri", "color": "#22201e"},
+    {"id": "castano-scuro", "name": "Castano scuro", "color": "#3b2a1e"},
+    {"id": "castano", "name": "Castani", "color": "#6b4423"},
+    {"id": "rosso", "name": "Rossi", "color": "#a4482a"},
+    {"id": "biondo", "name": "Biondi", "color": "#d9b25c"},
+    {"id": "grigio", "name": "Grigi", "color": "#9a9a96"},
+    {"id": "bianco", "name": "Bianchi", "color": "#e6e3dc"}
+  ]
+}

@@ -37,6 +37,8 @@ export const SURVEY = { hours: 8, maxVolunteers: 2 } as const;
 
 /** Squadra minima per aprire il cantiere (sotto, in futuro, si perde). */
 export const MIN_TEAM = 3;
+/** Lunghezza massima del nome di un volontario, quando lo si cambia in Fase 2. */
+export const VOLUNTEER_NAME_MAX = 16;
 
 /** Dimensione massima di un terreno in tile: tanto ci sta nella scena accanto alla sede. */
 export const GRID_MAX = { width: 14, height: 11 } as const;

@@ -28,11 +28,14 @@ export interface ClickResult {
   selection: MapSelection;
   /** Attività da aprire nella modale centrale, con i volontari già scelti. */
   open?: { activity: ActivityRef; volunteerIds: string[] };
+  /** Volontario di cui aprire la scheda (secondo clic su di lui). */
+  profile?: string;
 }
 
 /**
  * Regole del punta e clicca:
  * - clic su un volontario: resta selezionato (la scena mostra nome e ruolo);
+ *   un secondo clic su di lui apre la sua scheda;
  * - poi clic su un punto con un'attività: si apre la modale con quel volontario;
  *   se il punto ne ha più d'una, l'etichetta le elenca e si sceglie lì (`chooseActivity`);
  * - clic su un punto senza niente selezionato: si mostrano le sue attività sopra;
@@ -41,7 +44,10 @@ export interface ClickResult {
  */
 export function clickMap(selection: MapSelection, hit: MapHit): ClickResult {
   if (!hit) return { selection: null };
-  if ('volunteer' in hit) return { selection: { type: 'volontario', volunteer: hit.volunteer } };
+  if ('volunteer' in hit) {
+    const again = selection?.type === 'volontario' && selection.volunteer === hit.volunteer;
+    return again ? { selection, profile: hit.volunteer } : { selection: { type: 'volontario', volunteer: hit.volunteer } };
+  }
   // Il volontario scelto resta in attesa anche mentre si sceglie tra più attività.
   const volunteer = selection?.volunteer;
   const ids = volunteer ? [volunteer] : [];

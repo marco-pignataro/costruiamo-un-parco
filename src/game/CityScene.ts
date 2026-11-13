@@ -7,7 +7,7 @@ import { type MapHit, type MapSelection, chooseActivity, clickMap } from '../ui/
 import { IsoCamera, type View } from './camera';
 import { LAYER, type Point, type Rect, areaBounds, blockDepth, blockOutline, depthOf, footprintCorners, insidePolygon, tileCenter, worldToTile } from './iso';
 import { MapLabel, drawPeopleShadows, selectionLabel } from './mapUi';
-import { SHIRTS, backdrop, createTextures } from './sprites';
+import { backdrop, createTextures, volunteerLook, volunteerTexture } from './sprites';
 
 /** Cielo e Stretto sopra la città, in pixel del mondo (c'è anche il campanile). */
 const SKY = 110;
@@ -33,6 +33,8 @@ interface SceneData {
   sim: () => Simulation;
   view: View;
   onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => void;
+  /** Secondo clic su un volontario: apre la sua scheda. */
+  onOpenProfile: (volunteerId: string) => void;
 }
 
 interface Person {
@@ -141,8 +143,7 @@ export class CityScene extends Phaser.Scene {
 
     // I volontari compaiono già dove devono essere: il cammino si vede solo a gioco aperto.
     for (const v of this.sim.state.volunteers) {
-      const key = SHIRTS[v.archetypeId] ? `volontario-${v.archetypeId}` : 'volontario-base';
-      const img = this.add.image(0, 0, key).setOrigin(0.5, 1);
+      const img = this.add.image(0, 0, this.textureOf(v.id, false)).setOrigin(0.5, 1);
       img.setData('volunteer', v.id);
       img.setInteractive({ useHandCursor: true });
       this.images.set(v.id, img);
@@ -323,6 +324,7 @@ export class CityScene extends Phaser.Scene {
 
   private apply(r: ReturnType<typeof clickMap>) {
     this.selection = r.selection;
+    if (r.profile) this.initData.onOpenProfile(r.profile);
     if (r.open) this.initData.onOpenActivity(r.open.activity.kind, r.open.activity.id, r.open.volunteerIds);
     this.drawMarks();
   }
@@ -361,6 +363,11 @@ export class CityScene extends Phaser.Scene {
     const i = team.findIndex((v) => v.id === id);
     const t = spots[team.length + i] ?? spots[spots.length - 1] ?? home;
     return { tile: t, key: `sede:${i}` };
+  }
+
+  /** In città ognuno ha la maglietta del suo archetipo; di schiena quando sale verso lo Stretto. */
+  private textureOf(id: string, back: boolean): string {
+    return volunteerTexture(this, volunteerLook(this.sim, this.sim.volunteer(id), false), back);
   }
 
   private place(img: Phaser.GameObjects.Image, t: Tile) {
@@ -403,9 +410,14 @@ export class CityScene extends Phaser.Scene {
         const t = lengths[i] ? Math.min(1, d / lengths[i]) : 1;
         img.setPosition(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
         img.setFlipX(b.x < a.x);
+        const key = this.textureOf(img.getData('volunteer') as string, b.y < a.y);
+        if (img.texture.key !== key) img.setTexture(key);
         img.setDepth(depthOf(img.y) + 0.2).setData('footY', img.y);
       },
-      onComplete: () => this.place(img, to),
+      onComplete: () => {
+        img.setTexture(this.textureOf(img.getData('volunteer') as string, false));
+        this.place(img, to);
+      },
     });
   }
 

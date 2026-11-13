@@ -9,10 +9,11 @@ import hazards from '../data/hazards.json';
 import sites from '../data/sites.json';
 import sideQuests from '../data/sidequests.json';
 import city from '../data/city.json';
+import appearance from '../data/appearance.json';
 import { validateCity } from './city';
 import { GRID_MAX } from '../config';
 import { estimate, gridFromSite, validateProject } from './grid';
-import type { Archetype, CandidateDef, CityDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SideQuestDef, SiteDef, TaskDef } from './types';
+import type { AppearanceDef, Archetype, CandidateDef, CityDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SideQuestDef, SiteDef, TaskDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
@@ -30,6 +31,8 @@ export interface Content {
   sideQuests: SideQuestDef[];
   /** La città della parte burocratica: strade, sede, uffici, fornitore, monumenti. */
   city: CityDef;
+  /** Colori di pelle e capelli dei volontari. */
+  appearance: AppearanceDef;
 }
 
 export const defaultContent: Content = {
@@ -44,6 +47,7 @@ export const defaultContent: Content = {
   hazards: hazards as HazardDef[],
   sideQuests: sideQuests as SideQuestDef[],
   city: city as CityDef,
+  appearance: appearance as AppearanceDef,
 };
 
 /**
@@ -94,6 +98,11 @@ export function validateContent(c: Content): string[] {
     if (q.items.length === 0) errors.push(`${q.id}: nessun oggetto`);
   }
   for (const m of c.candidates) if (!has(c.archetypes, m.archetypeId)) errors.push(`${m.id}: archetipo sconosciuto ${m.archetypeId}`);
+  for (const m of c.candidates) {
+    if (!has(c.appearance.skin, m.skin)) errors.push(`${m.id}: colore della pelle sconosciuto ${m.skin}`);
+    if (!has(c.appearance.hair, m.hair)) errors.push(`${m.id}: colore dei capelli sconosciuto ${m.hair}`);
+    if (!Number.isInteger(m.age) || m.age < 16 || m.age > 99) errors.push(`${m.id}: età non valida`);
+  }
   if (new Set(c.candidates.map((m) => m.id)).size !== c.candidates.length) errors.push('Candidati con lo stesso id');
   if (c.sites.length === 0) errors.push('Nessun terreno');
   if (errors.length === 0) {

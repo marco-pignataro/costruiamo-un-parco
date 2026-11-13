@@ -35,7 +35,7 @@ const confirmed = () => startedGame();
 describe('migrazione dei salvataggi', () => {
   it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano (salvo quelle tolte)', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(8);
+    expect(s.version).toBe(9);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.budget).toBe(firstSite.budget);
@@ -74,7 +74,7 @@ describe('migrazione dei salvataggi', () => {
     v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
     (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
     const s = migrate(v2, defaultContent);
-    expect(s.version).toBe(8);
+    expect(s.version).toBe(9);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.active).toEqual([]);
@@ -89,7 +89,7 @@ describe('migrazione dei salvataggi', () => {
     delete v3.survey;
     delete v3.hiddenHazards;
     delete v3.rng;
-    expect(migrate(v3, defaultContent)).toMatchObject({ version: 8, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
+    expect(migrate(v3, defaultContent)).toMatchObject({ version: 9, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
   });
 
   it("v7 → v8: sparisce la pratica di occupazione del suolo e l'evento in piazza in corso si interrompe", () => {
@@ -102,14 +102,30 @@ describe('migrazione dei salvataggi', () => {
     v.busy = true;
     v.hoursUsed = 3;
     const s = migrate(v7, defaultContent);
-    expect(s.version).toBe(8);
+    expect(s.version).toBe(9);
     expect(s.pratiche.map((p) => p.id)).not.toContain('occupazione-suolo');
     expect(s.active).toEqual([]);
     expect(s.volunteers.find((x) => x.id === 'v7')).toMatchObject({ busy: false, hoursUsed: 0 });
     expect(s.reports.slice(-2).map((r) => r.title)).toEqual(['Cambia la raccolta fondi', 'Compiti interrotti']);
   });
 
-  it('un salvataggio v8 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it('v8 → v9: i volontari prendono età e aspetto dal candidato, chi non esiste più i primi colori', () => {
+    const v8 = structuredClone(confirmed().state) as unknown as Record<string, unknown>;
+    v8.version = 8;
+    const vols = v8.volunteers as Record<string, unknown>[];
+    for (const v of vols) {
+      delete v.age;
+      delete v.skin;
+      delete v.hair;
+    }
+    vols.push({ ...vols[0], id: 'sparito' });
+    const s = migrate(v8, defaultContent);
+    expect(s.version).toBe(9);
+    expect(s.volunteers.find((v) => v.id === 'v1')).toMatchObject({ age: 58, skin: 'olivastra', hair: 'grigio' });
+    expect(s.volunteers.find((v) => v.id === 'sparito')).toMatchObject({ age: 40, skin: 'chiara', hair: 'nero' });
+  });
+
+  it('un salvataggio v9 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

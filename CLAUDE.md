@@ -4,6 +4,7 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 
 - **Lingua:** si lavora in italiano con Marco (risposte concise e dirette). Interfaccia, testi di gioco, commenti e messaggi di commit in italiano.
 - **Design completo:** [`docs/GDD.md`](docs/GDD.md). È la fonte di verità: leggilo prima di aggiungere meccaniche e aggiornalo nello stesso commit quando una decisione cambia.
+- **Note dalle prove:** Marco annota bug, modifiche, migliorie e aggiunte in [`docs/PROVE.md`](docs/PROVE.md). Quando una voce è fatta va sotto "Risolte" con il commit che la chiude.
 
 ## Vincoli che non cambiano
 
@@ -32,10 +33,10 @@ Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina** (ETS di
 | --- | --- |
 | `src/config.ts` | Titolo, associazione, ore di sessione, efficienze, ordini, lotti del piano, velocità di test |
 | `src/core/` | Simulazione in TypeScript puro, senza Phaser né DOM: `simulation.ts`, `duration.ts`, `grid.ts` (griglia del parco, regole di posa, preventivo), `plan.ts` (piano di cantiere dal progetto), `city.ts` (mappa della città: camminabilità, percorsi, posti davanti agli ingressi, validazione), `migrate.ts` (salvataggi vecchi), `storage.ts`, `types.ts`, `content.ts` (con `validateContent`) |
-| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), richieste dirette (`sidequests.json`), elementi del parco, materiali, lavorazioni del terreno e messa in sicurezza, insidie (`hazards.json`), terreni con progetto proposto e punti sospetti (`sites.json`), la città con edifici e uffici (`city.json`) |
+| `src/data/*.json` | Contenuti: archetipi, compiti burocratici, pratiche, candidati reclutabili (`candidates.json`), richieste dirette (`sidequests.json`), elementi del parco, materiali, lavorazioni del terreno e messa in sicurezza, insidie (`hazards.json`), terreni con progetto proposto e punti sospetti (`sites.json`), la città con edifici e uffici (`city.json`), colori di pelle e capelli dei volontari (`appearance.json`) |
 | `src/game/` | `iso.ts` (geometria isometrica pura: tile ↔ schermo, profondità, livelli di zoom; testata), `camera.ts` (zoom a due livelli e trascinamento, comune alle scene), `ParkScene.ts` (il parco: fasi preparatorie e weekend), `CityScene.ts` (la città della parte burocratica, con i volontari che camminano fino agli uffici), `mapUi.ts` (etichetta sulla mappa e ombre dei volontari, comuni alle due scene); le scene leggono lo stato e non decidono nulla; `sprites.ts` (pixel art da griglie di caratteri, rombi 32×16) |
 | `src/ui/activities.ts`, `src/ui/mapSelection.ts` | Elenco delle attività avviabili con il loro posto (tile del parco o edificio della città), scena da mostrare (`sceneFor`) e regole pure del punta e clicca; testati |
-| `src/ui/hud.ts` | HUD HTML ai bordi dello schermo (schede in alto, a sinistra, a destra, in basso), modale centrale delle attività (`openActivity`, da riusare per il punta e clicca), mini-puzzle, finale, resoconti |
+| `src/ui/hud.ts` | HUD HTML ai bordi dello schermo (schede in alto, a sinistra, a destra, in basso), modale centrale delle attività (`openActivity`) e della scheda del volontario (`openProfile`), barra di schede su telefono, mini-puzzle, finale, resoconti |
 | `tests/` | Vitest sulla simulazione |
 | `.github/workflows/deploy.yml` | Test + build + pubblicazione su Pages a ogni push su `main` |
 
@@ -69,6 +70,7 @@ Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto)
 - **Punto 2 fatto:** HUD ai bordi al posto del pannello laterale, pannelli laterali richiudibili, modale centrale per avviare ogni attività, pulsante di zoom (anche tasto Z); la visuale intera si adatta allo spazio libero tra i pannelli (`View` e `Insets` in `camera.ts`).
 - **Punto 3 fatto:** punta e clicca al parco (volontario → attività, attività → etichetta → modale, clic a vuoto deseleziona), ombre sulle aree interagibili e sotto i volontari, etichetta HTML che segue la mappa. In sviluppo `window.__view` espone la telecamera per le prove automatiche.
 - **Punto 4 fatto:** scena della città (`city.json` 24×16, 8 edifici più Duomo, campanile, Fontana di Orione e Madonnina), volontari che camminano lungo le strade fino all'ufficio del compito e tornano alla sede, punta e clicca sugli edifici (con scelta se ce n'è più d'una), cambio scena automatico con dissolvenza. La scrivania provvisoria al parco non c'è più. 132 test.
+- **Prima prova (PROVE.md del 13/11):** nomi delle colonne per fase (Arredi/Preventivo in progettazione); arredi spostabili con un clic senza strumento; maglietta di gruppo blu sul campo e sprite di schiena; scheda del volontario (età, morale, stanchezza; nome, pelle e capelli modificabili in Fase 2); HUD rivista (cassa e pulsante della fase in fondo a sinistra, in corso in cima a destra, menu e zoom in basso) e versione per telefono con barra di schede. preventivo oltre la cassa ammesso alla conferma del progetto (i fondi si recuperano in cantiere). `GameState` v9 (età e aspetto dei volontari). 144 test.
 - **Prossimo passo:** 5) prova di gioco del gate 2 e bilanciamento. Poi: fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
 
 ## Pixel art: Aseprite + server MCP in WSL2

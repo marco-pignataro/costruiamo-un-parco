@@ -19,6 +19,14 @@ describe('punta e clicca: regole dei clic', () => {
     expect(b).toEqual({ selection: null, open: { activity: bonifica, volunteerIds: ['v5'] } });
   });
 
+  it('un secondo clic sul volontario selezionato apre la sua scheda e lo lascia selezionato', () => {
+    const a = clickMap(null, { volunteer: 'v5' });
+    const b = clickMap(a.selection, { volunteer: 'v5' });
+    expect(b).toEqual({ selection: { type: 'volontario', volunteer: 'v5' }, profile: 'v5' });
+    // un altro volontario cambia solo la selezione
+    expect(clickMap(a.selection, { volunteer: 'v6' })).toEqual({ selection: { type: 'volontario', volunteer: 'v6' } });
+  });
+
   it("prima l'elemento mostra l'attività, il secondo clic apre la modale", () => {
     const a = clickMap(null, at(bonifica));
     expect(a.selection).toMatchObject({ type: 'luogo', place: 'lavoro:prep:bonifica:1' });

@@ -8,13 +8,14 @@
   --line: #d8d2c2;
   --edge: 10px;
   --side: 290px;
+  --tabbar: 58px;
   font-family: ui-sans-serif, system-ui, sans-serif;
   color: var(--ink);
   background: var(--bg);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); }
+body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); }
 
 /* La scena occupa tutto lo schermo; la HUD le sta sopra, sui bordi. */
 #game { position: fixed; inset: 0; }
@@ -31,15 +32,22 @@ body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); }
   padding: var(--edge);
   pointer-events: none; /* in mezzo si clicca la mappa */
   font-size: 14px;
+  z-index: 6; /* sopra l'etichetta della mappa */
 }
 .region { display: flex; gap: var(--edge); min-height: 0; pointer-events: none; }
 .region:empty { display: none; }
 #hud-top { grid-area: top; align-items: flex-start; flex-wrap: wrap; }
 #hud-bottom { grid-area: bottom; align-items: flex-end; flex-wrap: wrap; }
-#hud-left, #hud-right { flex-direction: column; overflow-y: auto; width: var(--side); max-width: 42vw; align-items: stretch; scrollbar-width: thin; }
+/* Colonne: il contenuto scorre, in fondo a sinistra cassa e pulsante della fase restano fermi. */
+#hud-left, #hud-right { flex-direction: column; overflow: hidden; width: var(--side); max-width: 42vw; align-items: stretch; }
 #hud-left { grid-area: left; }
 #hud-right { grid-area: right; }
-#hud-left:has(> .tab:only-child), #hud-right:has(> .tab:only-child) { width: auto; }
+#hud-left.collapsed, #hud-right.collapsed { width: auto; align-items: flex-start; }
+.col-body { flex: 0 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--edge); scrollbar-width: thin; pointer-events: none; }
+.col-body > .card, .col-foot > .card { flex: none; }
+.col-foot { flex: none; display: flex; flex-direction: column; gap: var(--edge); pointer-events: none; }
+.collapsed .col-foot { width: min(var(--side), 42vw); }
+.sheet-head { display: none; }
 #hud-toast { position: fixed; left: 50%; top: 50%; translate: -50% 0; pointer-events: none; max-width: min(520px, 80vw); }
 #hud-toast .card { pointer-events: auto; }
 
@@ -59,15 +67,23 @@ body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); }
 .card small { color: var(--muted); }
 .region > .card { flex: none; }
 
-#hud-top .brand { max-width: 380px; }
+#hud-top .brand { flex: 0 1 420px; min-width: 0; }
 #hud-top .brand p { margin: 2px 0 0; }
-#hud-top .session { flex: 1 1 180px; min-width: 160px; max-width: 320px; }
-#hud-top .money p { margin: 0; white-space: nowrap; }
-#hud-top .day { margin-left: auto; display: flex; flex-direction: column; gap: 6px; justify-content: center; max-width: 320px; }
-#hud-bottom .running { flex: 1 1 auto; max-height: 30vh; overflow-y: auto; }
-#hud-bottom .running .active { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-#hud-bottom .support { max-width: 360px; }
-#hud-bottom .controls { margin-left: auto; display: flex; gap: 6px; align-items: flex-end; }
+#hud-top .brand .bar { margin-top: 8px; }
+.money p { margin: 0; white-space: nowrap; display: flex; justify-content: space-between; gap: 8px; }
+.day { display: flex; flex-direction: column; gap: 6px; }
+.running .active { gap: 6px; }
+
+/* In basso: menu a sinistra, zoom a destra. Su mobile diventa la barra delle schede. */
+#hud-bottom { justify-content: space-between; }
+.tabbar { display: flex; pointer-events: none; }
+.tab-btn { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.tab-btn.side { display: none; }
+.tab-btn.on { color: var(--accent); }
+.zoom { margin-left: auto; font-weight: 600; }
+.zoom .short { display: none; }
+.menu-sheet { position: fixed; left: var(--edge); bottom: 62px; width: 260px; z-index: 8; }
+.menu-items { display: grid; gap: 6px; }
 
 .tab { padding: 6px 10px; font-weight: 600; cursor: pointer; border: none; text-align: left; }
 .tab.hide { align-self: flex-end; padding: 2px 10px; font-weight: normal; }
@@ -91,7 +107,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 ul.vols .vol { grid-template-columns: auto 1fr auto; }
 label.vol { cursor: pointer; }
 label.vol:hover { background: white; }
-.vol i { width: 10px; height: 10px; border-radius: 2px; }
+img.face { width: 20px; height: 28px; image-rendering: pixelated; display: block; }
+[data-profile] { cursor: pointer; border-radius: 6px; }
+[data-profile]:hover { background: white; }
 .vol.busy { opacity: 0.55; }
 .vol .hours { font-variant-numeric: tabular-nums; text-align: right; }
 
@@ -110,10 +128,6 @@ label.vol:hover { background: white; }
 .pratiche em { color: var(--warn); font-style: normal; font-size: 12px; }
 .pratiche .st-approvata strong { color: var(--accent); }
 
-.menu { position: relative; }
-.menu summary { list-style: none; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: white; cursor: pointer; }
-.menu summary::-webkit-details-marker { display: none; }
-.menu-items { position: absolute; right: 0; bottom: calc(100% + 6px); width: 240px; display: grid; gap: 6px; background: var(--panel); padding: 10px; border-radius: 8px; box-shadow: 0 6px 16px rgb(0 0 0 / 0.3); }
 .donate { display: block; text-align: center; padding: 8px; border-radius: 6px; background: #c0392b; color: white; text-decoration: none; font-weight: 600; margin-bottom: 4px; }
 
 /* modale centrale (attività, mini-puzzle, finale) e resoconti sopra a tutto */
@@ -134,6 +148,7 @@ label.vol:hover { background: white; }
 .tool { display: grid; gap: 2px; text-align: left; padding: 6px 8px; }
 .tool small { font-size: 11px; }
 .tool.on { outline: 2px solid var(--accent); background: white; }
+.hint { background: #fff6d8; border-radius: 6px; padding: 6px 8px; font-size: 13px; margin-bottom: 8px !important; }
 
 .site { display: grid; gap: 4px; }
 .site.on { outline: 3px solid var(--accent); }
@@ -143,7 +158,21 @@ label.vol:hover { background: white; }
 .factors { gap: 2px !important; font-size: 12px; }
 .factors li { display: flex; justify-content: space-between; gap: 8px; }
 .cands li.cand { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
-.cand i { width: 10px; height: 10px; border-radius: 2px; }
+.cands li.cand { padding: 2px 4px; }
+
+/* scheda del volontario: sprite grande a sinistra, dati a destra */
+.sheet.profile { width: min(600px, 100%); grid-template-columns: minmax(150px, 1fr) 1.4fr; gap: 18px; align-items: start; }
+.profile .portrait { display: grid; place-items: center; align-self: stretch; background: linear-gradient(#b8e0f2, #b8e0f2 58%, #5a9e3a 58%); border-radius: 8px; padding: 18px 8px; }
+.profile .portrait img { width: 140px; image-rendering: pixelated; }
+.profile .info { display: grid; gap: 6px; min-width: 0; }
+.profile h3 { margin: 6px 0 0; }
+.profile .facts .bar { margin: 3px 0 1px; }
+.field { display: grid; gap: 4px; font-size: 13px; }
+.field > span { color: var(--muted); }
+.field input { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: white; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.swatch { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1px var(--line); }
+.swatch.on { box-shadow: 0 0 0 2px var(--accent); }
 
 .danger { color: var(--warn); }
 .warn { color: var(--warn); }
@@ -166,7 +195,41 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
 @media (max-width: 860px) {
   :root { --side: 220px; --edge: 6px; }
   #hud { font-size: 13px; }
-  #hud-top .brand small { display: none; }
+  #hud-top .brand > small { display: none; }
+}
+
+/*
+ * Telefono (stessa soglia di MOBILE in hud.ts): in alto il titolo e lo zoom,
+ * in basso la barra delle schede (menu e le due colonne); ogni colonna e il
+ * menu si aprono a tutto schermo salendo dal basso.
+ */
+@keyframes slide-up { from { transform: translateY(100%); } to { transform: none; } }
+@media (max-width: 700px) {
+  #hud { grid-template-columns: 1fr; grid-template-areas: "top" "." "bottom"; padding-bottom: var(--tabbar); }
+  #hud-top .brand { flex: 1 1 auto; margin-right: 52px; }
+  #hud-left, #hud-right { display: none; }
+  #hud[data-sheet="left"] #hud-left, #hud[data-sheet="right"] #hud-right {
+    display: flex; position: fixed; inset: 0 0 var(--tabbar) 0; width: auto; max-width: none; z-index: 8;
+    padding: 10px; background: var(--bg); pointer-events: auto; animation: slide-up 0.22s ease-out;
+  }
+  .col-body { flex: 1 1 auto; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: center; flex: none; }
+  .sheet-head button { padding: 4px 10px; }
+  .tab { display: none; }
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; height: var(--tabbar); z-index: 9; pointer-events: auto;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    background: var(--panel); box-shadow: 0 -2px 10px rgb(0 0 0 / 0.25);
+  }
+  .tab-btn, .tab-btn.side { display: flex; flex-direction: column; justify-content: center; gap: 2px; border: none; border-radius: 0; background: transparent; box-shadow: none; font-size: 11px; color: var(--muted); }
+  .tab-btn.on { color: var(--accent); }
+  .zoom { position: fixed; top: var(--edge); right: var(--edge); width: 42px; height: 42px; padding: 0; font-size: 22px; line-height: 1; z-index: 7; }
+  .zoom .long { display: none; }
+  .zoom .short { display: inline; }
+  .menu-sheet { inset: 0 0 var(--tabbar) 0; width: auto; border-radius: 0; animation: slide-up 0.22s ease-out; display: grid; align-content: start; gap: 10px; }
+  .menu-sheet .sheet-head { display: flex; }
+  .sheet.profile { grid-template-columns: 1fr; }
+  .profile .portrait img { width: 100px; }
 }
 
 /* etichetta sopra il volontario o l'attività selezionati sulla mappa */

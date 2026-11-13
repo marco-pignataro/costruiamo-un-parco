@@ -1,4 +1,4 @@
-import { FUNDRAISING, HOURS_PER_WORKING_DAY, INAUGURATION, MIN_TEAM, ORDERS, SESSION_HOURS, SIDE_QUEST, SURVEY } from '../config';
+import { FUNDRAISING, HOURS_PER_WORKING_DAY, INAUGURATION, MIN_TEAM, VOLUNTEER_NAME_MAX, ORDERS, SESSION_HOURS, SIDE_QUEST, SURVEY } from '../config';
 import type { Content } from './content';
 import { computeDuration, formatHours, type DurationResult } from './duration';
 import {
@@ -6,6 +6,7 @@ import {
   estimate,
   expectedAppeal,
   gridFromSite,
+  movePlacement,
   place,
   placementAt,
   removePlacement,
@@ -14,7 +15,7 @@ import {
   type PlaceCheck,
 } from './grid';
 import { emergencyTasks, gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, Volunteer, CityDef } from './types';
+import type { ActiveTask, AppearanceDef, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, Volunteer, CityDef } from './types';
 
 const EPS = 1e-6;
 
@@ -36,7 +37,7 @@ export class Simulation {
   static newGame(content: Content, now: number, timeScale = 1): Simulation {
     const site = content.sites[0];
     const state: GameState = {
-      version: 8,
+      version: 9,
       stage: 'terreno',
       siteId: site.id,
       pv: site.pv,
@@ -131,7 +132,32 @@ export class Simulation {
     const m = this.content.candidates.find((x) => x.id === candidateId)!;
     const a = this.archetype(m.archetypeId);
     this.state.pv -= a.pvCost;
-    this.state.volunteers.push({ id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false });
+    this.state.volunteers.push(volunteerFrom(m, a));
+  }
+
+  /** Colori tra cui scegliere pelle e capelli. */
+  get appearance(): AppearanceDef {
+    return this.content.appearance;
+  }
+
+  /** Cambia nome, pelle o capelli di un volontario: solo mentre si compone la squadra. */
+  customizeVolunteer(id: string, patch: { name?: string; skin?: string; hair?: string }): void {
+    if (this.state.stage !== 'squadra') throw new Error("L'aspetto si sceglie in Fase 2, mentre si compone la squadra");
+    const v = this.volunteer(id);
+    if (patch.name !== undefined) {
+      const name = patch.name.trim().replace(/\s+/g, ' ');
+      if (!name) throw new Error('Il nome non può essere vuoto');
+      if (name.length > VOLUNTEER_NAME_MAX) throw new Error(`Il nome può avere al massimo ${VOLUNTEER_NAME_MAX} caratteri`);
+      v.name = name;
+    }
+    if (patch.skin !== undefined) {
+      if (!this.content.appearance.skin.some((c) => c.id === patch.skin)) throw new Error(`Colore della pelle sconosciuto: ${patch.skin}`);
+      v.skin = patch.skin;
+    }
+    if (patch.hair !== undefined) {
+      if (!this.content.appearance.hair.some((c) => c.id === patch.hair)) throw new Error(`Colore dei capelli sconosciuto: ${patch.hair}`);
+      v.hair = patch.hair;
+    }
   }
 
   /** Toglie un volontario dalla squadra e restituisce i suoi PV (solo in Fase 2). */
@@ -308,6 +334,11 @@ export class Simulation {
     return Math.max(0, v.weeklyHours - v.hoursUsed);
   }
 
+  /** Stanchezza della settimana, da 0 a 1: ore già spese sul monte settimanale. */
+  fatigue(v: Volunteer): number {
+    return v.weeklyHours > 0 ? Math.min(1, v.hoursUsed / v.weeklyHours) : 0;
+  }
+
   /** Compiti del piano che devono finire prima di questo e non sono ancora fatti. */
   missingPrerequisites(t: TaskDef | PlanTask): PlanTask[] {
     if (!('after' in t)) return [];
@@ -372,6 +403,20 @@ export class Simulation {
     removePlacement(this.state.grid, uid);
   }
 
+  /** Si può spostare l'elemento `uid` in (x, y)? Il suo posto attuale conta come libero. */
+  canMoveElement(uid: number, x: number, y: number): PlaceCheck {
+    const e = this.designError();
+    if (e) return { ok: false, errors: [e], risks: [] };
+    const p = this.state.grid.placements.find((q) => q.uid === uid);
+    if (!p) return { ok: false, errors: [`Elemento non presente: ${uid}`], risks: [] };
+    return canPlace(this.state.grid, this.content, p.elementId, x, y, uid);
+  }
+
+  moveElement(uid: number, x: number, y: number): void {
+    this.requireDesign();
+    movePlacement(this.state.grid, this.content, uid, x, y);
+  }
+
   elementAt(x: number, y: number): Placement | undefined {
     return placementAt(this.state.grid, this.content, x, y);
   }
@@ -390,7 +435,7 @@ export class Simulation {
    * materiali vengono dal piano completo: elementi, preparazione del terreno e
    * messa in sicurezza delle insidie note sotto il progetto.
    */
-  designSummary(): Estimate & { appeal: number; problems: string[]; riskTiles: number } {
+  designSummary(): Estimate & { appeal: number; problems: string[]; riskTiles: number; shortfallEur: number } {
     const g = this.state.grid;
     const est = estimate(g, this.content);
     const plan = generatePlan(g, this.content);
@@ -399,8 +444,9 @@ export class Simulation {
     const riskTiles = new Set(plan.tasks.filter((t) => t.prepId && this.content.preparations.find((p) => p.id === t.prepId)!.risks.length > 0).flatMap((t) => t.tiles)).size;
     const problems = validateProject(g, this.content);
     if (g.placements.length === 0) problems.push('Il progetto è vuoto');
-    if (costEur > this.state.budget) problems.push(`Il preventivo (${costEur} €) supera la cassa (${this.state.budget} €)`);
-    return { ...est, costEur, hours, materials: plan.materials, appeal: expectedAppeal(g, this.content), problems, riskTiles };
+    // Un preventivo oltre la cassa non blocca: i fondi mancanti si recuperano in cantiere, prima di ordinare.
+    const shortfallEur = Math.max(0, costEur - this.state.budget);
+    return { ...est, costEur, hours, materials: plan.materials, appeal: expectedAppeal(g, this.content), problems, riskTiles, shortfallEur };
   }
 
   /** Conferma il progetto: nascono piano di cantiere e pratiche, si apre il cantiere. */
@@ -959,4 +1005,9 @@ export class Simulation {
     const r = this.state.reports.find((x) => x.id === id);
     if (r) r.seen = true;
   }
+}
+
+/** Un volontario appena reclutato: dati dell'archetipo e aspetto del candidato. */
+export function volunteerFrom(m: CandidateDef, a: Archetype): Volunteer {
+  return { id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false, age: m.age, skin: m.skin, hair: m.hair };
 }

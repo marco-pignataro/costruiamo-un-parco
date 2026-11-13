@@ -82,7 +82,8 @@ export function placementAt(g: ParkGrid, c: Content, x: number, y: number): Plac
   });
 }
 
-export function canPlace(g: ParkGrid, c: Content, elementId: string, x: number, y: number): PlaceCheck {
+/** `ignoreUid`: elemento che si sta spostando, il suo posto vecchio conta come libero. */
+export function canPlace(g: ParkGrid, c: Content, elementId: string, x: number, y: number, ignoreUid?: number): PlaceCheck {
   const e = elementDef(c, elementId);
   const errors: string[] = [];
   const risks = new Set<string>();
@@ -93,7 +94,8 @@ export function canPlace(g: ParkGrid, c: Content, elementId: string, x: number, 
     }
     const i = tileIndex(g, tx, ty);
     if (BLOCKING_SURFACES.includes(g.surface[i])) errors.push('Un albero tutelato non si può rimuovere');
-    if (placementAt(g, c, tx, ty)) errors.push('Spazio già occupato');
+    const other = placementAt(g, c, tx, ty);
+    if (other && other.uid !== ignoreUid) errors.push('Spazio già occupato');
     const r = g.risk[i];
     if (r) risks.add(r);
   }
@@ -115,6 +117,17 @@ export function removePlacement(g: ParkGrid, uid: number): void {
   const i = g.placements.findIndex((p) => p.uid === uid);
   if (i < 0) throw new Error(`Elemento non presente: ${uid}`);
   g.placements.splice(i, 1);
+}
+
+/** Sposta un elemento del progetto in (x, y): stesso uid, stesso tipo. */
+export function movePlacement(g: ParkGrid, c: Content, uid: number, x: number, y: number): void {
+  const p = g.placements.find((q) => q.uid === uid);
+  if (!p) throw new Error(`Elemento non presente: ${uid}`);
+  if (g.built.includes(uid)) throw new Error('Elemento già costruito');
+  const check = canPlace(g, c, p.elementId, x, y, uid);
+  if (!check.ok) throw new Error(check.errors.join('; '));
+  p.x = x;
+  p.y = y;
 }
 
 /**

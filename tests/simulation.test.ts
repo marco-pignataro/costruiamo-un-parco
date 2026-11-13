@@ -134,7 +134,7 @@ describe('piano di cantiere nella partita', () => {
 
   it('i lavori del weekend nascono dal progetto del terreno di prova', () => {
     const sim = newGame();
-    expect(sim.state.version).toBe(8);
+    expect(sim.state.version).toBe(9);
     expect(sim.state.plan.length).toBeGreaterThan(0);
     expect(sim.state.plan.every((t) => t.phase === 'operativa')).toBe(true);
   });

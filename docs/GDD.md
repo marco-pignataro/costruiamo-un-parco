@@ -162,6 +162,8 @@ Il monte ore è settimanale e unico: si spende sia nella parte burocratica sia i
 
 **Prototipo.** Si recluta da un elenco di 17 candidati (`src/data/candidates.json`) spendendo i PV del terreno; ogni volontario si può anche congedare e i PV tornano indietro, finché la squadra non è confermata. Presidente e segretario/a sono unici; servono almeno 3 volontari. I PV avanzati restano per il futuro (reclutamenti in corso di partita). Energia, morale, tratti e crescita non ci sono ancora.
 
+**Scheda del volontario (prototipo, deciso il 13/11/2026).** Ogni candidato ha età, colore della pelle e colore dei capelli (`src/data/candidates.json`, colori in `src/data/appearance.json`: 5 pelli, 7 capelli). Un clic su un volontario nella squadra, o un secondo clic su di lui sulla mappa, apre la scheda nella modale centrale: a sinistra lo sprite grande, a destra le statistiche (età, morale, stanchezza) e le caratteristiche (nome, pelle, capelli). Nome (al massimo 16 caratteri), pelle e capelli si cambiano solo in Fase 2, finché la squadra non è confermata; dopo la scheda si legge e basta. La stanchezza per ora è la parte del monte ore settimanale già spesa; il morale compare come "non ancora in gioco" finché non arrivano le sue regole. Salvataggi v9.
+
 ## Fase 3 — Sopralluogo
 
 Il sopralluogo è una fase di esplorazione a tempo: il giocatore manda 3-4 volontari ad analizzare i punti sospetti del terreno e deve scoprire le insidie prima che si trasformino in imprevisti costosi in cantiere.
@@ -215,7 +217,7 @@ La progettazione è una modalità creativa su griglia: il disegno finale diventa
 
 **Dal disegno ai lavori.** Alla conferma, il progetto genera il **piano di cantiere**: ogni elemento diventa un task con materiali, ore-uomo, skill, pratiche necessarie e dipendenze (es. bonifica → livellamento → sentiero → panchina). Genera anche tutte le pratiche (vedi Burocrazia).
 
-**Editor del prototipo.** La progettazione parte dal progetto proposto del terreno scelto, che il giocatore può cambiare. Si sceglie un elemento e si clicca sulla griglia (anteprima verde o rossa); la gomma o il tasto destro tolgono. Il pannello mostra il preventivo (euro dei materiali, ore, skill, materiali da ordinare, pratiche), il gradimento previsto e i problemi. Il progetto si conferma solo senza problemi: non vuoto, regole di adiacenza rispettate e preventivo entro la cassa (le raccolte fondi servono poi a coprire gli imprevisti del cantiere). Dopo la conferma il progetto non si tocca più finché non arrivano le varianti.
+**Editor del prototipo.** La progettazione parte dal progetto proposto del terreno scelto, che il giocatore può cambiare. Si sceglie un elemento e si clicca sulla griglia (anteprima verde o rossa); la gomma o il tasto destro tolgono. Senza strumento scelto, un clic su un arredo già posato lo prende (resta chiaro al suo posto) e il clic dopo lo posa altrove, se lo spazio è libero; tasto destro o Esc annullano. L'arredo spostato tiene lo stesso uid. Il pannello mostra il preventivo (euro dei materiali, ore, skill, materiali da ordinare, pratiche), il gradimento previsto e i problemi. Il progetto si conferma solo senza problemi: non vuoto e regole di adiacenza rispettate. Il preventivo può superare la cassa (deciso il 13/11/2026): il pannello e la conferma dicono quanto manca, e sta al giocatore recuperare i fondi in cantiere con le raccolte prima di ordinare i materiali, perché gli ordini si pagano subito e partono solo se la cassa basta. Dopo la conferma il progetto non si tocca più finché non arrivano le varianti.
 
 **Gradimento previsto (prototipo).** Ogni elemento ha dei punti (aiuola 8, panchina 6, cestino 3, sentiero e staccionata 1); la k-esima copia dello stesso tipo vale 1/k, ogni tipo diverso aggiunge 5 punti di varietà e ogni albero tutelato 2. Massimo 100. Ombra, accessibilità e panorama arriveranno con i nuovi elementi e terreni.
 
@@ -400,14 +402,16 @@ Il gioco si guarda su due scene isometriche e si comanda con una HUD ai bordi de
 
 A fine parte burocratica il gioco passa da solo al parco, con una breve transizione; a fine weekend torna in città. La squadra si recluta come oggi, dalla HUD con il terreno sullo sfondo, anche in futuro.
 
-**HUD ai bordi.** Niente pannello laterale: ogni blocco ha un suo posto fisso attorno alla mappa, che resta libera al centro. Disposizione di partenza, da rivedere in prova:
+**HUD ai bordi.** Niente pannello laterale: ogni blocco ha un suo posto fisso attorno alla mappa, che resta libera al centro. Disposizione rivista dopo la prima prova (13/11/2026):
 
-- **In alto:** settimana, fase, ore di sessione usate e rimaste, cassa, PV, pulsante per chiudere la giornata o la sessione.
-- **A sinistra:** la squadra, con monte ore residuo e stato (libero, al lavoro, dove).
-- **A destra:** registro delle pratiche e ordini in consegna (in città), elenco dei lavori disponibili e bloccati (al parco).
-- **In basso:** compiti in corso con il loro timer, pulsante di zoom.
+- **In alto:** una sola scheda con titolo del gioco, settimana e parte della settimana e, come ultimo elemento, la barra della sessione con le ore usate (senza etichetta).
+- **A sinistra:** la squadra, con monte ore residuo e stato (libero, al lavoro, dove). In fondo alla colonna la scheda della cassa (cassa e progetto realizzato, PV in Fase 2, cassa e preventivo in progettazione) e sotto il pulsante di completamento della fase, sempre lì in ogni fase.
+- **A destra:** prima i compiti in corso con il loro timer, poi le attività da fare, poi registro delle pratiche e magazzino.
+- **In basso:** il menu della partita a sinistra (notifiche, esporta salvataggio, nuova partita) e lo zoom a destra.
 
-In basso a destra c'è anche il menu della partita (notifiche, esporta salvataggio, nuova partita). I pannelli di sinistra e di destra si possono richiudere per vedere più mappa. Nelle fasi preparatorie la disposizione è la stessa: terreni a destra; squadra a sinistra e candidati a destra; strumenti dell'editor a sinistra, preventivo, gradimento e controlli a destra; il pulsante di conferma sempre in alto a destra.
+I pannelli di sinistra e di destra si possono richiudere per vedere più mappa; la cassa e il pulsante della fase restano visibili. Le colonne cambiano nome con la fase: Terreni; Squadra e Candidati; Squadra e Attività (sopralluogo e cantiere); Arredi e Preventivo (progettazione).
+
+**Su telefono** (schermo largo al massimo 700 px) in basso c'è una barra di schede con icona ed etichetta: Menu e le due colonne con il loro nome. Ogni scheda si apre a tutto schermo salendo dal basso e si chiude con la ✕ o toccandola di nuovo. Lo zoom diventa un pulsante +/− in alto a destra.
 
 La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque risoluzione; la pixel art resta nella scena. La visuale intera si adatta allo spazio libero tra i pannelli; il tasto Z fa lo stesso del pulsante di zoom.
 
@@ -420,7 +424,7 @@ La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque r
 **Punta e clicca.** Il giocatore assegna, non pilota.
 
 - **Elementi interagibili:** le tile, gli edifici e i punti con un'attività avviabile adesso hanno una leggera ombra che li stacca dallo sfondo.
-- **Prima il volontario:** cliccando un volontario compaiono nome e ruolo e resta selezionato; cliccando poi un elemento interagibile si apre la modale dell'attività con quel volontario già scelto.
+- **Prima il volontario:** cliccando un volontario compaiono nome e ruolo e resta selezionato; cliccando poi un elemento interagibile si apre la modale dell'attività con quel volontario già scelto. Un secondo clic sullo stesso volontario apre la sua scheda (vedi Fase 2).
 - **Prima l'elemento:** il primo clic mostra sopra l'elemento l'attività da fare; il secondo apre la modale.
 - **La modale** sta al centro dello schermo: dati dell'attività (ore, skill, materiali, pratiche, durata e qualità previste, euro se è una raccolta), elenco dei volontari da spuntare e pulsante per avviare. Gli errori di avvio sono gli stessi della HUD.
 - **Clic a vuoto:** cliccare un punto non interagibile della mappa toglie la selezione.
@@ -450,7 +454,7 @@ Pixel art isometrica (proiezione 2:1), palette ristretta ispirata ai colori di M
 - **Tile:** rombi isometrici da 32×16 px; la griglia logica della simulazione resta quadrata, cambia solo il disegno. Personaggi 16×24 px con animazioni di lavoro (scavare, trasportare, martellare, piantare).
 - **Palette:** circa 32 colori. Azzurro dello Stretto, verde della macchia mediterranea, ocra della terra, rosso dei coppi, grigio del cemento per i terreni degradati.
 - **Trasformazione visibile:** il terreno passa visivamente da grigio-marrone a verde man mano che il parco cresce. È il feedback emotivo principale.
-- **Volontari:** maglietta con i colori di Puli-AMO; ogni archetipo riconoscibile da un accessorio (cappello, cassetta attrezzi, tablet).
+- **Volontari:** sul campo (sopralluogo e weekend) tutti hanno la stessa maglietta di gruppo blu, con una scritta bianca sulla schiena e il logo bianco sul petto, dal lato del cuore; in città e nelle fasi preparatorie la maglietta ha il colore dell'archetipo. Ogni archetipo sarà riconoscibile anche da un accessorio (cappello, cassetta attrezzi, tablet). Lo sprite ha una vista davanti e una di schiena, usata da chi cammina verso il fondo della scena.
 - **Animazioni dei volontari (deciso il 13/11/2026):** niente animazioni per singolo compito né per singolo socio, che a 16×24 px non si distinguerebbero e moltiplicherebbero il lavoro.
   - Un corpo base comune; in Aseprite l'accessorio dell'archetipo sta su un livello separato e si sovrappone fotogramma per fotogramma alle stesse animazioni.
   - Animazioni per tipo di gesto, circa 6-8: scavare, trasportare, martellare, piantare, falciare/rastrellare, lavorare alla scrivania (pratiche e raccolta online in sede), parlare allo sportello (uffici), più camminata e attesa.

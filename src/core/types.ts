@@ -16,6 +16,23 @@ export interface CandidateDef {
   id: string;
   name: string;
   archetypeId: string;
+  age: number;
+  /** Id di un colore di `appearance.json`. */
+  skin: string;
+  hair: string;
+}
+
+/** Un colore scelto per l'aspetto dei volontari (pelle o capelli). */
+export interface LookColor {
+  id: string;
+  name: string;
+  color: string;
+}
+
+/** Colori tra cui scegliere l'aspetto dei volontari. */
+export interface AppearanceDef {
+  skin: LookColor[];
+  hair: LookColor[];
 }
 
 export interface TaskDef {
@@ -111,6 +128,10 @@ export interface Volunteer {
   weeklyHours: number;
   hoursUsed: number;
   busy: boolean;
+  age: number;
+  /** Id dei colori di pelle e capelli (`appearance.json`): si cambiano in Fase 2. */
+  skin: string;
+  hair: string;
 }
 
 export interface ActiveTask {
@@ -168,7 +189,7 @@ export interface HiddenHazard {
 }
 
 export interface GameState {
-  version: 8;
+  version: 9;
   /**
    * terreno: scelta del terreno (Fase 1); squadra: reclutamento con i PV (Fase 2);
    * sopralluogo: analisi dei punti sospetti (Fase 3); progettazione: si disegna

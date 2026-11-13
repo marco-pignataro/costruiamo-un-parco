@@ -1,10 +1,10 @@
-import { ASSOCIATION, GAME_TITLE, HOURS_PER_WORKING_DAY, ORDERS, SIDE_QUEST, SURVEY } from '../config';
+import { ASSOCIATION, GAME_TITLE, HOURS_PER_WORKING_DAY, ORDERS, SIDE_QUEST, SURVEY, VOLUNTEER_NAME_MAX } from '../config';
 import { formatHours } from '../core/duration';
 import type { Simulation } from '../core/simulation';
-import type { ActiveTask, PraticaStatus } from '../core/types';
+import type { ActiveTask, PraticaStatus, Stage, Volunteer } from '../core/types';
 import type { Insets } from '../game/camera';
 import { ERASER, type EditorTool } from '../game/ParkScene';
-import { SHIRTS } from '../game/sprites';
+import { inUniform, volunteerLook, volunteerPortrait } from '../game/sprites';
 import { type Activity, type Kind, listActivities } from './activities';
 
 /** Mini-puzzle aperto: delegazione scelta, ordine di presentazione e risposte date. */
@@ -46,6 +46,41 @@ export interface HudActions {
 }
 
 type Region = 'top' | 'left' | 'right' | 'bottom';
+type Side = 'left' | 'right';
+
+/** Contenuto della HUD per una fase: in fondo alla colonna sinistra cassa e pulsante della fase. */
+interface Parts {
+  top?: string;
+  left?: string;
+  leftFoot?: string;
+  right?: string;
+}
+
+/** Nome delle due colonne in ogni fase: titolo della linguetta su desktop e della scheda su mobile. */
+const COLUMN_NAMES: Record<Stage, Partial<Record<Side, string>>> = {
+  terreno: { right: 'Terreni' },
+  squadra: { left: 'Squadra', right: 'Candidati' },
+  sopralluogo: { left: 'Squadra', right: 'Attività' },
+  progettazione: { left: 'Arredi', right: 'Preventivo' },
+  cantiere: { left: 'Squadra', right: 'Attività' },
+  inaugurato: {},
+};
+
+/** Icone della barra in basso su mobile (20×20, colore del testo). */
+const svg = (d: string) => `<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICONS: Record<string, string> = {
+  Menu: svg('<path d="M3 5h14M3 10h14M3 15h14"/>'),
+  Squadra: svg('<circle cx="7" cy="7" r="2.5"/><circle cx="14" cy="8" r="2"/><path d="M2.5 16c.5-3 2.3-4.5 4.5-4.5s4 1.5 4.5 4.5M11.5 13c.7-1.2 1.6-1.8 2.5-1.8 1.7 0 3 1.3 3.5 3.8"/>'),
+  Candidati: svg('<circle cx="8" cy="7" r="2.8"/><path d="M2.5 16.5c.6-3.2 2.7-5 5.5-5s4.9 1.8 5.5 5M15.5 5v5M13 7.5h5"/>'),
+  Attività: svg('<path d="M8 5h9M8 10h9M8 15h9"/><path d="m2.5 5 1.2 1.2L6 4M2.5 10l1.2 1.2L6 9M2.5 15l1.2 1.2L6 14"/>'),
+  Arredi: svg('<path d="M3 10h14M4 13.5h12M5 10v6M15 10v6M4 6.5h12v3.5H4z"/>'),
+  Preventivo: svg('<rect x="4" y="2.5" width="12" height="15" rx="1.5"/><path d="M7 6.5h6M7 10h6M7 13.5h3"/>'),
+  Terreni: svg('<path d="M10 17.5s5.5-5.2 5.5-9.3A5.5 5.5 0 0 0 4.5 8.2c0 4.1 5.5 9.3 5.5 9.3z"/><circle cx="10" cy="8.2" r="2"/>'),
+};
+
+/** Schermo da telefono: barra di schede in basso e pannelli a tutto schermo. Uguale al CSS. */
+const MOBILE = '(max-width: 700px)';
+const isMobile = () => globalThis.matchMedia?.(MOBILE).matches ?? false;
 
 /**
  * HUD attorno alla scena: ogni blocco è una scheda con un posto fisso su un
@@ -61,8 +96,14 @@ export class Hud {
   private team = new Set<string>();
   private message = '';
   private puzzle: Puzzle | null = null;
-  private collapsed: Record<'left' | 'right', boolean> = { left: false, right: false };
+  private collapsed: Record<Side, boolean> = { left: false, right: false };
   private lastInsets = '';
+  /** Scheda del volontario aperta nella modale centrale. */
+  private profile: string | null = null;
+  private menuOpen = false;
+  /** Su mobile: pannello aperto a tutto schermo. */
+  private sheet: Side | null = null;
+  private wasMobile = isMobile();
 
   constructor(
     root: HTMLElement,
@@ -94,10 +135,23 @@ export class Hud {
       this.actions.onChange();
       this.render();
     });
-    window.addEventListener('resize', () => this.measure());
+    window.addEventListener('resize', () => {
+      if (isMobile() !== this.wasMobile) {
+        this.wasMobile = isMobile();
+        this.sheet = null;
+        this.menuOpen = false;
+        this.render();
+      }
+      this.measure();
+    });
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.open) {
-        this.closeActivity();
+      if (e.key === 'Escape') {
+        if (this.open) this.closeActivity();
+        else if (this.profile) this.profile = null;
+        else if (this.editor.moving !== null) this.editor.moving = null;
+        else if (this.menuOpen) this.menuOpen = false;
+        else if (this.sheet) this.sheet = null;
+        else return;
         this.render();
       } else if ((e.key === 'z' || e.key === 'Z') && !(e.target instanceof HTMLInputElement) && !e.ctrlKey && !e.metaKey) {
         this.actions.onZoom();
@@ -123,6 +177,16 @@ export class Hud {
     this.open = { kind, id };
     this.team = new Set(volunteerIds.filter((v) => !this.sim.volunteer(v).busy));
     this.message = '';
+    this.sheet = null;
+    this.menuOpen = false;
+    this.render();
+  }
+
+  /** Apre la scheda di un volontario (secondo clic sulla mappa o clic nella squadra). */
+  openProfile(volunteerId: string): void {
+    if (!this.sim.state.volunteers.some((v) => v.id === volunteerId)) return;
+    this.profile = volunteerId;
+    this.message = '';
     this.render();
   }
 
@@ -133,28 +197,46 @@ export class Hud {
     const stage = sim.state.stage;
     if (this.open && !this.activities().some((a) => a.kind === this.open!.kind && a.id === this.open!.id)) this.closeActivity();
 
-    let parts: Partial<Record<Region, string>>;
+    if (this.profile && !sim.state.volunteers.some((v) => v.id === this.profile)) this.profile = null;
+    if (stage !== 'progettazione') this.editor.moving = null;
+
+    let parts: Parts;
     if (stage === 'terreno') parts = this.sitesParts();
     else if (stage === 'squadra') parts = this.teamParts();
     else if (stage === 'progettazione') parts = this.designParts();
-    else if (stage === 'inaugurato') parts = { top: this.brand('Il parco è inaugurato!'), bottom: this.controls() };
+    else if (stage === 'inaugurato') parts = { top: this.brand('Il parco è inaugurato!') };
     else parts = this.playParts();
 
-    for (const r of ['top', 'left', 'right', 'bottom'] as Region[]) {
-      let html = parts[r] ?? '';
-      if ((r === 'left' || r === 'right') && html) {
-        const label = r === 'left' ? 'Squadra' : 'Attività';
-        html = this.collapsed[r]
-          ? `<button class="card tab" data-toggle="${r}" title="Mostra">${r === 'left' ? '▸' : '◂'} ${label}</button>`
-          : `<button class="card tab hide" data-toggle="${r}" title="Nascondi">${r === 'left' ? '◂' : '▸'}</button>${html}`;
+    const mobile = isMobile();
+    const names = COLUMN_NAMES[stage];
+    const html: Record<Region, string> = { top: parts.top ?? '', left: '', right: '', bottom: '' };
+    for (const side of ['left', 'right'] as Side[]) {
+      const body = parts[side] ?? '';
+      const foot = side === 'left' && parts.leftFoot ? `<div class="col-foot">${parts.leftFoot}</div>` : '';
+      if (!body && !foot) {
+        if (this.sheet === side) this.sheet = null;
+        continue;
       }
-      setHTML(this.regions[r], html);
+      const label = names[side] ?? '';
+      const head = `<div class="sheet-head card"><strong>${esc(label)}</strong><button data-sheet="${side}" title="Chiudi">✕</button></div>`;
+      // Su desktop la colonna si richiude; il pulsante della fase in fondo resta sempre visibile.
+      const collapsed = !mobile && this.collapsed[side];
+      const arrows = side === 'left' ? ['▸', '◂'] : ['◂', '▸'];
+      html[side] = collapsed
+        ? `<button class="card tab" data-toggle="${side}" title="Mostra">${arrows[0]} ${esc(label)}</button>${foot}`
+        : `${head}<button class="card tab hide" data-toggle="${side}" title="Nascondi">${arrows[1]}</button><div class="col-body">${body}</div>${foot}`;
+      this.regions[side].classList.toggle('collapsed', collapsed);
     }
+    if (!html[this.sheet ?? 'top']) this.sheet = null;
+    html.bottom = this.controls(names, { left: !!html.left, right: !!html.right });
+    this.regions.top.parentElement!.dataset.sheet = mobile && this.sheet ? this.sheet : '';
+    for (const r of ['top', 'left', 'right', 'bottom'] as Region[]) setHTML(this.regions[r], html[r]);
     setHTML(this.toast, this.message ? `<p class="card msg">${esc(this.message)}</p>` : '');
 
     if (stage === 'inaugurato') this.showDialog(this.finale(), 'finale');
     else if (this.puzzle && stage === 'cantiere') this.showDialog(this.puzzleCard(), 'puzzle');
     else if (this.open) this.showDialog(this.activityCard(), 'activity');
+    else if (this.profile) this.showDialog(this.profileCard(this.sim.volunteer(this.profile)), 'profile');
     else this.showDialog('', '');
     this.renderModal();
     this.measure();
@@ -170,11 +252,13 @@ export class Hud {
   private measure() {
     const W = window.innerWidth;
     const H = window.innerHeight;
-    const r = (el: HTMLElement) => (el.childElementCount ? el.getBoundingClientRect() : null);
+    const mobile = isMobile();
+    const r = (el: HTMLElement | null) => (el?.childElementCount ? el.getBoundingClientRect() : null);
     const top = r(this.regions.top);
-    const left = r(this.regions.left);
-    const right = r(this.regions.right);
-    const bottom = r(this.regions.bottom);
+    // Su mobile i pannelli si aprono sopra la mappa e non le tolgono spazio; in basso c'è la barra delle schede.
+    const left = mobile ? null : r(this.regions.left);
+    const right = mobile ? null : r(this.regions.right);
+    const bottom = mobile ? this.regions.bottom.querySelector<HTMLElement>('.tabbar')?.getBoundingClientRect() ?? null : r(this.regions.bottom);
     const insets: Insets = {
       top: top ? Math.round(top.bottom) : 0,
       left: left ? Math.round(left.right) : 0,
@@ -191,19 +275,35 @@ export class Hud {
     return `<section class="card brand"><h1>${esc(GAME_TITLE)}</h1><p>${subtitle}</p>${extra}</section>`;
   }
 
-  /** In basso a destra: zoom e menu della partita. */
-  private controls(): string {
-    return `<section class="card controls">
-        <button data-act="zoom" class="zoom" title="Alterna visuale intera e ingrandimento (tasto Z)">${this.actions.isZoomed() ? '− Visuale intera' : '+ Ingrandisci'}</button>
-        <details class="menu"><summary>Menu</summary>
+  /**
+   * In basso: menu della partita a sinistra e zoom a destra. Su mobile la
+   * stessa barra diventa una fila di schede (menu e le due colonne) e lo zoom
+   * va in alto a destra.
+   */
+  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>): string {
+    const tab = (side: Side) => {
+      const label = names[side] ?? '';
+      return `<button class="tab-btn side ${this.sheet === side ? 'on' : ''}" data-sheet="${side}">${ICONS[label] ?? ''}<span>${esc(label)}</span></button>`;
+    };
+    const zoomed = this.actions.isZoomed();
+    const menu = this.menuOpen
+      ? `<section class="card menu-sheet">
+          <div class="sheet-head"><strong>Menu</strong><button data-act="menu" title="Chiudi">✕</button></div>
           <div class="menu-items">
             <button data-act="notify">Attiva notifiche</button>
             <button data-act="export">Esporta salvataggio</button>
             <button data-act="new">Nuova partita</button>
             <small>Prototipo. Per provare più in fretta: <code>?velocita=60</code> nell'indirizzo e una nuova partita (1 ora = 1 minuto).</small>
           </div>
-        </details>
-      </section>`;
+        </section>`
+      : '';
+    return `<nav class="tabbar">
+        <button class="tab-btn menu-btn card ${this.menuOpen ? 'on' : ''}" data-act="menu">${ICONS.Menu}<span>Menu</span></button>
+        ${has.left ? tab('left') : ''}${has.right ? tab('right') : ''}
+      </nav>
+      <button data-act="zoom" class="card zoom" title="Alterna visuale intera e ingrandimento (tasto Z)" aria-label="${zoomed ? 'Visuale intera' : 'Ingrandisci'}">
+        <span class="long">${zoomed ? '− Visuale intera' : '+ Ingrandisci'}</span><span class="short">${zoomed ? '−' : '+'}</span></button>
+      ${menu}`;
   }
 
   /** Pulsante donazioni: solo nel menu iniziale (scelta del terreno) e all'inaugurazione, mai durante il gioco. */
@@ -212,6 +312,11 @@ export class Hud {
         <a class="donate" href="${ASSOCIATION.donationUrl}" target="_blank" rel="noopener">Sostieni ${esc(ASSOCIATION.name)}</a>
         <small>Il gioco è gratuito. Se ti piace, aiuta l'associazione che rigenera davvero gli spazi di Messina. 5x1000: codice fiscale <strong>${ASSOCIATION.taxCode5x1000}</strong></small>
       </section>`;
+  }
+
+  /** Faccina del volontario: lo stesso sprite della mappa, piccolo. */
+  private face(v: Volunteer): string {
+    return `<img class="face" alt="" src="${volunteerPortrait(volunteerLook(this.sim, v, inUniform(this.sim)), 2)}">`;
   }
 
   private activeName(a: ActiveTask): string {
@@ -227,7 +332,7 @@ export class Hud {
 
   // ---------- sopralluogo e cantiere ----------
 
-  private playParts(): Partial<Record<Region, string>> {
+  private playParts(): Parts {
     const sim = this.sim;
     const s = sim.state;
     const now = Date.now();
@@ -238,32 +343,41 @@ export class Hud {
     const closeLabel = surveying ? 'Chiudi il sopralluogo' : s.phase === 'burocratica' ? 'Chiudi e vai al weekend' : 'Chiudi il weekend';
     const closeTitle = surveying ? 'I punti non analizzati restano un mistero' : 'I giorni rimanenti passano comunque e le attese avanzano';
 
-    const top = [
-      this.brand(`${surveying ? `Fase 3 · ${esc(sim.siteName)}` : `Settimana ${s.week}`} · ${phaseName}`),
-      `<section class="card session"><h2>Sessione</h2><div class="bar"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div>
-        <small>${formatHours(used)} su ${limit} h${s.active.length ? '' : ' · ferma: nessun compito in corso'}</small></section>`,
-      surveying
-        ? ''
-        : `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Progetto realizzato <strong>${Math.round(sim.projectProgress * 100)}%</strong></p></section>`,
-      `<section class="card day"><button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="${closeTitle}">${closeLabel}</button>${surveying ? '' : this.inaugurateButton()}</section>`,
-    ].join('');
+    // In alto: titolo, settimana e parte della settimana, poi la barra della sessione.
+    const session = `<div class="bar"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div>
+      <small>${formatHours(used)} su ${limit} h${s.active.length ? '' : ' · ferma: nessun compito in corso'}</small>`;
+    const top = this.brand(`${surveying ? `Fase 3 · ${esc(sim.siteName)}` : `Settimana ${s.week}`} · ${phaseName}`, session);
 
-    // A sinistra: la squadra, con ore e cosa sta facendo.
+    // A sinistra: la squadra, con ore e cosa sta facendo; in fondo cassa e chiusura della giornata.
     const doing = new Map<string, string>();
     for (const a of s.active) for (const id of a.volunteerIds) doing.set(id, this.activeName(a));
     const vols = s.volunteers
       .map((v) => {
-        const color = SHIRTS[v.archetypeId] ?? SHIRTS.base;
         const what = doing.get(v.id);
-        return `<li class="vol ${v.busy ? 'busy' : ''}"><i style="background:${color}"></i>
+        return `<li class="vol ${v.busy ? 'busy' : ''}" data-profile="${v.id}" title="Apri la scheda">${this.face(v)}
           <span><strong>${esc(v.name)}</strong> <small>${esc(sim.archetype(v.archetypeId).name)}</small><br>
           <small>${what ? `Al lavoro: ${esc(what)}` : 'Libero'}</small></span>
           <small class="hours">${formatHours(sim.hoursLeft(v))}<br>su ${v.weeklyHours} h</small></li>`;
       })
       .join('');
     const left = `<section class="card"><h2>Squadra</h2><ul class="vols">${vols}</ul></section>`;
+    const leftFoot =
+      (surveying
+        ? ''
+        : `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Progetto realizzato <strong>${Math.round(sim.projectProgress * 100)}%</strong></p></section>`) +
+      `<section class="card day"><button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="${closeTitle}">${closeLabel}</button>${surveying ? '' : this.inaugurateButton()}</section>`;
 
-    // A destra: cosa si può fare, poi i registri.
+    // A destra: prima i compiti in corso, poi cosa si può fare, poi i registri.
+    const active = s.active
+      .map((a) => {
+        const leftH = Math.max(0, (a.endsAt - now) / s.msPerHour);
+        const pct = Math.min(100, ((now - a.startedAt) / (a.endsAt - a.startedAt)) * 100);
+        const who = a.volunteerIds.map((id) => sim.volunteer(id).name).join(', ');
+        return `<li><strong>${esc(this.activeName(a))}</strong><div class="bar"><span style="width:${pct.toFixed(1)}%"></span></div>
+          <small>${esc(who)} · mancano ${formatHours(leftH)}</small></li>`;
+      })
+      .join('');
+    const running = `<section class="card running"><h2>In corso</h2><ul class="active">${active || '<li><small>Nessun compito in corso: il tempo di sessione è fermo.</small></li>'}</ul></section>`;
     const acts = this.activities();
     const list = acts
       .map((a) => {
@@ -311,19 +425,7 @@ export class Hud {
         <section class="card"><h2>Magazzino</h2>${stock}</section>`;
     }
 
-    // In basso: i compiti in corso con il loro timer, poi lo zoom.
-    const active = s.active
-      .map((a) => {
-        const leftH = Math.max(0, (a.endsAt - now) / s.msPerHour);
-        const pct = Math.min(100, ((now - a.startedAt) / (a.endsAt - a.startedAt)) * 100);
-        const who = a.volunteerIds.map((id) => sim.volunteer(id).name).join(', ');
-        return `<li><strong>${esc(this.activeName(a))}</strong><div class="bar"><span style="width:${pct.toFixed(1)}%"></span></div>
-          <small>${esc(who)} · mancano ${formatHours(leftH)}</small></li>`;
-      })
-      .join('');
-    const bottom = `<section class="card running"><h2>In corso</h2><ul class="active">${active || '<li><small>Nessun compito in corso: il tempo di sessione è fermo.</small></li>'}</ul></section>${this.controls()}`;
-
-    return { top, left, right: todo + registers, bottom };
+    return { top, left, leftFoot, right: running + todo + registers };
   }
 
   private inaugurateButton(): string {
@@ -396,10 +498,9 @@ export class Hud {
 
     const vols = sim.state.volunteers
       .map((v) => {
-        const color = SHIRTS[v.archetypeId] ?? SHIRTS.base;
         const skills = v.skills.length ? v.skills.join(', ') : 'braccia';
         return `<label class="vol ${v.busy ? 'busy' : ''}"><input type="checkbox" data-vol="${v.id}" ${this.team.has(v.id) ? 'checked' : ''} ${v.busy ? 'disabled' : ''}>
-          <i style="background:${color}"></i><span>${esc(v.name)} <small>${esc(sim.archetype(v.archetypeId).name)} · ${esc(skills)}</small></span>
+          ${this.face(v)}<span>${esc(v.name)} <small>${esc(sim.archetype(v.archetypeId).name)} · ${esc(skills)}</small></span>
           <small class="hours">${v.busy ? 'impegnato' : `${formatHours(sim.hoursLeft(v))} libere`}</small></label>`;
       })
       .join('');
@@ -425,6 +526,47 @@ export class Hud {
         ${line ? `<p class="preview">${line}</p>` : ''}
         ${errors}
         <div class="buttons"><button data-act="cancel">Annulla</button><button data-act="start" class="confirm" ${p.errors.length ? 'disabled' : ''}>${label}</button></div>
+      </div>`;
+  }
+
+  /**
+   * Scheda del volontario: a sinistra lo sprite grande, a destra statistiche e
+   * caratteristiche. Nome, pelle e capelli si cambiano solo in Fase 2.
+   */
+  private profileCard(v: Volunteer): string {
+    const sim = this.sim;
+    const a = sim.archetype(v.archetypeId);
+    const editable = sim.state.stage === 'squadra';
+    const look = volunteerLook(sim, v, inUniform(sim));
+    const fatigue = sim.fatigue(v);
+    const skin = sim.appearance.skin.find((c) => c.id === v.skin);
+    const hair = sim.appearance.hair.find((c) => c.id === v.hair);
+    const swatches = (kind: 'skin' | 'hair', chosen: string) =>
+      `<div class="swatches">${sim.appearance[kind]
+        .map((c) => `<button class="swatch ${c.id === chosen ? 'on' : ''}" data-${kind}="${c.id}" title="${esc(c.name)}" aria-label="${esc(c.name)}" style="background:${c.color}"></button>`)
+        .join('')}</div>`;
+    const traits = editable
+      ? `<label class="field"><span>Nome</span><input type="text" data-name="${v.id}" value="${esc(v.name)}" maxlength="${VOLUNTEER_NAME_MAX}" autocomplete="off"></label>
+        <div class="field"><span>Colore della pelle</span>${swatches('skin', v.skin)}</div>
+        <div class="field"><span>Colore dei capelli</span>${swatches('hair', v.hair)}</div>`
+      : `<dl class="facts"><dt>Nome</dt><dd>${esc(v.name)}</dd><dt>Pelle</dt><dd>${esc(skin?.name ?? v.skin)}</dd><dt>Capelli</dt><dd>${esc(hair?.name ?? v.hair)}</dd></dl>
+        <p><small>Nome e aspetto si scelgono mentre si compone la squadra.</small></p>`;
+    return `<div class="card sheet profile" role="dialog" aria-modal="true" aria-label="${esc(v.name)}">
+        <div class="portrait"><img alt="${esc(v.name)}" src="${volunteerPortrait(look, 14)}"></div>
+        <div class="info">
+          <small class="kind">${esc(a.name)}</small>
+          <h2>${esc(v.name)}</h2>
+          <h3>Statistiche</h3>
+          <dl class="facts">
+            <dt>Età</dt><dd>${v.age} anni</dd>
+            <dt>Morale</dt><dd><small>non ancora in gioco</small></dd>
+            <dt>Stanchezza</dt><dd><div class="bar"><span style="width:${(fatigue * 100).toFixed(0)}%"></span></div><small>${formatHours(v.hoursUsed)} spese su ${v.weeklyHours} h questa settimana</small></dd>
+            <dt>Skill</dt><dd>${esc(v.skills.join(', ') || 'braccia')}</dd>
+          </dl>
+          <h3>Caratteristiche</h3>
+          ${traits}
+          <div class="buttons"><button data-act="profile-close" class="confirm">Chiudi</button></div>
+        </div>
       </div>`;
   }
 
@@ -488,7 +630,7 @@ export class Hud {
   // ---------- fasi preparatorie ----------
 
   /** Fase 1: schede dei terreni a destra; quello selezionato si vede sulla mappa. */
-  private sitesParts(): Partial<Record<Region, string>> {
+  private sitesParts(): Parts {
     const sim = this.sim;
     const cards = sim.sites
       .map((site) => {
@@ -509,46 +651,46 @@ export class Hud {
       .join('');
     return {
       top: this.brand('Fase 1 · Scegli il terreno', '<small>Più un terreno è difficile, più cassa e punti volontariato dà, e più vale il punteggio finale. I "?" si scoprono con il sopralluogo.</small>'),
-      right: cards,
-      bottom: this.donate() + this.controls(),
+      right: cards + this.donate(),
     };
   }
 
-  /** Fase 2: la squadra a sinistra, chi può unirsi a destra. */
-  private teamParts(): Partial<Record<Region, string>> {
+  /** Fase 2: la squadra a sinistra (un clic apre la scheda, dove si cambia l'aspetto), chi può unirsi a destra. */
+  private teamParts(): Parts {
     const sim = this.sim;
     const s = sim.state;
-    const row = (name: string, archetypeId: string, button: string) => {
+    const row = (name: string, archetypeId: string, face: string, button: string, profile = '') => {
       const a = sim.archetype(archetypeId);
-      const color = SHIRTS[a.id] ?? SHIRTS.base;
       const skills = a.skills.length ? a.skills.join(', ') : 'braccia';
-      return `<li class="cand"><i style="background:${color}"></i>
+      return `<li class="cand" ${profile ? `data-profile="${profile}" title="Apri la scheda: nome e aspetto"` : ''}>${face}
         <span><strong>${esc(name)}</strong> <small>${esc(a.name)}</small><br><small>${esc(skills)} · ${a.weeklyHours} h/sett · ${a.pvCost} PV</small></span>
         ${button}</li>`;
     };
-    const team = s.volunteers.map((v) => row(v.name, v.archetypeId, `<button data-dismiss="${v.id}">Congeda</button>`)).join('');
+    const team = s.volunteers.map((v) => row(v.name, v.archetypeId, this.face(v), `<button data-dismiss="${v.id}">Congeda</button>`, v.id)).join('');
     const pool = sim.candidates
       .filter((m) => !s.volunteers.some((v) => v.id === m.id))
       .map((m) => {
         const errors = sim.recruitErrors(m.id);
-        return row(m.name, m.archetypeId, `<button data-recruit="${m.id}" ${errors.length ? `disabled title="${esc(errors.join('; '))}"` : ''}>Recluta</button>`);
+        const face = `<img class="face" alt="" src="${volunteerPortrait(volunteerLook(sim, { ...m, skills: [], weeklyHours: 0, hoursUsed: 0, busy: false }, false), 2)}">`;
+        return row(m.name, m.archetypeId, face, `<button data-recruit="${m.id}" ${errors.length ? `disabled title="${esc(errors.join('; '))}"` : ''}>Recluta</button>`);
       })
       .join('');
     const problems = sim.teamProblems();
     return {
-      top:
-        this.brand(`Fase 2 · Componi la squadra · ${esc(sim.siteName)}`, '<small>Gli specialisti costano di più ma lavorano meglio e guidano fino a 2 volontari senza la loro skill. Presidente e segretario/a: uno solo.</small>') +
-        `<section class="card money"><p>Punti volontariato <strong>${s.pv} PV</strong></p></section>
+      top: this.brand(
+        `Fase 2 · Componi la squadra · ${esc(sim.siteName)}`,
+        '<small>Gli specialisti costano di più ma lavorano meglio e guidano fino a 2 volontari senza la loro skill. Presidente e segretario/a: uno solo. Clicca un volontario per sceglierne nome e aspetto.</small>',
+      ),
+      left: `<section class="card"><h2>La squadra (${s.volunteers.length})</h2><ul class="cands">${team || '<li><small>Ancora nessuno.</small></li>'}</ul></section>`,
+      leftFoot: `<section class="card money"><p>Punti volontariato <strong>${s.pv} PV</strong></p></section>
         <section class="card day">${problems.length ? `<ul class="errors">${problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
           <button data-act="confirm-team" class="confirm" ${problems.length ? 'disabled' : ''}>Conferma la squadra</button></section>`,
-      left: `<section class="card"><h2>La squadra (${s.volunteers.length})</h2><ul class="cands">${team || '<li><small>Ancora nessuno.</small></li>'}</ul></section>`,
       right: `<section class="card"><h2>Chi può unirsi</h2><ul class="cands">${pool}</ul></section>`,
-      bottom: this.controls(),
     };
   }
 
   /** Fase 4: strumenti dell'editor a sinistra, preventivo, gradimento e controlli a destra. */
-  private designParts(): Partial<Record<Region, string>> {
+  private designParts(): Parts {
     const sim = this.sim;
     const s = sim.state;
     const sum = sim.designSummary();
@@ -562,15 +704,22 @@ export class Hud {
     ].join('');
     const materials = sum.materials.map((m) => `${m.qty} × ${esc(sim.materialName(m.id).toLowerCase())}`).join(', ') || '—';
     const pratiche = sum.pratiche.map((id) => esc(sim.praticaDef(id).name)).join(', ') || '—';
-    const problems = sum.problems.length
-      ? `<ul class="errors">${sum.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`
-      : '<p><small>Nessun problema: il progetto si può confermare.</small></p>';
+    const shortfall = sum.shortfallEur > 0
+      ? `<p class="warn"><small>Il preventivo supera la cassa di <strong>${sum.shortfallEur} €</strong>: si può confermare lo stesso, ma i fondi mancanti vanno raccolti in cantiere prima di ordinare i materiali.</small></p>`
+      : '';
+    const problems =
+      (sum.problems.length
+        ? `<ul class="errors">${sum.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`
+        : '<p><small>Nessun problema: il progetto si può confermare.</small></p>') + shortfall;
+    const moving = this.editor.moving !== null ? s.grid.placements.find((p) => p.uid === this.editor.moving) : undefined;
+    const hint = moving
+      ? `<p class="hint">Stai spostando: <strong>${esc(sim.elementDef(moving.elementId).name)}</strong>. Clicca dove posarlo; tasto destro o Esc per annullare.</p>`
+      : '<p><small>Senza strumento scelto, clicca un arredo già posato per spostarlo.</small></p>';
     return {
-      top:
-        this.brand(`Progettazione del parco · ${esc(sim.siteName)}`, '<small>Scegli un elemento e clicca sul terreno per posarlo. Ogni elemento diventa un lavoro del cantiere.</small>') +
-        `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Preventivo <strong>${sum.costEur} €</strong></p></section>
+      top: this.brand(`Progettazione del parco · ${esc(sim.siteName)}`, '<small>Scegli un arredo e clicca sul terreno per posarlo. Ogni arredo diventa un lavoro del cantiere.</small>'),
+      left: `<section class="card"><h2>Arredi</h2>${hint}<div class="tools-grid">${tools}</div></section>`,
+      leftFoot: `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Preventivo <strong>${sum.costEur} €</strong></p></section>
         <section class="card day"><button data-act="confirm" class="confirm" ${sum.problems.length ? 'disabled' : ''}>Conferma il progetto e apri il cantiere</button></section>`,
-      left: `<section class="card"><h2>Elementi</h2><div class="tools-grid">${tools}</div></section>`,
       right: `<section class="card"><h2>Preventivo</h2>
           <p>Materiali: <strong>${sum.costEur} €</strong> · Lavoro: <strong>${sum.hours} h</strong> complessive, preparazione del terreno compresa</p>
           ${sum.riskTiles > 0 ? `<p class="warn"><small>Costruisci su ${sum.riskTiles} tile a rischio: servono lavori di messa in sicurezza.</small></p>` : ''}
@@ -583,7 +732,6 @@ export class Hud {
           <small>${sum.appeal} su 100 · conta la varietà più della quantità</small>
         </section>
         <section class="card"><h2>Controlli</h2>${problems}</section>`,
-      bottom: this.controls(),
     };
   }
 
@@ -612,6 +760,10 @@ export class Hud {
 
   private onInput(e: Event) {
     const el = e.target as HTMLInputElement;
+    if (el.dataset.name) {
+      this.customize(el.dataset.name, { name: el.value });
+      return;
+    }
     if (!el.dataset.vol) return;
     if (el.checked) this.team.add(el.dataset.vol);
     else this.team.delete(el.dataset.vol);
@@ -619,19 +771,51 @@ export class Hud {
     this.render();
   }
 
+  /** Nome, pelle o capelli dalla scheda del volontario (Fase 2). */
+  private customize(id: string, patch: { name?: string; skin?: string; hair?: string }) {
+    try {
+      this.sim.customizeVolunteer(id, patch);
+      this.message = '';
+    } catch (err) {
+      this.message = (err as Error).message;
+    }
+    this.actions.onChange();
+    this.render();
+  }
+
   private onClick(e: Event) {
     const target = e.target as HTMLElement;
     // Clic sullo sfondo della modale: si chiude come con Annulla.
-    if (target === this.dialog && this.dialog.dataset.kind === 'activity') {
+    if (target === this.dialog && (this.dialog.dataset.kind === 'activity' || this.dialog.dataset.kind === 'profile')) {
       this.closeActivity();
+      this.profile = null;
       this.render();
       return;
     }
     const toggle = target.closest<HTMLButtonElement>('button[data-toggle]');
     if (toggle) {
-      const r = toggle.dataset.toggle as 'left' | 'right';
+      const r = toggle.dataset.toggle as Side;
       this.collapsed[r] = !this.collapsed[r];
       this.render();
+      return;
+    }
+    const sheetBtn = target.closest<HTMLButtonElement>('button[data-sheet]');
+    if (sheetBtn) {
+      const side = sheetBtn.dataset.sheet as Side;
+      this.sheet = this.sheet === side ? null : side;
+      this.menuOpen = false;
+      this.render();
+      return;
+    }
+    const swatch = target.closest<HTMLButtonElement>('button[data-skin], button[data-hair]');
+    if (swatch && this.profile) {
+      this.customize(this.profile, swatch.dataset.skin ? { skin: swatch.dataset.skin } : { hair: swatch.dataset.hair });
+      return;
+    }
+    // Riga di un volontario: apre la sua scheda (ma non se si clicca un suo pulsante).
+    const row = target.closest<HTMLElement>('[data-profile]');
+    if (row && !target.closest('button')) {
+      this.openProfile(row.dataset.profile!);
       return;
     }
     const openBtn = target.closest<HTMLButtonElement>('button[data-open]');
@@ -666,6 +850,7 @@ export class Hud {
     if (toolBtn) {
       const t = toolBtn.dataset.tool!;
       this.editor.tool = this.editor.tool === t ? null : t;
+      this.editor.moving = null;
       this.render();
       return;
     }
@@ -703,6 +888,15 @@ export class Hud {
           this.actions.onZoom();
           this.render();
           return;
+        case 'menu':
+          this.menuOpen = !this.menuOpen;
+          this.sheet = null;
+          this.render();
+          return;
+        case 'profile-close':
+          this.profile = null;
+          this.render();
+          return;
         case 'close':
           this.sim.closeSession(now);
           break;
@@ -730,16 +924,23 @@ export class Hud {
         case 'confirm-team':
           this.sim.confirmTeam();
           break;
-        case 'confirm':
-          if (!askConfirm('Confermare il progetto? Dopo non si potrà più modificare.')) return;
+        case 'confirm': {
+          const short = this.sim.designSummary().shortfallEur;
+          const extra = short > 0 ? ` Mancano ${short} € rispetto alla cassa: andranno raccolti durante il cantiere.` : '';
+          if (!askConfirm(`Confermare il progetto? Dopo non si potrà più modificare.${extra}`)) return;
           this.sim.confirmProject(now);
           this.editor.tool = null;
+          this.editor.moving = null;
           break;
+        }
         case 'notify':
           void Notification.requestPermission();
+          this.menuOpen = false;
           break;
         case 'export':
           this.actions.onExport();
+          this.menuOpen = false;
+          this.render();
           return;
         case 'new':
           if (confirmNewGame()) this.actions.onNewGame();

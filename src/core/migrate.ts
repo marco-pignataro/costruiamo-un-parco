@@ -13,8 +13,8 @@ type AnyState = Record<string, unknown> & { version?: number };
 export function migrate(raw: unknown, c: Content): GameState {
   let s = raw as AnyState;
   const start = s.version;
-  if (start === 8) return s as unknown as GameState;
-  if (typeof start !== 'number' || start < 1 || start > 7) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (start === 9) return s as unknown as GameState;
+  if (typeof start !== 'number' || start < 1 || start > 8) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
   if (s.version === 1) s = v1to2(s, c);
   if (s.version === 2) s = v2to3(s, c);
   if (s.version === 3) s = { ...s, version: 4, stage: 'cantiere' }; // v3 → v4: le partite esistenti sono già in cantiere
@@ -22,6 +22,7 @@ export function migrate(raw: unknown, c: Content): GameState {
   if (s.version === 5) s = { ...s, version: 6, survey: [], hiddenHazards: [], rng: ((s.lastTick as number) >>> 0) || 1 }; // v5 → v6: niente insidie per le partite già avviate
   if (s.version === 6) s = v6to7(s);
   if (s.version === 7) s = v7to8(s);
+  if (s.version === 8) s = v8to9(s, c);
   return dropUnknownActive(s as unknown as GameState, c);
 }
 
@@ -81,6 +82,18 @@ function v7to8(s: AnyState): AnyState {
     ]);
   }
   return out;
+}
+
+/**
+ * v8 → v9: i volontari hanno età e aspetto (pelle, capelli). Si prendono dal
+ * candidato con lo stesso id; chi non c'è più nei contenuti riceve i primi colori.
+ */
+function v8to9(s: AnyState, c: Content): AnyState {
+  const volunteers = (s.volunteers as Volunteer[]).map((v) => {
+    const m = c.candidates.find((x) => x.id === v.id);
+    return { ...v, age: m?.age ?? 40, skin: m?.skin ?? c.appearance.skin[0].id, hair: m?.hair ?? c.appearance.hair[0].id };
+  });
+  return { ...s, version: 9, volunteers };
 }
 
 function dropUnknownActive(s: GameState, c: Content): GameState {

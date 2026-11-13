@@ -99,3 +99,53 @@ describe('Fase 2: squadra con i PV', () => {
     expect(sim.state.pv).toBe(0);
   });
 });
+
+describe('Fase 2: aspetto dei volontari', () => {
+  it('chi entra in squadra porta età, pelle e capelli del candidato', () => {
+    const sim = squad();
+    sim.recruit('v5');
+    expect(sim.volunteer('v5')).toMatchObject({ name: 'Turi', age: 29, skin: 'ambrata', hair: 'nero' });
+  });
+
+  it('nome, pelle e capelli si cambiano mentre si compone la squadra', () => {
+    const sim = squad();
+    sim.recruit('v5');
+    sim.customizeVolunteer('v5', { name: '  Turi   il Grande ', skin: 'scura', hair: 'rosso' });
+    expect(sim.volunteer('v5')).toMatchObject({ name: 'Turi il Grande', skin: 'scura', hair: 'rosso' });
+  });
+
+  it('nomi vuoti o troppo lunghi e colori sconosciuti sono rifiutati', () => {
+    const sim = squad();
+    sim.recruit('v5');
+    expect(() => sim.customizeVolunteer('v5', { name: '   ' })).toThrow('vuoto');
+    expect(() => sim.customizeVolunteer('v5', { name: 'x'.repeat(40) })).toThrow('al massimo');
+    expect(() => sim.customizeVolunteer('v5', { skin: 'verde' })).toThrow('sconosciuto');
+    expect(() => sim.customizeVolunteer('v5', { hair: 'verde' })).toThrow('sconosciuto');
+    expect(sim.volunteer('v5').name).toBe('Turi');
+  });
+
+  it('dopo la conferma della squadra l\'aspetto non cambia più', () => {
+    const sim = squad();
+    for (const id of ['v1', 'v5', 'v6']) sim.recruit(id);
+    sim.confirmTeam();
+    expect(() => sim.customizeVolunteer('v5', { hair: 'rosso' })).toThrow('Fase 2');
+  });
+
+  it('i colori dei candidati esistono tutti nella palette', () => {
+    for (const m of c.candidates) {
+      expect(c.appearance.skin.some((x) => x.id === m.skin)).toBe(true);
+      expect(c.appearance.hair.some((x) => x.id === m.hair)).toBe(true);
+    }
+  });
+
+  it('la stanchezza è la parte del monte settimanale già spesa', () => {
+    const sim = squad();
+    sim.recruit('v5');
+    const v = sim.volunteer('v5');
+    expect(sim.fatigue(v)).toBe(0);
+    v.hoursUsed = 3;
+    expect(sim.fatigue(v)).toBe(0.5);
+    v.hoursUsed = 9;
+    expect(sim.fatigue(v)).toBe(1);
+  });
+});

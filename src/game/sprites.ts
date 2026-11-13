@@ -1,4 +1,6 @@
 import type * as Phaser from 'phaser';
+import type { Simulation } from '../core/simulation';
+import type { Volunteer } from '../core/types';
 import { ISO } from './iso';
 
 /**
@@ -40,6 +42,11 @@ export const SHIRTS: Record<string, string> = {
   coordinatore: '#e84393',
 };
 
+/**
+ * Volontario visto davanti e di schiena. c = maglietta, u = stampa bianca della
+ * maglietta di gruppo (logo sul petto, lato cuore; scritta sulla schiena):
+ * senza divisa diventa del colore della maglietta.
+ */
 const VOLUNTEER = [
   '...hhhh...',
   '..hhhhhh..',
@@ -47,8 +54,8 @@ const VOLUNTEER = [
   '..ssssss..',
   '...ssss...',
   '..cccccc..',
-  '.cccccccc.',
-  '.sccccccs.',
+  '.cccccuuc.',
+  '.scccccus.',
   '.sccccccs.',
   '..cccccc..',
   '..pppppp..',
@@ -56,6 +63,86 @@ const VOLUNTEER = [
   '..pp..pp..',
   '..bb..bb..',
 ];
+
+const VOLUNTEER_BACK = [
+  '...hhhh...',
+  '..hhhhhh..',
+  '..hhhhhh..',
+  '..hhhhhh..',
+  '...ssss...',
+  '..cccccc..',
+  '.ccuuuucc.',
+  '.sccccccs.',
+  '.scuucucs.',
+  '..cccccc..',
+  '..pppppp..',
+  '..pp..pp..',
+  '..pp..pp..',
+  '..bb..bb..',
+];
+
+/** Maglietta di gruppo di Puli-AMO: blu, con logo e scritta bianchi. La indossano tutti sul campo. */
+export const UNIFORM_SHIRT = '#2a5fa8';
+const UNIFORM_PRINT = '#f4f1e8';
+
+/** Sul campo (sopralluogo e weekend) tutti indossano la maglietta di gruppo; in città quella dell'archetipo. */
+export function inUniform(sim: Simulation): boolean {
+  const s = sim.state;
+  return s.stage === 'sopralluogo' || (s.stage === 'cantiere' && s.phase === 'operativa');
+}
+
+/** Aspetto di un volontario per lo sprite: colori di pelle, capelli e maglietta. */
+export interface VolunteerLook {
+  skin: string;
+  hair: string;
+  shirt: string;
+  /** Maglietta di gruppo: blu con logo e scritta bianchi. */
+  uniform: boolean;
+}
+
+/** Colori del volontario: pelle e capelli scelti in Fase 2, maglietta dell'archetipo o di gruppo. */
+export function volunteerLook(sim: Simulation, v: Volunteer, uniform: boolean): VolunteerLook {
+  const skin = sim.appearance.skin.find((c) => c.id === v.skin)?.color ?? PALETTE.s;
+  const hair = sim.appearance.hair.find((c) => c.id === v.hair)?.color ?? PALETTE.h;
+  return { skin, hair, shirt: uniform ? UNIFORM_SHIRT : (SHIRTS[v.archetypeId] ?? SHIRTS.base), uniform };
+}
+
+function lookColors(look: VolunteerLook): Record<string, string> {
+  return { s: look.skin, h: look.hair, c: look.shirt, u: look.uniform ? UNIFORM_PRINT : look.shirt };
+}
+
+/** Texture del volontario con quei colori, davanti o di schiena; si crea la prima volta che serve. */
+export function volunteerTexture(scene: Phaser.Scene, look: VolunteerLook, back = false): string {
+  const key = `vol-${look.skin}-${look.hair}-${look.shirt}-${look.uniform ? 'u' : 'n'}-${back ? 'b' : 'f'}`;
+  paint(scene, key, back ? VOLUNTEER_BACK : VOLUNTEER, lookColors(look));
+  return key;
+}
+
+const portraits = new Map<string, string>();
+
+/** Lo stesso sprite come immagine per la HUD (data URL), ingrandito senza sfumature. */
+export function volunteerPortrait(look: VolunteerLook, scale = 12): string {
+  const key = `${look.skin}-${look.hair}-${look.shirt}-${look.uniform}-${scale}`;
+  const cached = portraits.get(key);
+  if (cached) return cached;
+  const rows = VOLUNTEER;
+  const canvas = document.createElement('canvas');
+  canvas.width = rows[0].length * scale;
+  canvas.height = rows.length * scale;
+  const ctx = canvas.getContext('2d')!;
+  const extra = lookColors(look);
+  rows.forEach((row, y) =>
+    [...row].forEach((ch, x) => {
+      const color = extra[ch] ?? PALETTE[ch];
+      if (!color) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * scale, y * scale, scale, scale);
+    }),
+  );
+  const url = canvas.toDataURL();
+  portraits.set(key, url);
+  return url;
+}
 
 const TRASH = ['..ww..', '.wrrw.', 'gwwwwg', 'gggggg', '.g..g.'];
 
@@ -258,5 +345,4 @@ export function createTextures(scene: Phaser.Scene): void {
   paint(scene, 'panchina', BENCH);
   paint(scene, 'staccionata', FENCE);
   paint(scene, 'scrivania', DESK);
-  for (const [archetype, shirt] of Object.entries(SHIRTS)) paint(scene, `volontario-${archetype}`, VOLUNTEER, { c: shirt });
 }
