@@ -407,7 +407,11 @@ A fine parte burocratica il gioco passa da solo al parco, con una breve transizi
 - **A destra:** registro delle pratiche e ordini in consegna (in città), elenco dei lavori disponibili e bloccati (al parco).
 - **In basso:** compiti in corso con il loro timer, pulsante di zoom.
 
-La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque risoluzione; la pixel art resta nella scena.
+In basso a destra c'è anche il menu della partita (notifiche, esporta salvataggio, nuova partita). I pannelli di sinistra e di destra si possono richiudere per vedere più mappa. Nelle fasi preparatorie la disposizione è la stessa: terreni a destra; squadra a sinistra e candidati a destra; strumenti dell'editor a sinistra, preventivo, gradimento e controlli a destra; il pulsante di conferma sempre in alto a destra.
+
+La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque risoluzione; la pixel art resta nella scena. La visuale intera si adatta allo spazio libero tra i pannelli; il tasto Z fa lo stesso del pulsante di zoom.
+
+**Prototipo.** Ogni attività avviabile ha una voce nella lista "Da fare" a destra, con il primo motivo per cui è bloccata; cliccandola si apre la modale centrale. La modale si chiude con Annulla, con Esc o cliccando fuori.
 
 **Zoom e trascinamento.** Il pulsante di zoom alterna due soli livelli: la visuale intera della scena e un ingrandimento fisso, non regolabile. Da ingranditi la mappa si sposta cliccando e trascinando, entro i bordi della scena.
 

@@ -4,6 +4,7 @@ import { defaultContent } from './core/content';
 import { migrate } from './core/migrate';
 import { Simulation } from './core/simulation';
 import { browserStore, exportSave } from './core/storage';
+import { NO_INSETS, type View } from './game/camera';
 import { ParkScene, type EditorTool } from './game/ParkScene';
 import { Hud } from './ui/hud';
 import './style.css';
@@ -17,8 +18,9 @@ async function boot() {
   const save = () => void browserStore.save(sim.state);
   let notified = sim.state.reports.length;
   const editor: EditorTool = { tool: null };
+  const view: View = { camera: null, insets: NO_INSETS };
 
-  const hud = new Hud(document.getElementById('hud')!, document.getElementById('modal')!, () => sim, {
+  const hud = new Hud(document.getElementById('hud')!, document.getElementById('dialog')!, document.getElementById('modal')!, () => sim, {
     onChange: save,
     onNewGame: async () => {
       await browserStore.clear();
@@ -31,6 +33,12 @@ async function boot() {
       a.href = URL.createObjectURL(exportSave(sim.state));
       a.download = 'costruiamo-un-parco-salvataggio.json';
       a.click();
+    },
+    onZoom: () => view.camera?.toggleZoom(),
+    isZoomed: () => view.camera?.isZoomed ?? false,
+    onInsets: (insets) => {
+      view.insets = insets;
+      view.camera?.setInsets(insets);
     },
   }, editor);
 
@@ -48,6 +56,7 @@ async function boot() {
         game.scene.add('park', ParkScene, true, {
           sim: () => sim,
           editor,
+          view,
           onEdit: () => {
             save();
             hud.render();

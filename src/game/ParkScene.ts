@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import type { Simulation } from '../core/simulation';
 import type { PlanTask, SurfaceId } from '../core/types';
-import { IsoCamera } from './camera';
+import { IsoCamera, type View } from './camera';
 import { LAYER, type Point, type Rect, areaBounds, depthOf, footprintCenter, footprintCorners, tileCenter, worldToTile } from './iso';
 import { SHIRTS, backdrop, createTextures } from './sprites';
 
@@ -46,6 +46,7 @@ export const ERASER = 'gomma';
 interface SceneData {
   sim: () => Simulation;
   editor: EditorTool;
+  view: View;
   onEdit: () => void;
 }
 
@@ -149,15 +150,14 @@ export class ParkScene extends Phaser.Scene {
 
     this.hoverFrame = this.add.graphics().setDepth(LAYER.ui);
     this.input.mouse?.disableContextMenu();
-    this.camera = new IsoCamera(this, world);
+    this.camera = new IsoCamera(this, world, this.initData.view.insets);
+    this.initData.view.camera = this.camera;
+    this.events.once('shutdown', () => {
+      if (this.initData.view.camera === this.camera) this.initData.view.camera = null;
+    });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.showHover(p));
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (!this.camera.wasDrag()) this.edit(p);
-    });
-    // Provvisorio, finché il pulsante non arriva nella HUD: Z alterna i due livelli di zoom.
-    this.input.keyboard?.on('keydown-Z', () => {
-      const p = this.input.activePointer;
-      this.camera.toggleZoom(this.camera.isZoomed ? undefined : { x: p.worldX, y: p.worldY });
     });
 
     // In attesa: sul marciapiede davanti, a sinistra del terreno.

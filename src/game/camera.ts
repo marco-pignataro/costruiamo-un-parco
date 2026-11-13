@@ -4,10 +4,30 @@ import { type Rect, zoomLevels } from './iso';
 /** Oltre questi pixel di spostamento un clic diventa un trascinamento. */
 const DRAG_THRESHOLD = 4;
 
+/** Spazio occupato dalla HUD su ogni bordo dello schermo, in pixel CSS. */
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+/**
+ * Ponte tra HUD e scene: la HUD dice quanto spazio occupa e chiede lo zoom,
+ * la scena attiva registra qui la sua telecamera.
+ */
+export interface View {
+  camera: IsoCamera | null;
+  insets: Insets;
+}
+
 /**
  * Telecamera comune alle scene isometriche: due soli livelli di zoom (visuale
  * intera o ingrandimento fisso) e, da ingranditi, la mappa si sposta
- * trascinandola. Un trascinamento non vale come clic: le scene chiedono
+ * trascinandola. La visuale intera sta nello spazio libero tra i pannelli
+ * della HUD. Un trascinamento non vale come clic: le scene chiedono
  * `wasDrag()` prima di trattare il rilascio del puntatore.
  */
 export class IsoCamera {
@@ -18,6 +38,7 @@ export class IsoCamera {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly world: Rect,
+    private insets: Insets = NO_INSETS,
   ) {
     const cam = scene.cameras.main;
     cam.setRoundPixels(true);
@@ -53,26 +74,62 @@ export class IsoCamera {
     return this.dragged;
   }
 
-  /** Alterna visuale intera e ingrandimento; ingrandisce attorno al punto dato (o al centro). */
+  /** Alterna visuale intera e ingrandimento; ingrandisce attorno al punto dato (o al centro della vista). */
   toggleZoom(focus?: { x: number; y: number }): void {
     this.zoomed = !this.zoomed;
+    if (this.zoomed && !focus) {
+      // Senza un punto si ingrandisce il centro della zona libera tra i pannelli.
+      const { width: W, height: H } = this.scene.scale;
+      const i = this.insets;
+      const p = this.scene.cameras.main.getWorldPoint(i.left + (W - i.left - i.right) / 2, i.top + (H - i.top - i.bottom) / 2);
+      focus = { x: p.x, y: p.y };
+    }
     this.apply(focus);
+  }
+
+  setInsets(insets: Insets): void {
+    this.insets = insets;
+    this.apply();
   }
 
   private apply(focus?: { x: number; y: number }): void {
     const cam = this.scene.cameras.main;
+    const { width: W, height: H } = this.scene.scale;
+    const i = this.insets;
     const w = this.world.right - this.world.left;
     const h = this.world.bottom - this.world.top;
-    const { full, close } = zoomLevels(this.scene.scale.width, this.scene.scale.height, w, h);
-    const center = focus ?? { x: cam.midPoint.x || this.world.left + w / 2, y: cam.midPoint.y || this.world.top + h / 2 };
+    const free = { w: Math.max(80, W - i.left - i.right), h: Math.max(80, H - i.top - i.bottom) };
+    const { full, close } = zoomLevels(free.w, free.h, w, h);
     const zoom = this.zoomed ? close : full;
+    const before = { x: cam.midPoint.x, y: cam.midPoint.y };
     cam.setZoom(zoom);
-    // Limiti grandi almeno quanto la vista, centrati sulla scena: se la scena
-    // sta tutta nello schermo resta in mezzo, se no si trascina fino ai bordi.
-    const vw = Math.max(w, this.scene.scale.width / zoom);
-    const vh = Math.max(h, this.scene.scale.height / zoom);
-    cam.setBounds(this.world.left - (vw - w) / 2, this.world.top - (vh - h) / 2, vw, vh);
-    if (this.zoomed) cam.centerOn(center.x, center.y);
-    else cam.centerOn(this.world.left + w / 2, this.world.top + h / 2);
+    // Limiti: la scena più lo spazio sotto i pannelli, così ogni suo angolo
+    // si può portare nella zona libera; se resta più piccola della vista si
+    // allargano in modo uguale e la scena sta in mezzo alla zona libera.
+    let left = this.world.left - i.left / zoom;
+    let right = this.world.right + i.right / zoom;
+    let top = this.world.top - i.top / zoom;
+    let bottom = this.world.bottom + i.bottom / zoom;
+    const vw = W / zoom;
+    const vh = H / zoom;
+    if (right - left < vw) {
+      const grow = (vw - (right - left)) / 2;
+      left -= grow;
+      right += grow;
+    }
+    if (bottom - top < vh) {
+      const grow = (vh - (bottom - top)) / 2;
+      top -= grow;
+      bottom += grow;
+    }
+    cam.setBounds(left, top, right - left, bottom - top);
+    if (!this.zoomed) {
+      cam.centerOn((left + right) / 2, (top + bottom) / 2);
+      return;
+    }
+    // Il punto scelto va al centro della zona libera, non dello schermo;
+    // senza un punto (ridimensionamento, pannelli che cambiano) la vista resta dov'era.
+    if (focus) cam.centerOn(focus.x - (i.left - i.right) / 2 / zoom, focus.y - (i.top - i.bottom) / 2 / zoom);
+    else cam.centerOn(before.x, before.y);
   }
 }
