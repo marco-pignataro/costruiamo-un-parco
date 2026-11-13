@@ -451,6 +451,12 @@ Pixel art isometrica (proiezione 2:1), palette ristretta ispirata ai colori di M
 - **Palette:** circa 32 colori. Azzurro dello Stretto, verde della macchia mediterranea, ocra della terra, rosso dei coppi, grigio del cemento per i terreni degradati.
 - **Trasformazione visibile:** il terreno passa visivamente da grigio-marrone a verde man mano che il parco cresce. È il feedback emotivo principale.
 - **Volontari:** maglietta con i colori di Puli-AMO; ogni archetipo riconoscibile da un accessorio (cappello, cassetta attrezzi, tablet).
+- **Animazioni dei volontari (deciso il 13/11/2026):** niente animazioni per singolo compito né per singolo socio, che a 16×24 px non si distinguerebbero e moltiplicherebbero il lavoro.
+  - Un corpo base comune; in Aseprite l'accessorio dell'archetipo sta su un livello separato e si sovrappone fotogramma per fotogramma alle stesse animazioni.
+  - Animazioni per tipo di gesto, circa 6-8: scavare, trasportare, martellare, piantare, falciare/rastrellare, lavorare alla scrivania (pratiche e raccolta online in sede), parlare allo sportello (uffici), più camminata e attesa.
+  - Ogni compito o lavorazione dichiara nel suo JSON l'animazione da usare (es. `"anim": "scavare"`): bonifica → trasportare, vangatura → scavare, panchina → martellare. È un contenuto, non codice.
+  - Varietà individuale con lo scambio di palette (pelle, capelli), così due volontari dello stesso archetipo non sembrano gemelli.
+  - Eventuale eccezione: un'animazione di attesa propria per presidente e segretario/a, che sono unici.
 - **Sfondi:** lo Stretto con i traghetti, la costa calabra, il profilo della città nel menu e nelle schermate di caricamento.
 - **Mini-dungeon:** palette fredda grigio-beige, neon da ufficio, pile di fascicoli.
 - **Interfaccia:** stile cartellina e fascicolo, timbri come conferme, post-it per le notifiche.
