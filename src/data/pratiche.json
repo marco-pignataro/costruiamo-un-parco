@@ -1,4 +1,5 @@
 [
-  { "id": "assicurazione", "name": "Assicurazione dei volontari", "office": "Assicurazione", "requestHours": 2, "requestSkill": "burocrazia", "waitDays": 3, "unlocks": "Tutti i lavori in cantiere" },
-  { "id": "occupazione-suolo", "name": "Occupazione di suolo pubblico", "office": "Ufficio Suolo Pubblico", "requestHours": 1, "requestSkill": "burocrazia", "waitDays": 5, "unlocks": "Eventi di raccolta fondi in piazza" }
+  { "id": "assicurazione", "name": "Assicurazione dei volontari", "office": "Assicurazione", "mode": "timer", "requestHours": 2, "requestSkill": "burocrazia", "waitDays": 3, "unlocks": "Tutti i lavori in cantiere" },
+  { "id": "smaltimento", "name": "Ritiro dei rifiuti raccolti", "office": "Ufficio Igiene Cittadina", "mode": "side-quest", "sideQuest": "differenziata", "requestHours": 0, "requestSkill": null, "waitDays": 0, "unlocks": "Bonifica dei rifiuti" },
+  { "id": "occupazione-suolo", "name": "Occupazione di suolo pubblico", "office": "Ufficio Suolo Pubblico", "mode": "timer", "requestHours": 1, "requestSkill": "burocrazia", "waitDays": 5, "unlocks": "Eventi di raccolta fondi in piazza" }
 ]

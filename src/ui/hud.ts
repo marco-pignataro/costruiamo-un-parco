@@ -5,7 +5,15 @@ import type { PraticaStatus } from '../core/types';
 import { ERASER, type EditorTool } from '../game/ParkScene';
 import { SHIRTS } from '../game/sprites';
 
-type Kind = 'lavoro' | 'richiesta' | 'ordine' | 'analisi';
+type Kind = 'lavoro' | 'richiesta' | 'ordine' | 'analisi' | 'sidequest';
+
+/** Mini-puzzle aperto: delegazione scelta, ordine di presentazione e risposte date. */
+interface Puzzle {
+  praticaId: string;
+  volunteerIds: string[];
+  order: number[];
+  answers: Record<number, string>;
+}
 type Selection = { kind: Kind; id: string } | null;
 
 const STATUS_LABEL: Record<PraticaStatus, string> = {
@@ -28,6 +36,7 @@ export class Hud {
   private selection: Selection = null;
   private team = new Set<string>();
   private message = '';
+  private puzzle: Puzzle | null = null;
 
   constructor(
     private readonly root: HTMLElement,
@@ -59,9 +68,15 @@ export class Hud {
       return;
     }
     const stage = this.sim.state.stage;
+    if (stage === 'cantiere' && this.puzzle) {
+      this.renderPuzzle();
+      this.renderModal();
+      return;
+    }
     if (stage !== 'cantiere' && stage !== 'sopralluogo') {
       if (stage === 'terreno') this.renderSites();
       else if (stage === 'squadra') this.renderTeam();
+      else if (stage === 'inaugurato') this.renderFinale();
       else this.renderDesign();
       this.renderModal();
       return;
@@ -106,7 +121,11 @@ export class Hud {
       ...(!surveying && s.phase === 'burocratica'
         ? sim.allPratiche
             .filter((p) => sim.pratica(p.id).status === 'da-avviare')
-            .map((p) => ({ kind: 'richiesta' as const, id: p.id, label: `Pratica: ${p.name} (richiesta ${p.requestHours} h)` }))
+            .map((p) =>
+              sim.isSideQuest(p.id)
+                ? { kind: 'sidequest' as const, id: p.id, label: `Richiesta diretta: ${p.name} (una giornata, mini-puzzle)` }
+                : { kind: 'richiesta' as const, id: p.id, label: `Pratica: ${p.name} (richiesta ${p.requestHours} h)` },
+            )
         : []),
       ...(!surveying && s.phase === 'burocratica'
         ? sim.orderableTasks().map((t) => ({
@@ -143,14 +162,24 @@ export class Hud {
             ? sim.previewOrder(this.selection.id, ids)
             : this.selection.kind === 'analisi'
               ? sim.previewAnalysis(this.selection.id, ids)
-              : sim.previewRequest(this.selection.id, ids);
+              : this.selection.kind === 'sidequest'
+                ? sim.previewSideQuest(this.selection.id, ids)
+                : sim.previewRequest(this.selection.id, ids);
       const cost = 'costEur' in p && p.costEur !== undefined ? ` · spesa <strong>${p.costEur} €</strong>` : '';
-      preview =
-        p.hours !== undefined
-          ? `<p class="preview">Durata: <strong>${formatHours(p.hours)}</strong> · qualità <strong>${p.quality}</strong>${cost}</p>`
-          : '';
+      const def = this.selection.kind === 'lavoro' ? sim.taskDef(this.selection.id) : null;
+      const raise = def?.fundraisingEur && p.quality ? ` · raccolta prevista <strong>${sim.fundraisingYield(def.id, p.quality)} €</strong>` : '';
+      if (this.selection.kind === 'sidequest') {
+        const allowed = ids.length ? sim.sideQuestAllowedErrors(this.selection.id, ids) : sim.sideQuest(this.selection.id).allowedErrors;
+        preview = `<p class="preview">Una giornata: <strong>4 h</strong> di sessione e 4 h a testa · errori ammessi <strong>${allowed}</strong> (uno in più con il presidente)</p>`;
+      } else {
+        preview =
+          p.hours !== undefined
+            ? `<p class="preview">Durata: <strong>${formatHours(p.hours)}</strong> · qualità <strong>${p.quality}</strong>${cost}${raise}</p>`
+            : '';
+      }
       if (p.errors.length) preview += `<ul class="errors">${p.errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>`;
-      preview += `<button data-act="start" ${p.errors.length ? 'disabled' : ''}>Avvia</button>`;
+      const label = this.selection.kind === 'sidequest' ? 'Vai dal dirigente' : 'Avvia';
+      preview += `<button data-act="start" ${p.errors.length ? 'disabled' : ''}>${label}</button>`;
     }
 
     const pratiche = sim.allPratiche
@@ -212,6 +241,7 @@ export class Hud {
         <div class="bar session"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div>
         <small>Sessione: ${formatHours(used)} su ${limit} h</small>
         <button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="${closeTitle}">${closeLabel}</button>
+        ${surveying ? '' : this.inaugurateButton()}
       </header>
       ${this.message ? `<p class="msg">${esc(this.message)}</p>` : ''}
       <section><h2>Assegna un compito</h2>
@@ -229,10 +259,81 @@ export class Hud {
     this.renderModal();
   }
 
+  /** Pulsante donazioni: solo nel menu iniziale (scelta del terreno) e all'inaugurazione, mai durante il gioco. */
+  private donate(): string {
+    return `<section class="support">
+        <a class="donate" href="${ASSOCIATION.donationUrl}" target="_blank" rel="noopener">Sostieni ${esc(ASSOCIATION.name)}</a>
+        <small>Il gioco è gratuito. Se ti piace, aiuta l'associazione che rigenera davvero gli spazi di Messina. 5x1000: codice fiscale <strong>${ASSOCIATION.taxCode5x1000}</strong></small>
+      </section>`;
+  }
+
+  private inaugurateButton(): string {
+    const problems = this.sim.inaugurationProblems();
+    return `<button data-act="inaugurate" class="ribbon" ${problems.length ? `disabled title="${esc(problems.join('; '))}"` : ''}>Taglia il nastro: inaugura il parco</button>`;
+  }
+
+  /** Mini-puzzle della richiesta diretta: ogni oggetto nel contenitore giusto. */
+  private renderPuzzle(): void {
+    const sim = this.sim;
+    const pz = this.puzzle!;
+    const def = sim.praticaDef(pz.praticaId);
+    const q = sim.sideQuest(pz.praticaId);
+    const allowed = sim.sideQuestAllowedErrors(pz.praticaId, pz.volunteerIds);
+    const who = pz.volunteerIds.map((id) => sim.volunteer(id).name).join(', ');
+    const rows = pz.order
+      .map((i) => {
+        const it = q.items[i];
+        const bins = q.bins
+          .map((b) => `<button class="bin ${pz.answers[i] === b.id ? 'on' : ''}" data-item="${i}" data-bin="${b.id}">${esc(b.name)}</button>`)
+          .join('');
+        return `<li><strong>${esc(it.name)}</strong><div class="bins">${bins}</div></li>`;
+      })
+      .join('');
+    const done = Object.keys(pz.answers).length === q.items.length;
+    this.root.innerHTML = `
+      <header>
+        <h1>${esc(GAME_TITLE)}</h1>
+        <p>Richiesta diretta · ${esc(def.office)}</p>
+        <small>${esc(def.name)} · delegazione: ${esc(who)}</small>
+      </header>
+      <section class="puzzle">
+        <p>${esc(q.intro)}</p>
+        <p><small>Errori ammessi: <strong>${allowed}</strong>. La giornata si consuma comunque: 4 ore di sessione e 4 ore a testa.</small></p>
+        <ul>${rows}</ul>
+        <button data-act="puzzle-submit" class="confirm" ${done ? '' : 'disabled'}>Consegna al dirigente</button>
+        <button data-act="puzzle-cancel">Torna indietro (nessun costo)</button>
+      </section>`;
+  }
+
+  /** Fine partita: punteggio voce per voce e pulsante donazioni. */
+  private renderFinale(): void {
+    const sim = this.sim;
+    const f = sim.state.finale;
+    if (!f) return;
+    const P = (label: string, v: number, max: number) => `<tr><td>${label}</td><td>${v}</td><td><small>su ${max}</small></td></tr>`;
+    this.root.innerHTML = `
+      <header>
+        <h1>${esc(GAME_TITLE)}</h1>
+        <p>Il parco è inaugurato! · ${esc(sim.siteName)}</p>
+        <small>Progetto realizzato al ${Math.round(f.progress * 100)}% in ${f.week} ${f.week === 1 ? 'settimana' : 'settimane'}.</small>
+      </header>
+      <section><h2>Punteggio</h2>
+        <table class="score">
+          ${P('Realizzazione del progetto', f.realizzazione, 400)}
+          ${P('Gradimento dei cittadini', f.gradimento, 300)}
+          ${P('Qualità dei lavori', f.qualita, 150)}
+          ${P('Cassa avanzata', f.cassa, 100)}
+          ${P('Rapidità', f.rapidita, 100)}
+          <tr class="sum"><td>Totale × difficoltà del terreno (${f.multiplier.toLocaleString('it-IT')})</td><td colspan="2"><strong>${f.total}</strong></td></tr>
+        </table>
+      </section>
+      ${this.donate()}
+      <section><p><small>Prova un terreno più difficile: vale di più. Oppure un'altra squadra, un altro progetto.</small></p></section>
+      ${this.footer()}`;
+  }
+
   private footer(): string {
     return `<footer>
-        <a class="donate" href="${ASSOCIATION.donationUrl}" target="_blank" rel="noopener">Sostieni ${esc(ASSOCIATION.name)}</a>
-        <small>5x1000: codice fiscale ${ASSOCIATION.taxCode5x1000}</small>
         <div class="tools">
           <button data-act="notify">Attiva notifiche</button>
           <button data-act="export">Esporta salvataggio</button>
@@ -274,6 +375,7 @@ export class Hud {
       </header>
       ${this.message ? `<p class="msg">${esc(this.message)}</p>` : ''}
       <section class="sites">${cards}</section>
+      ${this.donate()}
       ${this.footer()}`;
   }
 
@@ -408,6 +510,12 @@ export class Hud {
       this.render();
       return;
     }
+    const binBtn = target.closest<HTMLButtonElement>('button[data-bin]');
+    if (binBtn && this.puzzle) {
+      this.puzzle.answers[Number(binBtn.dataset.item)] = binBtn.dataset.bin!;
+      this.render();
+      return;
+    }
     const toolBtn = target.closest<HTMLButtonElement>('button[data-tool]');
     if (toolBtn) {
       const t = toolBtn.dataset.tool!;
@@ -422,6 +530,18 @@ export class Hud {
       switch (btn.dataset.act) {
         case 'start':
           if (!this.selection) return;
+          if (this.selection.kind === 'sidequest') {
+            const ids = [...this.team];
+            const errs = this.sim.previewSideQuest(this.selection.id, ids).errors;
+            if (errs.length) throw new Error(errs.join('; '));
+            const n = this.sim.sideQuest(this.selection.id).items.length;
+            this.puzzle = { praticaId: this.selection.id, volunteerIds: ids, order: shuffle([...Array(n).keys()]), answers: {} };
+            this.selection = null;
+            this.team.clear();
+            this.message = '';
+            this.render();
+            return;
+          }
           if (this.selection.kind === 'lavoro') this.sim.startTask(this.selection.id, [...this.team], now);
           else if (this.selection.kind === 'ordine') this.sim.startOrder(this.selection.id, [...this.team], now);
           else if (this.selection.kind === 'analisi') this.sim.startAnalysis(this.selection.id, [...this.team], now);
@@ -431,6 +551,26 @@ export class Hud {
           break;
         case 'close':
           this.sim.closeSession(now);
+          break;
+        case 'puzzle-cancel':
+          this.puzzle = null;
+          break;
+        case 'puzzle-submit': {
+          const pz = this.puzzle!;
+          this.puzzle = null;
+          const r = this.sim.resolveSideQuest(pz.praticaId, pz.volunteerIds, pz.answers, now);
+          const q = this.sim.sideQuest(pz.praticaId);
+          const bin = (id: string) => q.bins.find((b) => b.id === id)?.name ?? id;
+          this.actions.onChange();
+          this.message = r.wrong.length
+            ? `Da rivedere: ${r.wrong.map((i) => `${q.items[i].name} va in ${bin(q.items[i].bin)}`).join('; ')}.`
+            : '';
+          this.render();
+          return;
+        }
+        case 'inaugurate':
+          if (!askConfirm('Inaugurare il parco adesso? La partita si chiude con il punteggio finale.')) return;
+          this.sim.inaugurate(now);
           break;
         case 'confirm-site':
           this.sim.confirmSite();
@@ -460,6 +600,14 @@ export class Hud {
     this.actions.onChange();
     this.render();
   }
+}
+
+function shuffle<T>(a: T[]): T[] {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function confirmNewGame(): boolean {

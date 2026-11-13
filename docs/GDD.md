@@ -1,6 +1,6 @@
 # Costrui-AMO: un Parco! — Game Design Document
 
-Aggiornato al 12/11/2026 · Marco Pignataro (Puli-AMO Messina)
+Aggiornato al 13/11/2026 · Marco Pignataro (Puli-AMO Messina)
 
 > Questo file è il riferimento per lo sviluppo: quando una decisione cambia, si aggiorna qui insieme al codice.
 > Il titolo è provvisorio: nel codice vive solo in `src/config.ts` (`GAME_TITLE`).
@@ -215,11 +215,11 @@ La progettazione è una modalità creativa su griglia: il disegno finale diventa
 
 **Dal disegno ai lavori.** Alla conferma, il progetto genera il **piano di cantiere**: ogni elemento diventa un task con materiali, ore-uomo, skill, pratiche necessarie e dipendenze (es. bonifica → livellamento → sentiero → panchina). Genera anche tutte le pratiche (vedi Burocrazia).
 
-**Editor del prototipo.** La partita comincia qui, con un progetto proposto già posato sul terreno di prova che il giocatore può cambiare. Si sceglie un elemento e si clicca sulla griglia (anteprima verde o rossa); la gomma o il tasto destro tolgono. Il pannello mostra il preventivo (euro dei materiali, ore, skill, materiali da ordinare, pratiche), il gradimento previsto e i problemi. Il progetto si conferma solo senza problemi: non vuoto, regole di adiacenza rispettate e preventivo entro la cassa (vincolo da rivedere quando le raccolte fondi porteranno soldi). Dopo la conferma il progetto non si tocca più finché non arrivano le varianti.
+**Editor del prototipo.** La progettazione parte dal progetto proposto del terreno scelto, che il giocatore può cambiare. Si sceglie un elemento e si clicca sulla griglia (anteprima verde o rossa); la gomma o il tasto destro tolgono. Il pannello mostra il preventivo (euro dei materiali, ore, skill, materiali da ordinare, pratiche), il gradimento previsto e i problemi. Il progetto si conferma solo senza problemi: non vuoto, regole di adiacenza rispettate e preventivo entro la cassa (le raccolte fondi servono poi a coprire gli imprevisti del cantiere). Dopo la conferma il progetto non si tocca più finché non arrivano le varianti.
 
 **Gradimento previsto (prototipo).** Ogni elemento ha dei punti (aiuola 8, panchina 6, cestino 3, sentiero e staccionata 1); la k-esima copia dello stesso tipo vale 1/k, ogni tipo diverso aggiunge 5 punti di varietà e ogni albero tutelato 2. Massimo 100. Ombra, accessibilità e panorama arriveranno con i nuovi elementi e terreni.
 
-**Come nasce il piano (prototipo).** Sotto ogni elemento nascono le lavorazioni del terreno: alcune dalla superficie (rifiuti → bonifica, cemento → rimozione, erba alta → sfalcio), altre perché l'elemento le chiede (sentieri e panchine → livellamento, aiuole → vangatura). Le dipendenze seguono le tile: un compito aspetta solo le lavorazioni sotto di lui e, per panchine e cestini, il sentiero accanto. Lavorazioni e tratti di sentiero o staccionata si raggruppano in lotti di al massimo 12 ore complessive, così ogni compito sta in un weekend. Una lavorazione finita cambia la superficie (dopo la bonifica c'è terra, dopo lo sfalcio prato). Le pratiche legate a elementi assenti dal progetto non nascono; quelle non legate al progetto (es. occupazione di suolo pubblico) ci sono sempre. Finché non c'è l'editor, la partita parte da un terreno di prova con un progetto già disegnato.
+**Come nasce il piano (prototipo).** Sotto ogni elemento nascono le lavorazioni del terreno: alcune dalla superficie (rifiuti → bonifica, cemento → rimozione, erba alta → sfalcio), altre perché l'elemento le chiede (sentieri e panchine → livellamento, aiuole → vangatura). Le dipendenze seguono le tile: un compito aspetta solo le lavorazioni sotto di lui e, per panchine e cestini, il sentiero accanto. Lavorazioni e tratti di sentiero o staccionata si raggruppano in lotti di al massimo 12 ore complessive, così ogni compito sta in un weekend. Una lavorazione finita cambia la superficie (dopo la bonifica c'è terra, dopo lo sfalcio prato). Le pratiche legate a elementi assenti dal progetto non nascono; quelle non legate al progetto (es. occupazione di suolo pubblico) ci sono sempre.
 
 **Varianti in corso d'opera.** Il progetto si può modificare durante il cantiere, ma ogni variante costa tempo e può richiedere una nuova autorizzazione. Riproduce un dilemma reale: adattarsi o tenere la rotta.
 
@@ -323,6 +323,8 @@ Tutte le pratiche nascono dal progetto e sono visibili da subito; si chiudono in
 
 **Tono e nomi.** Tutti gli enti hanno nomi di fantasia (es. "Ufficio Verde e Decoro", "Ente Acque Cittadine", "Sovrintendenza ai Beni Antichi"); nessun ente o funzionario reale è riconoscibile. La colonna "Ente" indica solo il tipo di ufficio.
 
+**Prototipo: la prima richiesta diretta.** "Ritiro dei rifiuti raccolti" (Ufficio Igiene Cittadina) serve per la bonifica dei rifiuti e per lo scavo dei rifiuti interrati, quindi nasce solo se il progetto li prevede. Il dirigente chiede di smistare i rifiuti della festa di quartiere davanti all'ufficio: un mini-puzzle con 10 oggetti da mettere in 5 contenitori (carta, plastica e metalli, vetro, organico, indifferenziato), in ordine casuale. Si può sbagliare 1 volta, 2 se nella delegazione c'è il presidente. La delegazione è di 1 o 2 volontari; la giornata si consuma sempre (4 ore di sessione, 4 ore a testa, le attese delle altre pratiche avanzano di 4 ore) e serve che restino almeno 4 ore di sessione. Se la richiesta è respinta si riprova un altro giorno; il gioco dice quali oggetti andavano altrove. Contenuti in `src/data/sidequests.json`.
+
 ## Raccolte fondi
 
 Quando il budget scende, il giocatore può avviare raccolte fondi: ognuna costa volontari e tempo sottratti al cantiere, e rende in base alla reputazione.
@@ -339,6 +341,15 @@ Quando il budget scende, il giocatore può avviare raccolte fondi: ognuna costa 
 **Rendimenti decrescenti.** Ripetere lo stesso tipo di raccolta a breve distanza rende sempre meno: il quartiere si stanca di essere chiamato. Spinge il giocatore a diversificare.
 
 **Mini-gioco del bando (proposta).** Si compone la proposta scegliendo tra blocchi di testo (obiettivi, impatto, partner, budget) che devono rispettare i criteri del bando.
+
+**Prototipo.** Due raccolte, ripetibili quante volte si vuole (in `src/data/tasks.json`):
+
+| Raccolta | Quando | Ore complessive | Max volontari | Serve | Euro di base |
+| --- | --- | --- | --- | --- | --- |
+| Raccolta fondi online | Parte burocratica | 8 | 3 | — | 120 |
+| Evento di raccolta fondi in piazza | Weekend | 12 | 5 | Pratica di occupazione di suolo pubblico | 250 |
+
+Euro raccolti = base × 1,5 se la qualità è alta (c'è il comunicatore) × (1 + 0,5 × quota del progetto realizzato) × 0,5 per ogni raccolta dello stesso tipo nelle ultime 3 settimane, arrotondati a 5 €. Il parco che cresce convince di più; chiedere spesso alle stesse persone rende meno. L'anteprima del compito mostra la cifra prevista; il resoconto settimanale riporta quanto si è raccolto.
 
 ## Eventi, rischi, vittoria e sconfitta
 
@@ -368,6 +379,18 @@ La partita si vince inaugurando il parco con almeno il 70% del progetto realizza
 - Moltiplicatore di difficoltà del terreno
 
 **Condizioni di sconfitta:** budget in rosso per 4 settimane consecutive, squadra sotto il minimo operativo, concessione scaduta prima dell'inaugurazione.
+
+**Prototipo.** Si inaugura con almeno il 70% del progetto realizzato e nessun compito in corso, con il pulsante "Taglia il nastro". Il punteggio è la somma di cinque voci, moltiplicata per la difficoltà del terreno:
+
+| Voce | Punti | Come si calcola |
+| --- | --- | --- |
+| Realizzazione | fino a 400 | 400 × quota del progetto costruita |
+| Gradimento | fino a 300 | gradimento degli elementi costruiti (0-100) × 3 |
+| Qualità | fino a 150 | 150 × quota degli elementi costruiti con qualità alta |
+| Cassa avanzata | fino a 100 | 1 punto ogni 3 € in cassa |
+| Rapidità | fino a 100 | 100 meno 10 punti per ogni settimana dopo la prima |
+
+La schermata finale mostra le voci, il totale e il pulsante per sostenere l'associazione. Morale, volontari persi e condizioni di sconfitta non ci sono ancora.
 
 **Dopo l'inaugurazione (proposta):** una modalità *manutenzione* senza fine, in cui il parco va curato, difeso dai vandalismi e animato con eventi.
 
@@ -457,4 +480,4 @@ Fuori dall'MVP restano il mini-dungeon, la modalità manutenzione e l'arte defin
 | Durata della partita | Non fissata: dura quanto serve a completare il parco |
 | Sviluppo | Tutto con Claude e strumenti gratuiti, senza bandi, zero euro di spesa |
 | Monte ore volontari | 6 ore a settimana base, 10 per i mestieri, 14 per presidente, segretario/a, coordinatori, esperti di carte e comunicatori; da bilanciare nel prototipo |
-| Donazioni | Link esterno a [puliamomessina.it/donazioni](https://www.puliamomessina.it/donazioni/) e 5x1000 con codice fiscale 97124820834; pulsante "Sostieni l'associazione" nel menu principale e nella schermata dell'inaugurazione, mai durante il gioco |
+| Donazioni | Link esterno a [puliamomessina.it/donazioni](https://www.puliamomessina.it/donazioni/) e 5x1000 con codice fiscale 97124820834; pulsante "Sostieni l'associazione" nel menu principale (oggi la scelta del terreno) e nella schermata dell'inaugurazione, mai durante il gioco |

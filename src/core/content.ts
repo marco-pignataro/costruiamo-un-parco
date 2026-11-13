@@ -7,9 +7,10 @@ import materials from '../data/materials.json';
 import preparations from '../data/preparations.json';
 import hazards from '../data/hazards.json';
 import sites from '../data/sites.json';
+import sideQuests from '../data/sidequests.json';
 import { GRID_MAX } from '../config';
 import { estimate, gridFromSite, validateProject } from './grid';
-import type { Archetype, CandidateDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SiteDef, TaskDef } from './types';
+import type { Archetype, CandidateDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SideQuestDef, SiteDef, TaskDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
@@ -23,6 +24,8 @@ export interface Content {
   /** Terreni tra cui scegliere in Fase 1, ognuno con il suo progetto proposto. */
   sites: SiteDef[];
   hazards: HazardDef[];
+  /** Mini-puzzle delle richieste dirette ai dirigenti. */
+  sideQuests: SideQuestDef[];
 }
 
 export const defaultContent: Content = {
@@ -35,6 +38,7 @@ export const defaultContent: Content = {
   preparations: preparations as PrepDef[],
   sites: sites as SiteDef[],
   hazards: hazards as HazardDef[],
+  sideQuests: sideQuests as SideQuestDef[],
 };
 
 /**
@@ -69,6 +73,20 @@ export function validateContent(c: Content): string[] {
   for (const t of c.tasks) {
     if (t.skill && !skills.has(t.skill)) errors.push(`${t.id}: skill sconosciuta ${t.skill}`);
     for (const p of t.requires) if (!has(c.pratiche, p)) errors.push(`${t.id}: pratica sconosciuta ${p}`);
+  }
+  for (const t of c.tasks) {
+    if (t.fundraisingEur !== undefined && (t.fundraisingEur <= 0 || !t.repeatable)) errors.push(`${t.id}: una raccolta fondi va ripetibile e con euro positivi`);
+  }
+  for (const p of c.pratiche) {
+    if (p.mode === 'side-quest') {
+      const q = c.sideQuests.find((x) => x.id === p.sideQuest);
+      if (!q) errors.push(`${p.id}: mini-puzzle sconosciuto ${String(p.sideQuest)}`);
+    }
+  }
+  for (const q of c.sideQuests) {
+    const bins = new Set(q.bins.map((b) => b.id));
+    for (const it of q.items) if (!bins.has(it.bin)) errors.push(`${q.id}: contenitore sconosciuto ${it.bin}`);
+    if (q.items.length === 0) errors.push(`${q.id}: nessun oggetto`);
   }
   for (const m of c.candidates) if (!has(c.archetypes, m.archetypeId)) errors.push(`${m.id}: archetipo sconosciuto ${m.archetypeId}`);
   if (new Set(c.candidates.map((m) => m.id)).size !== c.candidates.length) errors.push('Candidati con lo stesso id');

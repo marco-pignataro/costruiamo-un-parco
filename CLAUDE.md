@@ -56,17 +56,14 @@ npm run build
 
 Per provare senza aspettare: apri il gioco con `?velocita=60` (1 ora = 1 minuto) e avvia una **Nuova partita**.
 
-## A che punto siamo (12/11/2026)
+## A che punto siamo (13/11/2026)
 
-- **Fatto:** prototipo 0.1 con il ciclo del turno settimanale, pratiche a timer, monte ore, resoconti in coda, salvataggio IndexedDB, 17 test, pubblicazione automatica.
-- **In corso:** prova di gioco di una settimana con Marco e alcuni soci (gate 1 della roadmap).
-- **Fase 4, fatto:** griglia a livelli (superficie, rischi, progetto, realizzato), catalogo di 5 elementi, 8 materiali e 5 lavorazioni del terreno; il piano di cantiere nasce dal progetto (`generatePlan`) con dipendenze per tile, lotti da max 12 ore e pratiche solo se servono. Cassa, magazzino e ordini al fornitore: un lavoro parte solo con i materiali in magazzino. `GameState` è alla versione 3 (griglia, piano, cassa, magazzino, ordini) con migrazione a catena dei salvataggi v1 e v2. 
-- **Fase 4, editor fatto:** si progetta partendo dal progetto proposto del terreno scelto; si posano e tolgono elementi sulla griglia (tasto destro = gomma) con preventivo live, gradimento previsto (`expectedAppeal`) e controlli; la conferma genera piano e pratiche e apre il cantiere.
-- **Fase 1 e Fase 2 fatte:** la partita va terreno → squadra → progettazione → cantiere (`stage`). Tre terreni in `sites.json` (difficoltà 1, 2, 4) con cassa, PV, moltiplicatore, fattori (tipo di terra e sottosuolo "?" fino al sopralluogo) e bonus descritto; la squadra si recluta da 17 candidati spendendo i PV (presidente e segretario/a unici, minimo 3). `GameState` v5 con migrazione dalle versioni 1-4; 71 test. Fattori e bonus dei terreni e gli effetti di coordinatore, presidente e segretario/a sono ancora solo testo.
-- **Ancora fuori dalla Fase 4:** mappa dei rischi sovrapposta (arriva con il sopralluogo), regola di accessibilità, varianti in corso d'opera; ritardi casuali delle consegne, capienza del magazzino, altre fonti di materiali (recupero, donazioni, scambi); la raccolta fondi non porta ancora soldi.
-- **Fase 3 fatta:** dopo la squadra c'è il sopralluogo, una giornata di 8 ore di sessione in cui si analizzano i punti sospetti del terreno (max 2 volontari per punto). Con lo specialista giusto (la "lente" dell'insidia) l'esito è sempre corretto, senza c'è `errorChance` di non vedere l'insidia; il caso usa un generatore con seme salvato nello stato (`rng`). Le insidie trovate vanno sulla mappa dei rischi: in progettazione costruirci sopra aggiunge lavori di messa in sicurezza con materiali (il preventivo ora è quello del piano completo). Quelle sfuggite emergono in cantiere quando un lavoro tocca le loro tile (`revealHazards`): nascono compiti imprevisti che bloccano i lavori sopra. 4 insidie (rifiuti interrati, sottoservizi, falda alta, cavità); `GameState` v6; 82 test.
-- **Rischio noto:** un'insidia emersa in cantiere costa materiali, e se la cassa non basta la partita si blocca, perché la raccolta fondi non porta ancora soldi. È il motivo per fare subito la raccolta fondi.
-- **Prossimo blocco: una side-quest a mini-puzzle, una raccolta fondi, inaugurazione e punteggio → MVP.
+- **Fatto, Fasi 1-5 in versione minima:** terreno (3 terreni) → squadra con i PV (17 candidati) → sopralluogo con insidie → progettazione su griglia con preventivo → cantiere con piano generato dal progetto, pratiche, ordini, magazzino e imprevisti.
+- **Fatto per l'MVP:** raccolte fondi ripetibili che portano soldi (online nella parte burocratica, in piazza nel weekend con la pratica di occupazione del suolo), con bonus di qualità e di progresso e rendimenti decrescenti; prima richiesta diretta a un dirigente ("Ritiro dei rifiuti raccolti", mini-puzzle di smistamento, presidente = un errore in più) che sblocca la bonifica; inaugurazione dal 70% del progetto con punteggio in cinque voci × moltiplicatore del terreno. Il pulsante donazioni sta solo nel menu iniziale (scelta del terreno) e nella schermata finale.
+- **Stato tecnico:** `GameState` v7 (raccolte fondi, qualità dei compiti, punteggio finale) con migrazione dalle versioni 1-6; 99 test.
+- **Ancora solo testo:** fattori e bonus dei terreni, effetti di coordinatore e segretario/a, morale, tratti, crescita, fiducia degli uffici, condizioni di sconfitta.
+- **Ancora fuori:** mappa dei rischi come livello attivabile, regola di accessibilità, varianti in corso d'opera, ritardi delle consegne, capienza del magazzino, altre fonti di materiali, mini-dungeon, eventi casuali, secondo sopralluogo.
+- **Prossimo passo:** prova di gioco dell'MVP con qualcuno che non conosce il progetto (gate 2: finisce una partita senza aiuto) e bilanciamento di cassa, ore e punteggio sui risultati. Poi, in ordine di impatto: dare effetto a fattori e bonus dei terreni, morale e abbandoni, eventi casuali, pixel art definitiva con Aseprite.
 
 ## Pixel art: Aseprite + server MCP in WSL2
 

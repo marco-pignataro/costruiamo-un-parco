@@ -1,4 +1,4 @@
-import { HOURS_PER_WORKING_DAY, MIN_TEAM, ORDERS, SESSION_HOURS, SURVEY } from '../config';
+import { FUNDRAISING, HOURS_PER_WORKING_DAY, INAUGURATION, MIN_TEAM, ORDERS, SESSION_HOURS, SIDE_QUEST, SURVEY } from '../config';
 import type { Content } from './content';
 import { computeDuration, formatHours, type DurationResult } from './duration';
 import {
@@ -14,7 +14,7 @@ import {
   type PlaceCheck,
 } from './grid';
 import { emergencyTasks, gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, Archetype, CandidateDef, ElementDef, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, SiteDef, SurveyPoiState, PraticaState, TaskDef, Volunteer } from './types';
+import type { ActiveTask, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, Volunteer } from './types';
 
 const EPS = 1e-6;
 
@@ -36,7 +36,7 @@ export class Simulation {
   static newGame(content: Content, now: number, timeScale = 1): Simulation {
     const site = content.sites[0];
     const state: GameState = {
-      version: 6,
+      version: 7,
       stage: 'terreno',
       siteId: site.id,
       pv: site.pv,
@@ -59,6 +59,9 @@ export class Simulation {
       survey: [],
       hiddenHazards: [],
       rng: (now ^ 0x9e3779b9) >>> 0 || 1,
+      fundraising: [],
+      taskQuality: {},
+      finale: null,
     };
     return new Simulation(state, content);
   }
@@ -317,7 +320,7 @@ export class Simulation {
     return this.allTasks.filter(
       (t) =>
         t.phase === this.state.phase &&
-        !this.state.completedTasks.includes(t.id) &&
+        (t.repeatable || !this.state.completedTasks.includes(t.id)) &&
         !running.has(t.id) &&
         this.missingPrerequisites(t).length === 0,
     );
@@ -506,8 +509,158 @@ export class Simulation {
     if (this.state.stage !== 'cantiere') errors.push('Prima va confermato il progetto');
     if (this.state.phase !== 'burocratica') errors.push('Le pratiche si avviano nella parte burocratica');
     if (this.pratica(praticaId).status !== 'da-avviare') errors.push('Pratica già avviata');
+    if (def.mode === 'side-quest') errors.push('Questa pratica si chiede di persona al dirigente');
     if (volunteerIds.length > 2) errors.push('Massimo 2 volontari');
     return this.previewTeam(def.requestHours, def.requestSkill, volunteerIds, errors);
+  }
+
+  // ---------- richieste dirette ai dirigenti (Tipo 2) ----------
+
+  isSideQuest(praticaId: string): boolean {
+    return this.praticaDef(praticaId).mode === 'side-quest';
+  }
+
+  sideQuest(praticaId: string): SideQuestDef {
+    const id = this.praticaDef(praticaId).sideQuest;
+    const q = this.content.sideQuests.find((x) => x.id === id);
+    if (!q) throw new Error(`Mini-puzzle sconosciuto: ${String(id)}`);
+    return q;
+  }
+
+  /** Errori ammessi nel mini-puzzle: il presidente nella delegazione ne aggiunge uno. */
+  sideQuestAllowedErrors(praticaId: string, volunteerIds: string[]): number {
+    const president = volunteerIds.some((id) => this.volunteer(id).archetypeId === 'presidente');
+    return this.sideQuest(praticaId).allowedErrors + (president ? 1 : 0);
+  }
+
+  /** Una richiesta diretta occupa una giornata: 4 ore di sessione e 4 ore a testa. */
+  previewSideQuest(praticaId: string, volunteerIds: string[]): Preview {
+    const def = this.praticaDef(praticaId);
+    const errors: string[] = [];
+    const h = SIDE_QUEST.hours;
+    if (this.state.stage !== 'cantiere') errors.push('Prima va confermato il progetto');
+    if (this.state.phase !== 'burocratica') errors.push('Le richieste ai dirigenti si fanno nella parte burocratica');
+    if (def.mode !== 'side-quest') errors.push('Questa pratica segue la richiesta a timer');
+    else if (this.pratica(praticaId).status !== 'da-avviare') errors.push('Pratica già concessa');
+    if (volunteerIds.length === 0) errors.push('Scegli almeno un volontario');
+    if (volunteerIds.length > SIDE_QUEST.maxVolunteers) errors.push(`Massimo ${SIDE_QUEST.maxVolunteers} volontari`);
+    for (const id of volunteerIds) {
+      const v = this.volunteer(id);
+      if (v.busy) errors.push(`${v.name} è impegnato`);
+      else if (this.hoursLeft(v) + EPS < h) errors.push(`${v.name} ha solo ${formatHours(this.hoursLeft(v))} disponibili`);
+    }
+    if (this.sessionRemainingH + EPS < h) errors.push(`Serve una giornata (${h} h), alla sessione restano ${formatHours(this.sessionRemainingH)}`);
+    return { hours: h, quality: 'base', efficiency: 1, errors };
+  }
+
+  /**
+   * Chiude la richiesta diretta con le risposte del mini-puzzle (indice
+   * dell'oggetto → contenitore). La giornata si consuma comunque: passano 4 ore
+   * di sessione (le attese avanzano) e 4 ore del monte di chi c'era. Se gli
+   * errori sono entro il limite la pratica è concessa, altrimenti si può
+   * riprovare un altro giorno.
+   */
+  resolveSideQuest(praticaId: string, volunteerIds: string[], answers: Record<number, string>, now: number): SideQuestResult {
+    this.tick(now);
+    const p = this.previewSideQuest(praticaId, volunteerIds);
+    if (p.errors.length) throw new Error(p.errors.join('; '));
+    const q = this.sideQuest(praticaId);
+    const def = this.praticaDef(praticaId);
+    const wrong = q.items.map((it, i) => (answers[i] === it.bin ? -1 : i)).filter((i) => i >= 0);
+    const allowed = this.sideQuestAllowedErrors(praticaId, volunteerIds);
+    const ok = wrong.length <= allowed;
+    const s = this.state;
+    const h = SIDE_QUEST.hours;
+    for (const id of volunteerIds) this.volunteer(id).hoursUsed += h;
+    s.sessionUsedH = Math.min(this.sessionLimitH, s.sessionUsedH + h);
+    this.progressWaits(h, now);
+    const names = volunteerIds.map((id) => this.volunteer(id).name).join(', ');
+    if (ok) {
+      this.pratica(praticaId).status = 'approvata';
+      this.report(now, `Richiesta accolta: ${def.name}`, [
+        `${def.office}: il dirigente è soddisfatto.`,
+        `Errori: ${wrong.length} su ${q.items.length} (ammessi ${allowed})`,
+        `Sblocca: ${def.unlocks}`,
+        `Delegazione: ${names} · una giornata di lavoro`,
+      ]);
+    } else {
+      this.report(now, `Richiesta respinta: ${def.name}`, [
+        `${def.office}: "Ripassate quando avrete le idee più chiare."`,
+        `Errori: ${wrong.length} su ${q.items.length} (ammessi ${allowed})`,
+        'Si può riprovare un altro giorno.',
+        `Delegazione: ${names} · una giornata di lavoro`,
+      ]);
+    }
+    if (s.sessionUsedH >= this.sessionLimitH - EPS && s.active.length === 0) this.endSession(now, false);
+    return { ok, errors: wrong.length, allowed, wrong };
+  }
+
+  // ---------- raccolte fondi ----------
+
+  /** Euro che porterebbe adesso una raccolta fondi, con la qualità data. */
+  fundraisingYield(taskId: string, quality: Quality): number {
+    const def = this.taskDef(taskId);
+    if (!def.fundraisingEur) return 0;
+    const s = this.state;
+    const recent = s.fundraising.filter((f) => f.taskId === taskId && f.week > s.week - FUNDRAISING.windowWeeks).length;
+    const eur =
+      def.fundraisingEur *
+      (quality === 'alta' ? FUNDRAISING.qualityBonus : 1) *
+      (1 + this.projectProgress * FUNDRAISING.progressBonus) *
+      FUNDRAISING.decay ** recent;
+    return Math.round(eur / FUNDRAISING.roundTo) * FUNDRAISING.roundTo;
+  }
+
+  // ---------- inaugurazione e punteggio ----------
+
+  /** Cosa manca per poter inaugurare (vuoto = si può). */
+  inaugurationProblems(): string[] {
+    const s = this.state;
+    const problems: string[] = [];
+    if (s.stage !== 'cantiere') problems.push('Si inaugura a cantiere aperto');
+    const min = Math.round(INAUGURATION.minProgress * 100);
+    if (this.projectProgress + EPS < INAUGURATION.minProgress) problems.push(`Serve almeno il ${min}% del progetto realizzato (ora ${Math.round(this.projectProgress * 100)}%)`);
+    if (s.active.length > 0) problems.push('Ci sono compiti in corso');
+    return problems;
+  }
+
+  /** Punteggio come sarebbe se si inaugurasse adesso. */
+  score(): FinalScore {
+    const s = this.state;
+    const g = s.grid;
+    const P = INAUGURATION.points;
+    const progress = this.projectProgress;
+    const builtGrid = { ...g, placements: g.placements.filter((p) => g.built.includes(p.uid)) };
+    const appeal = expectedAppeal(builtGrid, this.content);
+    const qualityOf = (uid: number) => {
+      const task = s.plan.find((t) => t.placements.includes(uid));
+      return task ? s.taskQuality[task.id] : undefined;
+    };
+    const high = g.built.filter((uid) => qualityOf(uid) === 'alta').length;
+    const realizzazione = Math.round(progress * P.realizzazione);
+    const gradimento = Math.round((appeal / 100) * P.gradimento);
+    const qualita = g.built.length === 0 ? 0 : Math.round((high / g.built.length) * P.qualita);
+    const cassa = Math.round(Math.min(1, Math.max(0, s.budget) / INAUGURATION.cassaFull) * P.cassa);
+    const rapidita = Math.max(0, P.rapidita - INAUGURATION.rapiditaPerWeek * (s.week - 1));
+    const base = realizzazione + gradimento + qualita + cassa + rapidita;
+    const multiplier = this.site.scoreMultiplier;
+    return { week: s.week, progress, realizzazione, gradimento, qualita, cassa, rapidita, base, multiplier, total: Math.round(base * multiplier) };
+  }
+
+  /** Il taglio del nastro: la partita si chiude con il punteggio finale. */
+  inaugurate(now: number): FinalScore {
+    this.tick(now);
+    const problems = this.inaugurationProblems();
+    if (problems.length) throw new Error(problems.join('; '));
+    const f = this.score();
+    this.state.finale = f;
+    this.state.stage = 'inaugurato';
+    this.report(now, 'Il parco è inaugurato!', [
+      `${this.site.name}: progetto realizzato al ${Math.round(f.progress * 100)}% in ${f.week} settimane.`,
+      `Punteggio: ${f.total} (${f.base} × ${f.multiplier.toLocaleString('it-IT')})`,
+      'Grazie a tutta la squadra!',
+    ]);
+    return f;
   }
 
   private previewTeam(total: number, skill: string | null, ids: string[], errors: string[]): Preview {
@@ -659,9 +812,20 @@ export class Simulation {
     const time = `Durata: ${formatHours(a.hours)}`;
     if (a.kind === 'lavoro') {
       const def = this.taskDef(a.refId);
-      this.state.completedTasks.push(a.refId);
-      if ('tiles' in def) this.applyToGrid(def);
-      this.report(t, `Completato: ${def.name}`, [squad, time, `Qualità: ${a.quality}`]);
+      if (!def.repeatable) this.state.completedTasks.push(a.refId);
+      if ('tiles' in def) {
+        this.state.taskQuality[def.id] = a.quality;
+        this.applyToGrid(def);
+      }
+      const lines = [squad, time, `Qualità: ${a.quality}`];
+      if (def.fundraisingEur) {
+        const eur = this.fundraisingYield(def.id, a.quality);
+        this.state.budget += eur;
+        this.state.fundraising.push({ taskId: def.id, week: this.state.week, eur });
+        lines.push(`Raccolti: ${eur} € (in cassa ${this.state.budget} €)`);
+        if (eur < def.fundraisingEur) lines.push('Chiedere spesso alle stesse persone rende meno: alterna le raccolte.');
+      }
+      this.report(t, `Completato: ${def.name}`, lines);
       if ('tiles' in def) this.revealHazards(def, t);
     } else if (a.kind === 'analisi') {
       this.completeAnalysis(a, t, squad);
@@ -757,10 +921,12 @@ export class Simulation {
       ]);
     } else {
       const done = s.completedTasks.length;
+      const raised = s.fundraising.filter((f) => f.week === s.week).reduce((sum, f) => sum + f.eur, 0);
+      const inaugurable = this.projectProgress + EPS >= INAUGURATION.minProgress;
       this.report(t, `Fine della settimana ${s.week}`, [
         `Compiti completati finora: ${done}`,
-        `Progetto realizzato: ${Math.round(this.projectProgress * 100)}%`,
-        `In cassa: ${s.budget} €`,
+        `Progetto realizzato: ${Math.round(this.projectProgress * 100)}%${inaugurable ? ' · si può inaugurare' : ''}`,
+        `In cassa: ${s.budget} €${raised > 0 ? ` (raccolti questa settimana: ${raised} €)` : ''}`,
         'Le ore dei volontari ripartono da zero',
       ]);
       s.week += 1;

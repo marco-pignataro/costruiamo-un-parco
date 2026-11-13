@@ -68,7 +68,7 @@ describe('piano di cantiere generato dal progetto', () => {
 
   it('pratiche e materiali del piano, senza doppioni', () => {
     const plan = generatePlan(demo().g, c);
-    expect(plan.pratiche).toEqual(['assicurazione']);
+    expect(plan.pratiche).toEqual(['assicurazione', 'smaltimento']);
     expect(plan.materials).toContainEqual({ id: 'ghiaia', qty: 12 });
     expect(plan.materials).toContainEqual({ id: 'piantine', qty: 12 });
   });

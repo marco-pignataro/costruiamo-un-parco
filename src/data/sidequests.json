@@ -1,0 +1,26 @@
+[
+  {
+    "id": "differenziata",
+    "intro": "Il responsabile dell'Ufficio Igiene Cittadina ritirerà i sacchi del vostro cantiere, ma prima vi chiede un favore: smistare i rifiuti lasciati dalla festa di quartiere davanti all'ufficio. Mettete ogni oggetto nel contenitore giusto.",
+    "bins": [
+      { "id": "carta", "name": "Carta" },
+      { "id": "plastica", "name": "Plastica e metalli" },
+      { "id": "vetro", "name": "Vetro" },
+      { "id": "organico", "name": "Organico" },
+      { "id": "indifferenziato", "name": "Indifferenziato" }
+    ],
+    "items": [
+      { "name": "Giornale vecchio", "bin": "carta" },
+      { "name": "Cartone delle uova", "bin": "carta" },
+      { "name": "Bottiglia d'acqua di plastica", "bin": "plastica" },
+      { "name": "Lattina di aranciata", "bin": "plastica" },
+      { "name": "Barattolo di vetro della passata", "bin": "vetro" },
+      { "name": "Bottiglia di vino", "bin": "vetro" },
+      { "name": "Bucce d'arancia", "bin": "organico" },
+      { "name": "Fondi di caffè", "bin": "organico" },
+      { "name": "Spazzolino da denti", "bin": "indifferenziato" },
+      { "name": "Mozzicone di sigaretta", "bin": "indifferenziato" }
+    ],
+    "allowedErrors": 1
+  }
+]

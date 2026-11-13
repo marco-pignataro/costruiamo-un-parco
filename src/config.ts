@@ -41,6 +41,29 @@ export const MIN_TEAM = 3;
 /** Dimensione massima di un terreno in tile: tanto ci sta nella scena accanto alla sede. */
 export const GRID_MAX = { width: 14, height: 11 } as const;
 
+/**
+ * Raccolte fondi: euro = base × qualità × (1 + progresso del parco × progressBonus)
+ * × decay^(raccolte uguali nelle ultime windowWeeks settimane), arrotondati a roundTo.
+ * Il parco che cresce convince di più; chiedere troppo spesso rende meno.
+ */
+export const FUNDRAISING = { qualityBonus: 1.5, progressBonus: 0.5, decay: 0.5, windowWeeks: 3, roundTo: 5 } as const;
+
+/** Richiesta diretta al dirigente (Tipo 2): una giornata, al massimo 2 volontari. */
+export const SIDE_QUEST = { hours: 4, maxVolunteers: 2 } as const;
+
+/**
+ * Inaugurazione: si può fare con almeno minProgress del progetto realizzato.
+ * Punteggio = (realizzazione + gradimento + qualità + cassa + rapidità) × moltiplicatore del terreno.
+ */
+export const INAUGURATION = {
+  minProgress: 0.7,
+  points: { realizzazione: 400, gradimento: 300, qualita: 150, cassa: 100, rapidita: 100 },
+  /** Euro di cassa che valgono il massimo dei punti cassa. */
+  cassaFull: 300,
+  /** Punti di rapidità persi per ogni settimana dopo la prima. */
+  rapiditaPerWeek: 10,
+} as const;
+
 /** Gradimento previsto: bonus per ogni tipo di elemento diverso nel progetto (varietà). */
 export const APPEAL_VARIETY_BONUS = 5;
 

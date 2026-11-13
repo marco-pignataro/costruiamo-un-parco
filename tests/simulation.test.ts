@@ -16,8 +16,8 @@ describe('timer reali e recupero a gioco chiuso', () => {
     expect(sim.state.active).toHaveLength(1);
     sim.tick(at(8));
     expect(sim.state.active).toHaveLength(0);
-    expect(sim.state.completedTasks).toContain('raccolta-fondi');
-    expect(sim.unseenReports().map((r) => r.title)).toEqual(['Completato: Organizzare una raccolta fondi']);
+    expect(sim.state.completedTasks).not.toContain('raccolta-fondi'); // si può rifare
+    expect(sim.unseenReports().map((r) => r.title)).toEqual(['Completato: Raccolta fondi online']);
   });
 
   it('a gioco chiuso gli eventi si recuperano tutti, in ordine', () => {
@@ -27,7 +27,7 @@ describe('timer reali e recupero a gioco chiuso', () => {
     sim.tick(at(48)); // riapertura due giorni dopo
     const titles = sim.unseenReports().map((r) => r.title);
     expect(titles[0]).toBe('Richiesta inviata: Assicurazione dei volontari');
-    expect(titles[1]).toBe('Completato: Organizzare una raccolta fondi');
+    expect(titles[1]).toBe('Completato: Raccolta fondi online');
   });
 });
 
@@ -93,6 +93,7 @@ describe('sessioni', () => {
     sim.startRequest('assicurazione', ['v2'], T0);
     sim.tick(at(2));
     sim.closeSession(at(2));
+    sim.pratica('smaltimento').status = 'approvata';
     sim.startTask('prep:bonifica:1', ['v5', 'v6', 'v1', 'v7'], at(3)); // 12 / 4 = 3 h
     sim.tick(at(7));
     expect(sim.volunteer('v5').hoursUsed).toBeCloseTo(3);
@@ -127,12 +128,13 @@ describe('piano di cantiere nella partita', () => {
     sim.startRequest('assicurazione', ['v2'], T0);
     sim.tick(at(2));
     sim.closeSession(at(2));
+    sim.pratica('smaltimento').status = 'approvata'; // la richiesta diretta è in sidequest.test.ts
     return sim;
   };
 
   it('i lavori del weekend nascono dal progetto del terreno di prova', () => {
     const sim = newGame();
-    expect(sim.state.version).toBe(6);
+    expect(sim.state.version).toBe(7);
     expect(sim.state.plan.length).toBeGreaterThan(0);
     expect(sim.state.plan.every((t) => t.phase === 'operativa')).toBe(true);
   });

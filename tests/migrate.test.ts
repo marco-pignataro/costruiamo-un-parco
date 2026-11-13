@@ -35,7 +35,7 @@ const confirmed = () => startedGame();
 describe('migrazione dei salvataggi', () => {
   it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(6);
+    expect(s.version).toBe(7);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.budget).toBe(firstSite.budget);
@@ -51,7 +51,7 @@ describe('migrazione dei salvataggi', () => {
     const s = migrate(saveV1(), defaultContent);
     expect(s.active).toEqual([]);
     expect(s.volunteers.find((v) => v.id === 'v5')).toMatchObject({ busy: false, hoursUsed: 0 });
-    expect(s.reports.map((r) => r.title)).toEqual(['Il cantiere è stato riprogettato', 'Arriva il magazzino', 'Compiti interrotti']);
+    expect(s.reports.map((r) => r.title)).toEqual(['Il cantiere è stato riprogettato', 'Arriva il magazzino', 'Novità nel cantiere', 'Compiti interrotti']);
   });
 
   it('il salvataggio migrato si gioca: tick e compiti del piano funzionano', () => {
@@ -74,7 +74,7 @@ describe('migrazione dei salvataggi', () => {
     v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
     (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
     const s = migrate(v2, defaultContent);
-    expect(s.version).toBe(6);
+    expect(s.version).toBe(7);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.active).toEqual([]);
@@ -89,10 +89,10 @@ describe('migrazione dei salvataggi', () => {
     delete v3.survey;
     delete v3.hiddenHazards;
     delete v3.rng;
-    expect(migrate(v3, defaultContent)).toMatchObject({ version: 6, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
+    expect(migrate(v3, defaultContent)).toMatchObject({ version: 7, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
   });
 
-  it('un salvataggio v6 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it('un salvataggio v7 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

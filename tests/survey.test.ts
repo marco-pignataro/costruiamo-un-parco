@@ -115,6 +115,7 @@ describe('insidie in progettazione e in cantiere', () => {
     sim.closeSession(T0); // nessuna analisi: tutto resta nascosto
     sim.confirmProject(T0);
     sim.pratica('assicurazione').status = 'approvata';
+    sim.pratica('smaltimento').status = 'approvata';
     sim.closeSession(T0); // al weekend
     sim.startTask('prep:bonifica:1', ['v5', 'v6', 'v1', 'v7'], at(1)); // bonifica sotto l'aiuola, dove ci sono rifiuti interrati
     sim.tick(at(5));
@@ -138,6 +139,7 @@ describe('insidie in progettazione e in cantiere', () => {
     sim.state.budget = 1000; // con l'insidia nota il progetto proposto costa più della cassa
     sim.confirmProject(T0);
     sim.pratica('assicurazione').status = 'approvata';
+    sim.pratica('smaltimento').status = 'approvata';
     sim.closeSession(T0);
     const task = sim.state.plan.find((t) => t.id.startsWith('prep:scavo-rifiuti-interrati'))!;
     sim.state.completedTasks.push(...sim.missingPrerequisites(task).map((t) => t.id));

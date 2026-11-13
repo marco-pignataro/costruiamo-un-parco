@@ -29,16 +29,69 @@ export interface TaskDef {
   maxVolunteers: number;
   /** Pratiche che devono essere approvate prima di avviare il compito. */
   requires: string[];
+  /** Si può rifare quante volte si vuole (es. raccolte fondi). */
+  repeatable?: boolean;
+  /** Raccolta fondi: euro di base che porta in cassa (vedi FUNDRAISING in config). */
+  fundraisingEur?: number;
 }
 
 export interface PraticaDef {
   id: string;
   name: string;
   office: string;
+  /**
+   * timer (Tipo 1): richiesta a timer e attesa della risposta.
+   * side-quest (Tipo 2): richiesta diretta al dirigente, si chiude con un mini-puzzle.
+   * Se manca vale timer.
+   */
+  mode?: 'timer' | 'side-quest';
+  /** Mini-puzzle della richiesta diretta (id in sidequests.json). */
+  sideQuest?: string;
   requestHours: number;
   requestSkill: string | null;
   waitDays: number;
   unlocks: string;
+}
+
+/** Mini-puzzle di smistamento: ogni oggetto va nel contenitore giusto. */
+export interface SideQuestDef {
+  id: string;
+  /** Chi chiede il favore e perché: si legge prima del puzzle. */
+  intro: string;
+  bins: { id: string; name: string }[];
+  items: { name: string; bin: string }[];
+  /** Errori ammessi (il presidente ne aggiunge uno). */
+  allowedErrors: number;
+}
+
+/** Esito di un mini-puzzle. */
+export interface SideQuestResult {
+  ok: boolean;
+  errors: number;
+  allowed: number;
+  /** Indici degli oggetti messi nel contenitore sbagliato. */
+  wrong: number[];
+}
+
+/** Raccolta fondi conclusa: serve per i rendimenti decrescenti e per il resoconto. */
+export interface FundraisingEntry {
+  taskId: string;
+  week: number;
+  eur: number;
+}
+
+/** Punteggio dell'inaugurazione, voce per voce. */
+export interface FinalScore {
+  week: number;
+  progress: number;
+  realizzazione: number;
+  gradimento: number;
+  qualita: number;
+  cassa: number;
+  rapidita: number;
+  base: number;
+  multiplier: number;
+  total: number;
 }
 
 export type PraticaStatus = 'da-avviare' | 'in-richiesta' | 'in-attesa' | 'approvata';
@@ -97,7 +150,7 @@ export interface Report {
   seen: boolean;
 }
 
-export type Stage = 'terreno' | 'squadra' | 'sopralluogo' | 'progettazione' | 'cantiere';
+export type Stage = 'terreno' | 'squadra' | 'sopralluogo' | 'progettazione' | 'cantiere' | 'inaugurato';
 
 export interface SurveyPoiState {
   id: string;
@@ -115,11 +168,12 @@ export interface HiddenHazard {
 }
 
 export interface GameState {
-  version: 6;
+  version: 7;
   /**
    * terreno: scelta del terreno (Fase 1); squadra: reclutamento con i PV (Fase 2);
    * sopralluogo: analisi dei punti sospetti (Fase 3); progettazione: si disegna
-   * il parco (Fase 4); cantiere: turni settimanali (Fase 5).
+   * il parco (Fase 4); cantiere: turni settimanali (Fase 5); inaugurato: partita
+   * conclusa con il punteggio finale.
    */
   stage: Stage;
   siteId: string;
@@ -151,6 +205,12 @@ export interface GameState {
   hiddenHazards: HiddenHazard[];
   /** Stato del generatore casuale (con seme): la stessa partita dà gli stessi esiti. */
   rng: number;
+  /** Raccolte fondi concluse. */
+  fundraising: FundraisingEntry[];
+  /** Qualità con cui è finito ogni compito del piano (per il punteggio). */
+  taskQuality: Record<string, Quality>;
+  /** Punteggio, dopo l'inaugurazione. */
+  finale: FinalScore | null;
 }
 
 // ---------- Progettazione del parco (Fase 4) ----------

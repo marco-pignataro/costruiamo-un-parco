@@ -1,3 +1,4 @@
 [
-  {"id": "raccolta-fondi", "name": "Organizzare una raccolta fondi", "phase": "burocratica", "hours": 8, "skill": "comunicazione", "maxVolunteers": 3, "requires": []}
+  {"id": "raccolta-fondi", "name": "Raccolta fondi online", "phase": "burocratica", "hours": 8, "skill": "comunicazione", "maxVolunteers": 3, "requires": [], "repeatable": true, "fundraisingEur": 120},
+  {"id": "evento-piazza", "name": "Evento di raccolta fondi in piazza", "phase": "operativa", "hours": 12, "skill": "comunicazione", "maxVolunteers": 5, "requires": ["occupazione-suolo"], "repeatable": true, "fundraisingEur": 250}
 ]

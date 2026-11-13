@@ -105,3 +105,18 @@ button.confirm { width: 100%; background: var(--accent); color: white; border-co
 
 .danger { color: var(--warn); }
 .warn { color: var(--warn); }
+
+/* richiesta diretta: mini-puzzle di smistamento */
+.puzzle ul { display: grid; gap: 10px; }
+.puzzle .bins { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.puzzle .bin { padding: 3px 8px; font-size: 12px; }
+.puzzle .bin.on { background: var(--accent); color: white; border-color: var(--accent); }
+.puzzle > button { margin-top: 8px; width: 100%; }
+
+/* inaugurazione */
+button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
+.score { width: 100%; border-collapse: collapse; }
+.score td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.score td:nth-child(2) { text-align: right; padding-right: 6px; font-variant-numeric: tabular-nums; }
+.score .sum td { border-bottom: none; padding-top: 8px; }
+.support { display: grid; gap: 6px; }

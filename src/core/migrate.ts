@@ -13,13 +13,14 @@ type AnyState = Record<string, unknown> & { version?: number };
 export function migrate(raw: unknown, c: Content): GameState {
   let s = raw as AnyState;
   const start = s.version;
-  if (start === 6) return s as unknown as GameState;
-  if (typeof start !== 'number' || start < 1 || start > 5) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (start === 7) return s as unknown as GameState;
+  if (typeof start !== 'number' || start < 1 || start > 6) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
   if (s.version === 1) s = v1to2(s, c);
   if (s.version === 2) s = v2to3(s, c);
   if (s.version === 3) s = { ...s, version: 4, stage: 'cantiere' }; // v3 → v4: le partite esistenti sono già in cantiere
   if (s.version === 4) s = { ...s, version: 5, siteId: legacySite(c).id, pv: 0 }; // v4 → v5: erano tutte sul terreno di prova
   if (s.version === 5) s = { ...s, version: 6, survey: [], hiddenHazards: [], rng: ((s.lastTick as number) >>> 0) || 1 }; // v5 → v6: niente insidie per le partite già avviate
+  if (s.version === 6) s = v6to7(s);
   return dropUnknownActive(s as unknown as GameState, c);
 }
 
@@ -49,11 +50,28 @@ function v2to3(s: AnyState, c: Content): AnyState {
   return out;
 }
 
+/**
+ * v6 → v7: raccolte fondi, qualità dei compiti e punteggio finale. I compiti
+ * del piano già finiti contano come qualità base.
+ */
+function v6to7(s: AnyState): AnyState {
+  const out = { ...s, version: 7, fundraising: [], taskQuality: {}, finale: null };
+  if (s.stage === 'cantiere') {
+    addReport(out, 'Novità nel cantiere', [
+      'Le raccolte fondi ora portano soldi in cassa: online nella parte burocratica, in piazza nel weekend.',
+      'Con almeno il 70% del progetto realizzato si può inaugurare il parco e ottenere il punteggio finale.',
+    ]);
+  }
+  return out;
+}
+
 function dropUnknownActive(s: GameState, c: Content): GameState {
   const known = (a: ActiveTask) =>
     a.kind === 'richiesta'
       ? c.pratiche.some((p) => p.id === a.refId)
-      : c.tasks.some((t) => t.id === a.refId) || s.plan.some((t) => t.id === a.refId);
+      : a.kind === 'analisi'
+        ? c.sites.some((site) => site.pois.some((p) => p.id === a.refId))
+        : c.tasks.some((t) => t.id === a.refId) || s.plan.some((t) => t.id === a.refId);
   const dropped = s.active.filter((a) => !known(a));
   if (dropped.length === 0) return s;
   const volunteers: Volunteer[] = s.volunteers.map((v) => ({ ...v }));
