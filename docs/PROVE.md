@@ -29,12 +29,12 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
-Data di consegna e timeline (18/11), commit da indicare.
+Data di consegna e timeline (18/11), commit: 43c1f26.
 
 - [x] Ogni partita ha una data di consegna calcolata dal terreno e dagli arredi del progetto: determina le settimane di lavoro disponibili, sempre consultabili.
 - [x] Timeline delle settimane: su desktop orizzontale in alto al centro (settimana in corso, precedente e successiva; un clic per scorrerle tutte); su mobile una scheda nella barra in basso, in verticale, centrata sulla settimana in corso.
 
-Prima della prova esterna (18/11), commit da indicare.
+Prima della prova esterna (18/11), commit: 43c1f26.
 
 - [x] Pannello di benvenuto che introduce e spiega brevemente il gioco, e chiede se si vuole il tutorial o meno.
 - [x] Pannello "Tutorial" a ogni passaggio; nelle parti infrasettimanale e weekend solo la prima settimana.
