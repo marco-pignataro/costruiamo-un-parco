@@ -25,7 +25,8 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  /* minmax(0, …): la colonna centrale non si allarga quanto la fila dei volontari (su telefono usciva dallo schermo). */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas: "top top top" "left center right" "bottom bottom bottom";
   gap: var(--edge);
@@ -34,7 +35,7 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
   font-size: 14px;
   z-index: 6; /* sopra l'etichetta della mappa */
 }
-.region { display: flex; gap: var(--edge); min-height: 0; pointer-events: none; }
+.region { display: flex; gap: var(--edge); min-height: 0; min-width: 0; pointer-events: none; }
 .region:empty { display: none; }
 #hud-top { grid-area: top; align-items: flex-start; flex-wrap: wrap; }
 #hud-bottom { grid-area: bottom; align-items: flex-end; flex-wrap: wrap; }
@@ -195,7 +196,9 @@ img.face { width: 20px; height: 28px; image-rendering: pixelated; display: block
 .hint { background: #fff6d8; border-radius: 6px; padding: 6px 8px; font-size: 13px; margin-bottom: 8px !important; }
 
 .site { display: grid; gap: 4px; }
-.site.on { outline: 3px solid var(--accent); }
+.site { cursor: pointer; }
+.site:not(.on):hover { outline: 2px solid var(--line); }
+.site.on { outline: 3px solid var(--accent); cursor: default; }
 .site h3 { margin: 0; font-size: 15px; }
 .site p { margin: 0; }
 .stars { color: #c0392b; letter-spacing: 1px; }
@@ -247,7 +250,7 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
  */
 @keyframes slide-up { from { transform: translateY(100%); } to { transform: none; } }
 @media (max-width: 700px) {
-  #hud { grid-template-columns: 1fr; grid-template-areas: "top" "center" "bottom"; }
+  #hud { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "center" "bottom"; }
   #hud[data-tabs="1"] { padding-bottom: calc(var(--tabbar) + var(--edge)); }
   #hud-top .brand { flex: 1 1 auto; }
   #hud-left, #hud-right { display: none; }
@@ -267,18 +270,18 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
   }
   .tab-btn { display: flex; flex-direction: column; justify-content: center; gap: 2px; border: none; border-radius: 0; background: transparent; box-shadow: none; font-size: 11px; color: var(--muted); }
   .tab-btn.on { color: var(--accent); }
+  .tab-btn .tab-info { font-size: 10px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
+  .tab-btn.on .tab-info { color: var(--accent); }
   .menu-sheet { inset: 0; width: auto; border-radius: 0; animation: slide-up 0.22s ease-out; display: grid; align-content: start; gap: 10px; }
   .menu-btn { padding: 8px 10px; }
   .menu-btn span { display: none; }
   /* Barra della squadra: una sola riga che si scorre col dito. */
   #hud-bottom { flex-wrap: nowrap; }
-  .crew-focus { width: 170px; gap: 6px; padding: 6px; }
-  .crew-focus .photo { width: 52px; padding: 4px 5px 0; }
-  .crew-focus .photo img { width: 42px; }
-  .crew-info strong { font-size: 14px; }
-  .crew-info small { font-size: 11px; }
+  /* Niente riquadro grande: il volontario scelto ha il bordo colorato. */
+  .crew-focus { display: none; }
   .crew-list { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; pointer-events: auto; padding: 2px; }
   .crew-card { width: 64px; }
+  .crew-card.on { outline: 3px solid var(--accent); }
   .crew-card .photo img { width: 32px; }
   .recruit { padding: 10px; }
   .recruit-head small { display: none; }

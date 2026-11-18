@@ -29,6 +29,14 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
+Terza prova (18/11), commit: COMMIT.
+
+- [x] nel mobile la riga con le card dei volontari non scorre, e l'HUD superiore esce dallo schermo, o forse l'HUD in generale, non so, verifica tu.
+- [x] Nel mobile, nella barra con le card dei volontari, rimuovi la card "speciale" col volontario selezionato, distinguiamo semplicemente la card del volontario selezionato con un bordo colorato.
+- [x] Quando si passa da una fase all'altra, o da weekend a infrasettimanale, e viceversa, c'è di default sempre aperta l'ultima tab aperta. Non mi piace, non ci dev'essere niente aperto all'inizio di ogni nuova fase.
+- [x] Nella fase di selezione terreno, rendi tutta la card del terreno cliccabile (per visualizzarlo), mentre il tasto resta per sceglierlo.
+- [x] Nel mobile, sotto ogni tab scriviamo l'info più importante di quella tab in breve. In particolare: sotto "squadra" metti i PV (punti volontario) disponibili (Es.: "3 PV"); sotto "attività" metti le attività in corso su quelle totali fattibili (Es.: "3/10"); sotto "inventario" metti il totale in cassa (Es.: "392€"); sotto "Settimane" metti la percentuale di completamento (Es.: "30%") e rinomina la tab in "Progresso".
+
 Seconda prova (18/11), commit: 0832479.
 
 - [x] Le modali nel mobile riportano troppo spesso lo scroll in alto, è fastidioso.

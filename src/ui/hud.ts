@@ -86,7 +86,7 @@ const ICONS: Record<string, string> = {
   Arredi: svg('<path d="M3 10h14M4 13.5h12M5 10v6M15 10v6M4 6.5h12v3.5H4z"/>'),
   Preventivo: svg('<rect x="4" y="2.5" width="12" height="15" rx="1.5"/><path d="M7 6.5h6M7 10h6M7 13.5h3"/>'),
   Inventario: svg('<path d="M3 6.5 10 3l7 3.5v7L10 17l-7-3.5z"/><path d="m3 6.5 7 3.5 7-3.5M10 10v7"/>'),
-  Settimane: svg('<rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3M6.5 11.5h2M11.5 11.5h2M6.5 14.5h2"/>'),
+  Progresso: svg('<rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3M6.5 11.5h2M11.5 11.5h2M6.5 14.5h2"/>'),
   Terreni: svg('<path d="M10 17.5s5.5-5.2 5.5-9.3A5.5 5.5 0 0 0 4.5 8.2c0 4.1 5.5 9.3 5.5 9.3z"/><circle cx="10" cy="8.2" r="2"/>'),
 };
 
@@ -124,6 +124,8 @@ export class Hud {
   private timelineEl!: HTMLElement;
   private menuEl!: HTMLElement;
   private wasMobile = isMobile();
+  /** Fase e parte della settimana dell'ultimo disegno: quando cambiano si riparte senza niente aperto. */
+  private lastPhase = '';
   /** Volontario inquadrato nel riquadro grande in basso a sinistra (di base il presidente). */
   private selected: string | null = null;
 
@@ -233,6 +235,16 @@ export class Hud {
 
     if (this.profile && !sim.state.volunteers.some((v) => v.id === this.profile)) this.profile = null;
     if (stage !== 'progettazione') this.editor.moving = null;
+    // A ogni nuova fase, e tra giorni feriali e weekend, non resta aperta nessuna scheda.
+    const phaseKey = `${stage}:${sim.state.phase}`;
+    if (phaseKey !== this.lastPhase) {
+      if (this.lastPhase) {
+        this.sheet = null;
+        this.menuOpen = false;
+        this.timelineOpen = false;
+      }
+      this.lastPhase = phaseKey;
+    }
 
     let parts: Parts;
     if (stage === 'terreno') parts = this.sitesParts();
@@ -273,7 +285,7 @@ export class Hud {
       inventory && this.sheet === 'inventory'
         ? `<section class="inv-sheet"><div class="sheet-head card"><strong>Inventario</strong><button data-sheet="inventory" title="Chiudi">✕</button></div>${inventory}</section>`
         : '';
-    html.bottom = this.crewBar() + (tabs ? this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline, !!inventory) : '') + invSheet;
+    html.bottom = this.crewBar() + (tabs ? this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline, !!inventory, this.tabInfo(stage, timeline)) : '') + invSheet;
     const root = this.regions.top.parentElement!;
     root.dataset.sheet = mobile && this.sheet ? this.sheet : '';
     root.dataset.tabs = tabs ? '1' : '';
@@ -334,17 +346,39 @@ export class Hud {
     return `<section class="card brand"><h1>${esc(GAME_TITLE)}</h1><p>${subtitle}</p>${extra}</section>`;
   }
 
-  /** Su mobile, in basso, la barra delle schede: le due colonne e la timeline. */
-  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>, hasTimeline: boolean, hasInventory: boolean): string {
-    const tab = (side: Side) => {
-      const label = names[side] ?? '';
-      return `<button class="tab-btn side ${this.sheet === side ? 'on' : ''}" data-sheet="${side}">${ICONS[label] ?? ''}<span>${esc(label)}</span></button>`;
+  /** Su mobile, in basso, la barra delle schede: le due colonne, l'inventario e la timeline, ognuna col suo dato in breve. */
+  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>, hasTimeline: boolean, hasInventory: boolean, info: Partial<Record<Sheet, string>>): string {
+    const tab = (sheet: Sheet, label: string) => {
+      const sub = info[sheet] ? `<small class="tab-info">${esc(info[sheet]!)}</small>` : '';
+      return `<button class="tab-btn side ${this.sheet === sheet ? 'on' : ''}" data-sheet="${sheet}">${ICONS[label] ?? ''}<span>${esc(label)}</span>${sub}</button>`;
     };
     return `<nav class="tabbar">
-        ${has.left ? tab('left') : ''}${has.right ? tab('right') : ''}
-        ${hasInventory ? `<button class="tab-btn side ${this.sheet === 'inventory' ? 'on' : ''}" data-sheet="inventory">${ICONS.Inventario}<span>Inventario</span></button>` : ''}
-        ${hasTimeline ? `<button class="tab-btn side ${this.sheet === 'timeline' ? 'on' : ''}" data-sheet="timeline">${ICONS.Settimane}<span>Settimane</span></button>` : ''}
+        ${has.left ? tab('left', names.left ?? '') : ''}${has.right ? tab('right', names.right ?? '') : ''}
+        ${hasInventory ? tab('inventory', 'Inventario') : ''}
+        ${hasTimeline ? tab('timeline', 'Progresso') : ''}
       </nav>`;
+  }
+
+  /**
+   * Sotto ogni scheda della barra su mobile, il dato più importante: PV
+   * rimasti, attività in corso su quelle avviabili, cassa, progetto realizzato.
+   */
+  private tabInfo(stage: Stage, timeline: Timeline | null): Partial<Record<Sheet, string>> {
+    const sim = this.sim;
+    const s = sim.state;
+    const info: Partial<Record<Sheet, string>> = {};
+    if (timeline) info.timeline = `${Math.round(timeline.progress * 100)}%`;
+    if (stage === 'terreno') info.right = `${sim.sites.length} terreni`;
+    else if (stage === 'progettazione') {
+      info.left = `${s.grid.placements.length} posati`;
+      info.right = `${sim.designSummary().costEur} €`;
+    } else if (stage === 'sopralluogo' || stage === 'cantiere') {
+      info.left = `${s.pv} PV`;
+      const doable = this.activities().filter((a) => !a.blockers.length).length;
+      info.right = `${s.active.length}/${s.active.length + doable}`;
+      if (stage === 'cantiere') info.inventory = `${s.budget} €`;
+    }
+    return info;
   }
 
   /** In alto a destra, su tutti gli schermi: il pulsante del menu della partita e il menu aperto. */
@@ -434,7 +468,7 @@ export class Hud {
     if (mobile) {
       if (this.sheet !== 'timeline') return '';
       return `<section class="tl-sheet">
-          <div class="sheet-head card"><strong>Settimane</strong><button data-sheet="timeline" title="Chiudi">✕</button></div>
+          <div class="sheet-head card"><strong>Progresso</strong><button data-sheet="timeline" title="Chiudi">✕</button></div>
           <div class="card tl-info"><strong>${esc(title)}</strong><br><small>${esc(sub)}</small><br><small>In ogni settimana: barra lunga i giorni feriali, corta il weekend.</small>${actions}</div>
           <ol class="tl-weeks vertical">${cells(t.weeks)}</ol>
         </section>`;
@@ -868,15 +902,15 @@ export class Hud {
         const on = site.id === sim.state.siteId;
         const stars = '★'.repeat(site.difficulty) + '☆'.repeat(5 - site.difficulty);
         const factors = site.factors.map((f) => `<li><span>${esc(f.label)}</span> <strong>${f.hidden ? '?' : esc(f.value)}</strong></li>`).join('');
-        const action = on ? `<button data-act="confirm-site" class="confirm">Scegli questo terreno</button>` : `<button data-site="${site.id}">Guarda sulla mappa</button>`;
-        return `<article class="card site ${on ? 'on' : ''}">
+        // Un clic sulla scheda mostra il terreno sulla mappa; il pulsante lo sceglie.
+        return `<article class="card site ${on ? 'on' : ''}" data-site="${site.id}" ${on ? '' : 'title="Guarda sulla mappa"'}>
           <h3>${esc(site.name)}</h3>
           <p><span class="stars" title="Difficoltà ${site.difficulty} su 5">${stars}</span></p>
           <p><small>${esc(site.description)}</small></p>
           <p>Cassa <strong>${site.budget} €</strong> · <strong>${site.pv} PV</strong> · punteggio ×${site.scoreMultiplier.toLocaleString('it-IT')}</p>
           <ul class="factors">${factors}</ul>
           <p><small><em>${esc(site.bonus)}</em></small></p>
-          ${action}
+          <button data-act="confirm-site" data-choose="${site.id}" class="confirm">Scegli questo terreno</button>
         </article>`;
       })
       .join('');
@@ -1161,11 +1195,23 @@ export class Hud {
       this.openActivity(v.slice(0, cut) as Kind, v.slice(cut + 1));
       return;
     }
-    const pick = target.closest<HTMLButtonElement>('button[data-site], button[data-recruit], button[data-dismiss]');
+    // Scheda di un terreno: un clic lo mostra sulla mappa (il pulsante "Scegli" ha la sua azione).
+    const site = target.closest<HTMLElement>('article[data-site]');
+    if (site && !target.closest('button')) {
+      if (site.dataset.site !== this.sim.state.siteId) {
+        this.sim.chooseSite(site.dataset.site!);
+        // Su telefono la scheda si chiude, così il terreno si vede sulla mappa.
+        if (isMobile()) this.sheet = null;
+        this.message = '';
+        this.actions.onChange();
+        this.render();
+      }
+      return;
+    }
+    const pick = target.closest<HTMLButtonElement>('button[data-recruit], button[data-dismiss]');
     if (pick) {
       try {
-        if (pick.dataset.site) this.sim.chooseSite(pick.dataset.site);
-        else if (pick.dataset.recruit) this.sim.recruit(pick.dataset.recruit);
+        if (pick.dataset.recruit) this.sim.recruit(pick.dataset.recruit);
         else if (pick.dataset.dismiss) {
           this.sim.dismiss(pick.dataset.dismiss);
           if (this.profile === pick.dataset.dismiss) this.profile = null;
@@ -1264,6 +1310,7 @@ export class Hud {
           this.sim.inaugurate(now);
           break;
         case 'confirm-site':
+          if (btn.dataset.choose && btn.dataset.choose !== this.sim.state.siteId) this.sim.chooseSite(btn.dataset.choose);
           this.sim.confirmSite();
           // Si comincia dal presidente, già in squadra: nome e aspetto, poi gli altri.
           this.selected = this.sim.presidentCandidate.id;
