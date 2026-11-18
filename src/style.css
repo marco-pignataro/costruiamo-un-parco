@@ -258,3 +258,53 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
 .map-label .choose { display: grid; gap: 4px; margin-top: 6px; }
 .map-label .choose button { display: grid; gap: 1px; text-align: left; padding: 4px 8px; font-size: 12px; }
 .map-label .choose em { font-size: 11px; }
+
+/* benvenuto, tutorial e indizi notati (finestra in primo piano) */
+.sheet.welcome { width: min(520px, 100%); }
+.sheet.welcome h2 { font-size: 20px; }
+.sheet.welcome p, .sheet.tutorial p, .sheet.notice p { margin: 0; font-size: 14px; }
+.sheet.tutorial .kind { color: var(--accent); }
+.notice-head { display: flex; align-items: center; gap: 10px; }
+
+/*
+ * Timeline delle settimane di lavoro. Desktop: in alto al centro, chiusa su
+ * tre settimane, aperta su tutte da scorrere in orizzontale. Telefono: scheda
+ * a tutto schermo in verticale.
+ */
+.top-brand { display: contents; }
+.top-timeline { flex: 0 1 auto; min-width: 0; margin: 0 auto; display: flex; pointer-events: none; }
+.top-timeline:has(.timeline.open) { flex: 1 1 0; }
+.timeline { display: grid; gap: 6px; min-width: 0; cursor: pointer; padding: 8px 10px; }
+.timeline.open { cursor: default; width: 100%; }
+.tl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13px; }
+.tl-head small { font-size: 12px; }
+.timeline.open .tl-head { cursor: pointer; }
+.tl-toggle { flex: none; font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.tl-weeks { list-style: none; margin: 0; padding: 0 0 2px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+.tl-gap { align-self: center; color: var(--muted); padding: 0 2px; }
+.wk { flex: none; width: 118px; min-height: 70px; display: grid; gap: 2px; align-content: start; padding: 5px 7px; border-radius: 6px; background: white; border: 1px solid var(--line); font-size: 12px; }
+.wk b { font-size: 12px; }
+.wk small { font-size: 11px; line-height: 1.25; }
+.wk.st-passata { background: #ebe7da; }
+.wk.st-in-corso { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.wk.deadline { border-color: var(--warn); }
+.wk.deadline small:last-child { color: var(--warn); font-weight: 600; }
+.halves { display: grid; grid-template-columns: 2fr 1fr; gap: 2px; margin: 2px 0; }
+.half { height: 6px; border-radius: 3px; background: var(--line); }
+.half.done { background: #8fbf9f; }
+.half.now { background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.45; } }
+.tl-sheet { display: none; }
+
+@media (max-width: 700px) {
+  .timeline { display: none; }
+  #hud[data-sheet="timeline"] .tl-sheet {
+    display: flex; flex-direction: column; gap: 8px; position: fixed; inset: 0 0 var(--tabbar) 0; z-index: 8;
+    padding: 10px; background: var(--bg); pointer-events: auto; overflow-y: auto; animation: slide-up 0.22s ease-out;
+  }
+  .tl-sheet .sheet-head, .tl-sheet .tl-info { flex: none; }
+  .tl-weeks.vertical { flex-direction: column; overflow: visible; gap: 8px; }
+  .tl-weeks.vertical .wk { width: auto; padding: 8px 10px; font-size: 13px; }
+  .tl-weeks.vertical .wk b { font-size: 14px; }
+  .tl-weeks.vertical .wk small { font-size: 12px; }
+}

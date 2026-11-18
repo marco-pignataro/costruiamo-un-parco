@@ -10,10 +10,12 @@ import sites from '../data/sites.json';
 import sideQuests from '../data/sidequests.json';
 import city from '../data/city.json';
 import appearance from '../data/appearance.json';
+import tutorial from '../data/tutorial.json';
 import { validateCity } from './city';
+import { validateTutorial } from './tutorial';
 import { GRID_MAX } from '../config';
 import { estimate, gridFromSite, validateProject } from './grid';
-import type { AppearanceDef, Archetype, CandidateDef, CityDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SideQuestDef, SiteDef, TaskDef } from './types';
+import type { AppearanceDef, Archetype, CandidateDef, CityDef, ElementDef, HazardDef, MaterialDef, PraticaDef, PrepDef, SideQuestDef, SiteDef, TaskDef, TutorialDef } from './types';
 
 export interface Content {
   archetypes: Archetype[];
@@ -33,6 +35,8 @@ export interface Content {
   city: CityDef;
   /** Colori di pelle e capelli dei volontari. */
   appearance: AppearanceDef;
+  /** Benvenuto e pannelli del tutorial. */
+  tutorial: TutorialDef;
 }
 
 export const defaultContent: Content = {
@@ -48,6 +52,7 @@ export const defaultContent: Content = {
   sideQuests: sideQuests as SideQuestDef[],
   city: city as CityDef,
   appearance: appearance as AppearanceDef,
+  tutorial: tutorial as TutorialDef,
 };
 
 /**
@@ -130,5 +135,6 @@ export function validateContent(c: Content): string[] {
     }
   }
   errors.push(...validateCity(c.city, c.pratiche));
+  errors.push(...validateTutorial(c.tutorial));
   return errors;
 }

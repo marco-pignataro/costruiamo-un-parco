@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import type { Simulation } from '../core/simulation';
-import { type Activity, type Kind, activityTiles, listActivities } from '../ui/activities';
+import { type Activity, type Kind, activityTiles, listActivities, walkActivity } from '../ui/activities';
 import { type ActivityRef, type MapHit, type MapSelection, chooseActivity, clickMap } from '../ui/mapSelection';
 import { MapLabel, drawPeopleShadows, selectionLabel } from './mapUi';
 import type { PlanTask, SurfaceId } from '../core/types';
@@ -388,7 +388,13 @@ export class ParkScene extends Phaser.Scene {
     if (person) return { volunteer: person.getData('volunteer') as string };
     const t = this.tileAt(p);
     const a = t ? this.activityAt.get(t.y * this.sim().state.grid.width + t.x) : undefined;
-    return a ? { place: `${a.kind}:${a.id}`, activities: [{ kind: a.kind, id: a.id }] } : null;
+    if (a) return { place: `${a.kind}:${a.id}`, activities: [{ kind: a.kind, id: a.id }] };
+    // Nel sopralluogo, con un volontario scelto, ogni altra tile del terreno è una meta da perlustrare.
+    if (t && this.sim().state.stage === 'sopralluogo' && this.selection?.volunteer) {
+      const w = walkActivity(t.x, t.y);
+      return { place: `${w.kind}:${w.id}`, activities: [{ kind: w.kind, id: w.id }] };
+    }
+    return null;
   }
 
   private pick(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) {
@@ -538,7 +544,8 @@ export class ParkScene extends Phaser.Scene {
     const surveying = sim.state.stage === 'sopralluogo';
     for (const [id, mark] of this.poiMarks) {
       const st = sim.state.survey.find((x) => x.id === id);
-      mark.setVisible(surveying && st !== undefined && !st.found);
+      // Un punto sospetto si vede solo dopo che qualcuno l'ha notato.
+      mark.setVisible(surveying && st !== undefined && st.status !== 'nascosto' && !st.found);
       if (st) mark.setTexture(st.status === 'analizzato' ? 'indizio-ok' : 'indizio');
     }
     this.syncPlacements();
@@ -561,8 +568,27 @@ export class ParkScene extends Phaser.Scene {
     }
 
     // Chi lavora va sulle tile del suo compito; i compiti d'ufficio si vedono in città, qui si resta al bordo.
+    // Nel sopralluogo ognuno sta dove lo mette la simulazione: chi perlustra cammina, chi analizza è sul punto.
     const where = new Map<string, Point>();
-    for (const a of sim.state.active) {
+    const working = new Set<string>();
+    const walking = new Set<string>();
+    if (surveying) {
+      const now = Date.now();
+      for (const v of sim.state.volunteers) {
+        const at = sim.surveySpot(v.id, now);
+        const c = tileCenter(at.x, at.y);
+        where.set(v.id, { x: c.x, y: c.y + FOOT });
+      }
+      for (const a of sim.state.active) {
+        a.volunteerIds.forEach((id, i) => {
+          if (a.kind === 'perlustrazione') walking.add(id);
+          else working.add(id);
+          const p = where.get(id)!;
+          if (i > 0) where.set(id, { x: p.x + 6 * i, y: p.y });
+        });
+      }
+    }
+    for (const a of surveying ? [] : sim.state.active) {
       const def = a.kind === 'lavoro' ? sim.taskDef(a.refId) : null;
       const poi = a.kind === 'analisi' ? sim.poi(a.refId) : null;
       const tiles = poi ? [poi.y * g.width + poi.x] : def && 'tiles' in def ? (def as PlanTask).tiles : [];
@@ -571,33 +597,36 @@ export class ParkScene extends Phaser.Scene {
         const tile = tiles[i % tiles.length];
         const c = tileCenter(tile % g.width, Math.floor(tile / g.width));
         where.set(id, { x: c.x + (i >= tiles.length ? 6 : 0), y: c.y + FOOT });
+        working.add(id);
       });
     }
 
     for (const [id, img] of this.people) {
       const home = img.getData('home') as Point;
       const to = where.get(id) ?? home;
-      const key = `${to.x},${to.y}`;
+      const key = `${to.x},${to.y},${walking.has(id)}`;
       if (this.targets.get(id) === key) continue;
       this.targets.set(id, key);
       this.tweens.killTweensOf(img);
       const dist = Phaser.Math.Distance.Between(img.x, img.y, to.x, to.y);
       // Chi cammina verso il fondo del parco si vede di schiena.
-      this.face(id, img, to.y < img.y - 0.5);
+      if (dist > 0.5) this.face(id, img, to.y < img.y - 0.5);
+      const strolling = walking.has(id);
       this.tweens.add({
         targets: img,
         x: to.x,
         y: to.y,
-        duration: Math.max(200, dist * 12),
+        // Chi perlustra avanza a piccoli passi, un tratto a ogni aggiornamento.
+        duration: strolling ? 520 : Math.max(200, dist * 12),
         onUpdate: () => {
           img.setDepth(depthOf(img.y) + 0.2);
           img.setData('footY', img.y);
         },
         onComplete: () => {
-          this.face(id, img, false);
+          if (!strolling) this.face(id, img, false);
           img.setDepth(depthOf(to.y) + 0.2);
           img.setData('footY', to.y);
-          if (where.has(id)) this.tweens.add({ targets: img, y: to.y - 2, duration: 220, yoyo: true, repeat: -1 });
+          if (working.has(id)) this.tweens.add({ targets: img, y: to.y - 2, duration: 220, yoyo: true, repeat: -1 });
         },
       });
     }

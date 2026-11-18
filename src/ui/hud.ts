@@ -1,11 +1,12 @@
-import { ASSOCIATION, GAME_TITLE, HOURS_PER_WORKING_DAY, ORDERS, SIDE_QUEST, SURVEY, VOLUNTEER_NAME_MAX } from '../config';
+import { ASSOCIATION, GAME_TITLE, HOURS_PER_WORKING_DAY, INAUGURATION, ORDERS, SIDE_QUEST, SURVEY, VOLUNTEER_NAME_MAX } from '../config';
 import { formatHours } from '../core/duration';
 import type { Simulation } from '../core/simulation';
 import type { ActiveTask, PraticaStatus, Stage, Volunteer } from '../core/types';
 import type { Insets } from '../game/camera';
 import { ERASER, type EditorTool } from '../game/ParkScene';
 import { inUniform, volunteerLook, volunteerPortrait } from '../game/sprites';
-import { type Activity, type Kind, listActivities } from './activities';
+import { type Activity, type Kind, activityAvailable, listActivities, walkTarget } from './activities';
+import { type Timeline, type WeekCell, buildTimeline, timelineWindow } from './timeline';
 
 /** Mini-puzzle aperto: delegazione scelta, ordine di presentazione e risposte date. */
 interface Puzzle {
@@ -28,6 +29,7 @@ const KIND_LABEL: Record<Kind, string> = {
   sidequest: 'Richiesta diretta al dirigente',
   ordine: 'Ordine al fornitore',
   analisi: 'Analisi del sopralluogo',
+  perlustrazione: 'Perlustrazione del sopralluogo',
 };
 
 const LENS: Record<string, string> = { impianti: 'elettricista / idraulico', verde: 'giardiniere', progetto: 'geometra' };
@@ -64,6 +66,7 @@ const COLUMN_NAMES: Record<Stage, Partial<Record<Side, string>>> = {
   progettazione: { left: 'Arredi', right: 'Preventivo' },
   cantiere: { left: 'Squadra', right: 'Attività' },
   inaugurato: {},
+  fallito: {},
 };
 
 /** Icone della barra in basso su mobile (20×20, colore del testo). */
@@ -75,6 +78,7 @@ const ICONS: Record<string, string> = {
   Attività: svg('<path d="M8 5h9M8 10h9M8 15h9"/><path d="m2.5 5 1.2 1.2L6 4M2.5 10l1.2 1.2L6 9M2.5 15l1.2 1.2L6 14"/>'),
   Arredi: svg('<path d="M3 10h14M4 13.5h12M5 10v6M15 10v6M4 6.5h12v3.5H4z"/>'),
   Preventivo: svg('<rect x="4" y="2.5" width="12" height="15" rx="1.5"/><path d="M7 6.5h6M7 10h6M7 13.5h3"/>'),
+  Settimane: svg('<rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3M6.5 11.5h2M11.5 11.5h2M6.5 14.5h2"/>'),
   Terreni: svg('<path d="M10 17.5s5.5-5.2 5.5-9.3A5.5 5.5 0 0 0 4.5 8.2c0 4.1 5.5 9.3 5.5 9.3z"/><circle cx="10" cy="8.2" r="2"/>'),
 };
 
@@ -102,7 +106,14 @@ export class Hud {
   private profile: string | null = null;
   private menuOpen = false;
   /** Su mobile: pannello aperto a tutto schermo. */
-  private sheet: Side | null = null;
+  private sheet: Side | 'timeline' | null = null;
+  /** Su desktop: timeline aperta su tutte le settimane (chiusa mostra la precedente, quella in corso e la successiva). */
+  private timelineOpen = false;
+  /** Al prossimo disegno la timeline va centrata sulla settimana in corso (appena aperta). */
+  private centerTimeline = false;
+  /** In alto: la scheda del titolo e, accanto, la timeline (aggiornate a parte, così la timeline non perde lo scorrimento). */
+  private brandEl!: HTMLElement;
+  private timelineEl!: HTMLElement;
   private wasMobile = isMobile();
 
   constructor(
@@ -121,6 +132,11 @@ export class Hud {
       return el;
     };
     this.regions = { top: make('header', 'hud-top'), left: make('aside', 'hud-left'), right: make('aside', 'hud-right'), bottom: make('footer', 'hud-bottom') };
+    this.brandEl = document.createElement('div');
+    this.brandEl.className = 'top-brand';
+    this.timelineEl = document.createElement('div');
+    this.timelineEl.className = 'top-timeline';
+    this.regions.top.append(this.brandEl, this.timelineEl);
     this.toast = document.createElement('div');
     this.toast.id = 'hud-toast';
     root.append(this.toast);
@@ -128,13 +144,7 @@ export class Hud {
       el.addEventListener('click', (e) => this.onClick(e));
       el.addEventListener('change', (e) => this.onInput(e));
     }
-    modal.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-ok]');
-      if (!btn) return;
-      this.getSim().markSeen(Number(btn.dataset.ok));
-      this.actions.onChange();
-      this.render();
-    });
+    modal.addEventListener('click', (e) => this.onModalClick(e));
     window.addEventListener('resize', () => {
       if (isMobile() !== this.wasMobile) {
         this.wasMobile = isMobile();
@@ -151,6 +161,7 @@ export class Hud {
         else if (this.editor.moving !== null) this.editor.moving = null;
         else if (this.menuOpen) this.menuOpen = false;
         else if (this.sheet) this.sheet = null;
+        else if (this.timelineOpen) this.timelineOpen = false;
         else return;
         this.render();
       } else if ((e.key === 'z' || e.key === 'Z') && !(e.target instanceof HTMLInputElement) && !e.ctrlKey && !e.metaKey) {
@@ -195,7 +206,7 @@ export class Hud {
   render(): void {
     const sim = this.sim;
     const stage = sim.state.stage;
-    if (this.open && !this.activities().some((a) => a.kind === this.open!.kind && a.id === this.open!.id)) this.closeActivity();
+    if (this.open && !activityAvailable(sim, this.open)) this.closeActivity();
 
     if (this.profile && !sim.state.volunteers.some((v) => v.id === this.profile)) this.profile = null;
     if (stage !== 'progettazione') this.editor.moving = null;
@@ -205,6 +216,7 @@ export class Hud {
     else if (stage === 'squadra') parts = this.teamParts();
     else if (stage === 'progettazione') parts = this.designParts();
     else if (stage === 'inaugurato') parts = { top: this.brand('Il parco è inaugurato!') };
+    else if (stage === 'fallito') parts = { top: this.brand('Consegna mancata') };
     else parts = this.playParts();
 
     const mobile = isMobile();
@@ -227,13 +239,22 @@ export class Hud {
         : `${head}<button class="card tab hide" data-toggle="${side}" title="Nascondi">${arrows[1]}</button><div class="col-body">${body}</div>${foot}`;
       this.regions[side].classList.toggle('collapsed', collapsed);
     }
-    if (!html[this.sheet ?? 'top']) this.sheet = null;
-    html.bottom = this.controls(names, { left: !!html.left, right: !!html.right });
+    const timeline = buildTimeline(sim);
+    if (this.sheet === 'timeline' ? !timeline : !html[this.sheet ?? 'top']) this.sheet = null;
+    if (!timeline) this.timelineOpen = false;
+    html.bottom = this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline);
     this.regions.top.parentElement!.dataset.sheet = mobile && this.sheet ? this.sheet : '';
-    for (const r of ['top', 'left', 'right', 'bottom'] as Region[]) setHTML(this.regions[r], html[r]);
+    setHTML(this.brandEl, html.top);
+    setHTML(this.timelineEl, timeline ? this.timelineHtml(timeline, mobile) : '');
+    for (const r of ['left', 'right', 'bottom'] as Region[]) setHTML(this.regions[r], html[r]);
+    if (this.centerTimeline) {
+      this.centerTimeline = false;
+      this.scrollTimelineToNow();
+    }
     setHTML(this.toast, this.message ? `<p class="card msg">${esc(this.message)}</p>` : '');
 
     if (stage === 'inaugurato') this.showDialog(this.finale(), 'finale');
+    else if (stage === 'fallito') this.showDialog(this.failure(), 'finale');
     else if (this.puzzle && stage === 'cantiere') this.showDialog(this.puzzleCard(), 'puzzle');
     else if (this.open) this.showDialog(this.activityCard(), 'activity');
     else if (this.profile) this.showDialog(this.profileCard(this.sim.volunteer(this.profile)), 'profile');
@@ -280,7 +301,7 @@ export class Hud {
    * stessa barra diventa una fila di schede (menu e le due colonne) e lo zoom
    * va in alto a destra.
    */
-  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>): string {
+  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>, hasTimeline: boolean): string {
     const tab = (side: Side) => {
       const label = names[side] ?? '';
       return `<button class="tab-btn side ${this.sheet === side ? 'on' : ''}" data-sheet="${side}">${ICONS[label] ?? ''}<span>${esc(label)}</span></button>`;
@@ -290,6 +311,8 @@ export class Hud {
       ? `<section class="card menu-sheet">
           <div class="sheet-head"><strong>Menu</strong><button data-act="menu" title="Chiudi">✕</button></div>
           <div class="menu-items">
+            <button data-act="tutorial-toggle">${this.sim.state.tutorial?.on ? 'Spegni il tutorial' : 'Accendi il tutorial'}</button>
+            ${this.sim.hasTutorialStep() ? '<button data-act="tutorial-replay">Rivedi il tutorial di questa fase</button>' : ''}
             <button data-act="notify">Attiva notifiche</button>
             <button data-act="export">Esporta salvataggio</button>
             <button data-act="new">Nuova partita</button>
@@ -300,10 +323,87 @@ export class Hud {
     return `<nav class="tabbar">
         <button class="tab-btn menu-btn card ${this.menuOpen ? 'on' : ''}" data-act="menu">${ICONS.Menu}<span>Menu</span></button>
         ${has.left ? tab('left') : ''}${has.right ? tab('right') : ''}
+        ${hasTimeline ? `<button class="tab-btn side ${this.sheet === 'timeline' ? 'on' : ''}" data-sheet="timeline">${ICONS.Settimane}<span>Settimane</span></button>` : ''}
       </nav>
       <button data-act="zoom" class="card zoom" title="Alterna visuale intera e ingrandimento (tasto Z)" aria-label="${zoomed ? 'Visuale intera' : 'Ingrandisci'}">
         <span class="long">${zoomed ? '− Visuale intera' : '+ Ingrandisci'}</span><span class="short">${zoomed ? '−' : '+'}</span></button>
       ${menu}`;
+  }
+
+  // ---------- timeline delle settimane ----------
+
+  /**
+   * Timeline delle settimane di lavoro fino alla data di consegna. Su desktop
+   * è una scheda in alto al centro: chiusa mostra la settimana in corso, la
+   * precedente e la successiva; un clic la apre su tutte, da scorrere in
+   * orizzontale. Su telefono è una scheda della barra in basso, a tutto
+   * schermo e in verticale.
+   */
+  private timelineHtml(t: Timeline, mobile: boolean): string {
+    const pct = (x: number) => `${Math.round(x * 100)}%`;
+    const left = t.total - t.current + 1;
+    const title = t.provisional
+      ? `Consegna prevista: ${t.total} settimane`
+      : t.over
+        ? `Cantiere chiuso alla settimana ${t.current} di ${t.total}`
+        : `Settimana ${t.current} di ${t.total}`;
+    const sub = t.provisional
+      ? 'Cambia con il progetto: si fissa quando lo confermi'
+      : t.over
+        ? `Progetto realizzato ${pct(t.progress)}`
+        : `${left === 1 ? 'Ultima settimana prima della consegna' : `Restano ${left} settimane, questa compresa`} · progetto ${pct(t.progress)} (serve ${pct(t.minProgress)})`;
+    const cells = (list: WeekCell[]) => list.map((w) => this.weekCell(w, t)).join('');
+    if (mobile) {
+      if (this.sheet !== 'timeline') return '';
+      return `<section class="tl-sheet">
+          <div class="sheet-head card"><strong>Settimane</strong><button data-sheet="timeline" title="Chiudi">✕</button></div>
+          <div class="card tl-info"><strong>${esc(title)}</strong><br><small>${esc(sub)}</small><br><small>In ogni settimana: barra lunga i giorni feriali, corta il weekend.</small></div>
+          <ol class="tl-weeks vertical">${cells(t.weeks)}</ol>
+        </section>`;
+    }
+    const [a, b] = timelineWindow(t.total, Math.max(1, t.current));
+    const shown = this.timelineOpen ? t.weeks : t.weeks.filter((w) => w.week >= a && w.week <= b);
+    const more = this.timelineOpen
+      ? '<span class="tl-toggle">✕ Chiudi</span>'
+      : t.total > shown.length
+        ? `<span class="tl-toggle">Tutte le ${t.total} ▸</span>`
+        : '';
+    return `<section class="card timeline ${this.timelineOpen ? 'open' : ''}" ${this.timelineOpen ? '' : 'data-act="timeline" title="Mostra tutte le settimane"'}>
+        <div class="tl-head" ${this.timelineOpen ? 'data-act="timeline" title="Chiudi la timeline"' : ''}><span><strong>${esc(title)}</strong> <small>${esc(sub)}</small></span>${more}</div>
+        <ol class="tl-weeks">${!this.timelineOpen && a > 1 ? '<li class="tl-gap">…</li>' : ''}${cells(shown)}${!this.timelineOpen && b < t.total ? '<li class="tl-gap">…</li>' : ''}</ol>
+      </section>`;
+  }
+
+  private weekCell(w: WeekCell, t: Timeline): string {
+    const half = (p: 'burocratica' | 'operativa') => {
+      const done = w.status === 'passata' || (w.status === 'in-corso' && p === 'burocratica' && w.phase === 'operativa');
+      const now = w.status === 'in-corso' && w.phase === p;
+      return `<span class="half ${done ? 'done' : ''} ${now ? 'now' : ''}" title="${p === 'burocratica' ? 'Giorni feriali' : 'Weekend'}"></span>`;
+    };
+    const notes: string[] = [];
+    if (w.status === 'in-corso') notes.push(w.phase === 'burocratica' ? 'Ora: giorni feriali' : 'Ora: weekend');
+    if (w.progress !== null) notes.push(`Realizzato ${Math.round(w.progress * 100)}%`);
+    if (w.deliveries.length) notes.push(`Arrivano i materiali: ${w.deliveries.join(', ')}`);
+    if (t.provisional && w.week === 1) notes.push('Pratiche e ordini');
+    if (w.deadline) notes.push(`Consegna: serve il ${Math.round(t.minProgress * 100)}%`);
+    return `<li class="wk st-${w.status} ${w.deadline ? 'deadline' : ''}" ${w.status === 'in-corso' ? 'aria-current="true"' : ''}>
+        <b>Settimana ${w.week}</b>
+        <div class="halves">${half('burocratica')}${half('operativa')}</div>
+        ${notes.map((n) => `<small>${esc(n)}</small>`).join('')}
+      </li>`;
+  }
+
+  /** Porta al centro la settimana in corso (o la prima, in progettazione). */
+  private scrollTimelineToNow() {
+    const list = this.timelineEl.querySelector<HTMLElement>('.tl-weeks');
+    const cell = list?.querySelector<HTMLElement>('.wk.st-in-corso') ?? list?.querySelector<HTMLElement>('.wk');
+    if (!list || !cell) return;
+    if (list.classList.contains('vertical')) {
+      const box = list.closest<HTMLElement>('.tl-sheet') ?? list;
+      box.scrollTop = cell.offsetTop - (box.clientHeight - cell.offsetHeight) / 2;
+    } else {
+      list.scrollLeft = cell.offsetLeft - list.offsetLeft - (list.clientWidth - cell.offsetWidth) / 2;
+    }
   }
 
   /** Pulsante donazioni: solo nel menu iniziale (scelta del terreno) e all'inaugurazione, mai durante il gioco. */
@@ -327,7 +427,9 @@ export class Hud {
         ? `Ordine: materiali per ${sim.taskDef(a.refId).name}`
         : a.kind === 'analisi'
           ? `Analisi: ${sim.poi(a.refId).clue}`
-          : `Richiesta: ${sim.praticaDef(a.refId).name}`;
+          : a.kind === 'perlustrazione'
+            ? 'Perlustrazione del terreno'
+            : `Richiesta: ${sim.praticaDef(a.refId).name}`;
   }
 
   // ---------- sopralluogo e cantiere ----------
@@ -386,12 +488,15 @@ export class Hud {
           <strong>${esc(a.name)}</strong><small>${esc(KIND_LABEL[a.kind])} · ${esc(a.meta)}</small>${why}</button></li>`;
       })
       .join('');
-    const todo = `<section class="card"><h2>${surveying ? 'Punti da analizzare' : 'Da fare'}</h2>
-      <ul class="acts">${list || '<li><small>Niente da avviare adesso.</small></li>'}</ul></section>`;
+    const empty = surveying
+      ? 'Ancora nessun indizio notato.'
+      : 'Niente da avviare adesso.';
+    const todo = `<section class="card"><h2>${surveying ? 'Indizi notati' : 'Da fare'}</h2>
+      <ul class="acts">${list || `<li><small>${empty}</small></li>`}</ul></section>`;
     let registers = '';
     if (surveying) {
       const done = sim.pois
-        .filter((p) => sim.poiState(p.id).status !== 'da-analizzare')
+        .filter((p) => ['in-analisi', 'analizzato'].includes(sim.poiState(p.id).status))
         .map((p) => {
           const st = sim.poiState(p.id);
           const result = st.status === 'in-analisi' ? 'In analisi…' : st.found ? `<strong class="danger">${esc(sim.hazard(st.found).name)}</strong>` : 'Niente di preoccupante (forse)';
@@ -399,7 +504,7 @@ export class Hud {
         })
         .join('');
       registers = `<section class="card"><h2>Esiti</h2><ul>${done || '<li><small>Ancora nessuna analisi.</small></li>'}</ul>
-        <p><small>Le ore non bastano per tutto: scegli dove guardare. Senza lo specialista giusto un'insidia può sfuggire, e si scoprirà in cantiere.</small></p></section>`;
+        <p><small>Clicca un volontario e poi un punto del terreno per mandarlo a perlustrare: chi passa vicino a un indizio lo nota. Le ore non bastano per tutto: scegli dove guardare. Senza lo specialista giusto un'insidia può sfuggire, e si scoprirà in cantiere.</small></p></section>`;
     } else {
       const pratiche = sim.allPratiche
         .map((def) => {
@@ -487,6 +592,16 @@ export class Hud {
         ['Consegna', `il weekend della settimana ${sim.state.week + 1}`],
       );
       preview = sim.previewOrder(id, ids);
+    } else if (kind === 'perlustrazione') {
+      const to = walkTarget(id);
+      title = 'Perlustra fin qui';
+      max = 1;
+      rows.push(
+        ['Come funziona', 'Il volontario cammina fino al punto scelto guardandosi intorno. Se passa vicino a qualcosa di strano si ferma e ti chiede se approfondire.'],
+        ['Passo', `${formatHours(SURVEY.walkHoursPerTile)} per tile, anche in diagonale`],
+        ['Volontari', 'uno alla volta'],
+      );
+      preview = sim.previewWalk(to.x, to.y, ids);
     } else {
       const p = sim.poi(id);
       const lens = sim.poiLens(id);
@@ -509,6 +624,8 @@ export class Hud {
     let line = '';
     if (kind === 'sidequest') {
       line = `Una giornata: <strong>${SIDE_QUEST.hours} h</strong> di sessione e ${SIDE_QUEST.hours} h a testa`;
+    } else if (kind === 'perlustrazione') {
+      line = p.hours !== undefined ? `Cammino di <strong>${formatHours(p.hours)}</strong>, se nessuno nota niente prima` : '';
     } else if (p.hours !== undefined) {
       const cost = 'costEur' in p && p.costEur !== undefined ? ` · spesa <strong>${p.costEur} €</strong>` : '';
       const def = kind === 'lavoro' ? sim.taskDef(id) : null;
@@ -516,7 +633,7 @@ export class Hud {
       line = `Durata <strong>${formatHours(p.hours)}</strong> · qualità <strong>${p.quality}</strong>${cost}${raise}`;
     }
     const errors = p.errors.length ? `<ul class="errors">${p.errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>` : '';
-    const label = kind === 'sidequest' ? 'Vai dal dirigente' : 'Avvia';
+    const label = kind === 'sidequest' ? 'Vai dal dirigente' : kind === 'perlustrazione' ? 'Vai' : 'Avvia';
     return `<div class="card sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
         <small class="kind">${esc(KIND_LABEL[kind])}</small>
         <h2>${esc(title)}</h2>
@@ -600,6 +717,19 @@ export class Hud {
         <ul>${rows}</ul>
         <div class="buttons"><button data-act="puzzle-cancel">Torna indietro (nessun costo)</button>
         <button data-act="puzzle-submit" class="confirm" ${done ? '' : 'disabled'}>Consegna al dirigente</button></div>
+      </div>`;
+  }
+
+  /** Fine partita persa: la data di consegna è arrivata prima del minimo di progetto. */
+  private failure(): string {
+    const sim = this.sim;
+    const min = Math.round(INAUGURATION.minProgress * 100);
+    return `<div class="card sheet" role="dialog" aria-modal="true">
+        <small class="kind">${esc(sim.siteName)}</small>
+        <h2>Consegna mancata</h2>
+        <p>Alla data di consegna, la settimana ${sim.state.deadlineWeek}, il progetto era realizzato al <strong>${Math.round(sim.projectProgress * 100)}%</strong>: per inaugurare ne serviva almeno il ${min}%.</p>
+        <p><small>Prova con un progetto più piccolo, una squadra più adatta o un piano più ordinato: pratiche e ordini presto, lavori in fila senza tempi morti.</small></p>
+        <div class="buttons"><button data-act="new" class="confirm">Nuova partita</button></div>
       </div>`;
   }
 
@@ -722,6 +852,7 @@ export class Hud {
         <section class="card day"><button data-act="confirm" class="confirm" ${sum.problems.length ? 'disabled' : ''}>Conferma il progetto e apri il cantiere</button></section>`,
       right: `<section class="card"><h2>Preventivo</h2>
           <p>Materiali: <strong>${sum.costEur} €</strong> · Lavoro: <strong>${sum.hours} h</strong> complessive, preparazione del terreno compresa</p>
+          <p>Consegna: entro <strong>${sum.weeks} settimane</strong> <small>(si fissa alla conferma; servirà almeno il ${Math.round(INAUGURATION.minProgress * 100)}% del progetto)</small></p>
           ${sum.riskTiles > 0 ? `<p class="warn"><small>Costruisci su ${sum.riskTiles} tile a rischio: servono lavori di messa in sicurezza.</small></p>` : ''}
           <p><small>Skill utili: ${esc(sum.skills.join(', ') || '—')}</small></p>
           <p><small>Da ordinare: ${materials}</small></p>
@@ -737,10 +868,18 @@ export class Hud {
 
   // ---------- resoconti ----------
 
+  /**
+   * Finestra in primo piano, una cosa alla volta: prima i resoconti in coda,
+   * poi il benvenuto, poi il pannello del tutorial, infine le domande sugli
+   * indizi notati nel sopralluogo.
+   */
   private renderModal(): void {
-    const next = this.sim.unseenReports()[0];
+    const sim = this.sim;
+    const next = sim.unseenReports()[0];
+    const html = next ? '' : sim.needsWelcome ? this.welcomeCard() : sim.tutorialPanel() ? this.tutorialCard() : sim.pendingNotices().length ? this.noticeCard() : '';
     if (!next) {
-      this.modal.hidden = true;
+      this.modal.hidden = html === '';
+      if (html) setHTML(this.modal, html);
       return;
     }
     const queue = this.sim.unseenReports().length;
@@ -756,6 +895,78 @@ export class Hud {
     );
   }
 
+  /** Benvenuto della nuova partita: cos'è il gioco e se si vuole il tutorial. */
+  private welcomeCard(): string {
+    const w = this.sim.tutorialTexts.welcome;
+    const fill = (t: string) => esc(t.replaceAll('{titolo}', GAME_TITLE).replaceAll('{associazione}', ASSOCIATION.name));
+    return `<div class="card sheet welcome" role="dialog" aria-modal="true" aria-label="Benvenuto">
+      <h2>${esc(GAME_TITLE)}</h2>
+      <p>${fill(w.intro)}</p>
+      <ul>${w.lines.map((l) => `<li>${fill(l)}</li>`).join('')}</ul>
+      <p><strong>${fill(w.question)}</strong></p>
+      <small>Puoi cambiare idea quando vuoi dal Menu.</small>
+      <div class="buttons"><button data-act="welcome-no">No, gioco da solo</button><button data-act="welcome-yes" class="confirm">Sì, con il tutorial</button></div></div>`;
+  }
+
+  private tutorialCard(): string {
+    const t = this.sim.tutorialPanel()!;
+    return `<div class="card sheet tutorial" role="dialog" aria-modal="true" aria-label="${esc(t.title)}">
+      <small class="kind">Tutorial</small>
+      <h2>${esc(t.title)}</h2>
+      <ul>${t.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
+      <div class="buttons"><button data-act="tutorial-off">Spegni il tutorial</button><button data-act="tutorial-ok" class="confirm">Ho capito</button></div></div>`;
+  }
+
+  /** Un volontario ha notato un indizio: approfondire subito o lasciar perdere. */
+  private noticeCard(): string {
+    const sim = this.sim;
+    const { poi, volunteerId } = sim.pendingNotices()[0];
+    const v = sim.volunteer(volunteerId);
+    return `<div class="card sheet notice" role="dialog" aria-modal="true" aria-label="${esc(poi.clue)}">
+      <small class="kind">Sopralluogo · ${esc(v.name)} ha notato qualcosa</small>
+      <div class="notice-head">${this.face(v)}<h2>${esc(poi.clue)}</h2></div>
+      <p>Approfondire? L'analisi richiede <strong>${poi.hours} h</strong> complessive (fino a ${SURVEY.maxVolunteers} volontari). Senza lo specialista giusto un'insidia può sfuggire.</p>
+      <small>Se lasci perdere il punto resta segnato sulla mappa: puoi analizzarlo anche più tardi.</small>
+      <div class="buttons"><button data-act="notice-skip" data-poi="${poi.id}">Lascia perdere</button><button data-act="notice-dig" data-poi="${poi.id}" data-vol="${volunteerId}" class="confirm">Approfondisci</button></div></div>`;
+  }
+
+  private onModalClick(e: Event) {
+    const sim = this.sim;
+    const target = e.target as HTMLElement;
+    const ok = target.closest<HTMLElement>('[data-ok]');
+    const btn = target.closest<HTMLElement>('button[data-act]');
+    if (ok) sim.markSeen(Number(ok.dataset.ok));
+    else if (!btn) return;
+    else {
+      switch (btn.dataset.act) {
+        case 'welcome-yes':
+        case 'welcome-no':
+          sim.setTutorial(btn.dataset.act === 'welcome-yes');
+          break;
+        case 'tutorial-ok':
+          sim.dismissTutorial();
+          break;
+        case 'tutorial-off':
+          sim.dismissTutorial();
+          sim.setTutorial(false);
+          break;
+        case 'notice-skip':
+          sim.answerNotice(btn.dataset.poi!);
+          break;
+        case 'notice-dig': {
+          sim.answerNotice(btn.dataset.poi!);
+          this.actions.onChange();
+          this.openActivity('analisi', btn.dataset.poi!, [btn.dataset.vol!]);
+          return;
+        }
+        default:
+          return;
+      }
+    }
+    this.actions.onChange();
+    this.render();
+  }
+
   // ---------- eventi ----------
 
   private onInput(e: Event) {
@@ -765,6 +976,8 @@ export class Hud {
       return;
     }
     if (!el.dataset.vol) return;
+    // Si perlustra uno alla volta: scegliere un altro volontario sostituisce il primo.
+    if (el.checked && this.open?.kind === 'perlustrazione') this.team.clear();
     if (el.checked) this.team.add(el.dataset.vol);
     else this.team.delete(el.dataset.vol);
     this.message = '';
@@ -801,8 +1014,9 @@ export class Hud {
     }
     const sheetBtn = target.closest<HTMLButtonElement>('button[data-sheet]');
     if (sheetBtn) {
-      const side = sheetBtn.dataset.sheet as Side;
+      const side = sheetBtn.dataset.sheet as Side | 'timeline';
       this.sheet = this.sheet === side ? null : side;
+      this.centerTimeline = this.sheet === 'timeline';
       this.menuOpen = false;
       this.render();
       return;
@@ -854,6 +1068,13 @@ export class Hud {
       this.render();
       return;
     }
+    // La timeline (scheda chiusa o intestazione di quella aperta) si apre e si chiude con un clic.
+    if (target.closest('[data-act="timeline"]') && !target.closest('button')) {
+      this.timelineOpen = !this.timelineOpen;
+      this.centerTimeline = this.timelineOpen;
+      this.render();
+      return;
+    }
     const btn = target.closest<HTMLButtonElement>('button[data-act]');
     if (!btn) return;
     const now = Date.now();
@@ -876,6 +1097,10 @@ export class Hud {
           if (kind === 'lavoro') this.sim.startTask(id, ids, now);
           else if (kind === 'ordine') this.sim.startOrder(id, ids, now);
           else if (kind === 'analisi') this.sim.startAnalysis(id, ids, now);
+          else if (kind === 'perlustrazione') {
+            const to = walkTarget(id);
+            this.sim.startWalk(to.x, to.y, ids, now);
+          }
           else this.sim.startRequest(id, ids, now);
           this.closeActivity();
           break;
@@ -933,6 +1158,14 @@ export class Hud {
           this.editor.moving = null;
           break;
         }
+        case 'tutorial-toggle':
+          this.sim.setTutorial(!this.sim.state.tutorial?.on);
+          this.menuOpen = false;
+          break;
+        case 'tutorial-replay':
+          this.sim.replayTutorial();
+          this.menuOpen = false;
+          break;
         case 'notify':
           void Notification.requestPermission();
           this.menuOpen = false;

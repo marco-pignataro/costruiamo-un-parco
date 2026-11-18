@@ -15,7 +15,9 @@ import {
   type PlaceCheck,
 } from './grid';
 import { emergencyTasks, gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, AppearanceDef, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, Volunteer, CityDef } from './types';
+import { currentTutorial, tutorialStepOf } from './tutorial';
+import { deadlineWeeks, rapidityPoints } from './deadline';
+import type { ActiveTask, AppearanceDef, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, TilePos, TutorialDef, TutorialStepDef, Volunteer, CityDef } from './types';
 
 const EPS = 1e-6;
 
@@ -37,7 +39,7 @@ export class Simulation {
   static newGame(content: Content, now: number, timeScale = 1): Simulation {
     const site = content.sites[0];
     const state: GameState = {
-      version: 9,
+      version: 11,
       stage: 'terreno',
       siteId: site.id,
       pv: site.pv,
@@ -58,11 +60,15 @@ export class Simulation {
       stock: {},
       orders: [],
       survey: [],
+      surveyPos: {},
       hiddenHazards: [],
       rng: (now ^ 0x9e3779b9) >>> 0 || 1,
       fundraising: [],
       taskQuality: {},
       finale: null,
+      tutorial: null,
+      deadlineWeek: null,
+      weekLog: [],
     };
     return new Simulation(state, content);
   }
@@ -181,7 +187,8 @@ export class Simulation {
     const s = this.state;
     s.stage = 'sopralluogo';
     s.sessionUsedH = 0;
-    s.survey = this.site.pois.map((p) => ({ id: p.id, status: 'da-analizzare', found: null }));
+    s.survey = this.site.pois.map((p) => ({ id: p.id, status: 'nascosto', found: null }));
+    s.surveyPos = {};
   }
 
   // ---------- Fase 3: sopralluogo ----------
@@ -216,8 +223,10 @@ export class Simulation {
 
   previewAnalysis(poiId: string, volunteerIds: string[]): Preview {
     const errors: string[] = [];
+    const status = this.state.stage === 'sopralluogo' ? this.poiState(poiId).status : null;
     if (this.state.stage !== 'sopralluogo') errors.push('Le analisi si fanno nel sopralluogo');
-    else if (this.poiState(poiId).status !== 'da-analizzare') errors.push('Punto già analizzato');
+    else if (status === 'nascosto') errors.push('Nessuno ha ancora notato questo punto');
+    else if (status === 'in-analisi' || status === 'analizzato') errors.push('Punto già analizzato');
     if (volunteerIds.length > SURVEY.maxVolunteers) errors.push(`Massimo ${SURVEY.maxVolunteers} volontari`);
     return this.previewTeam(this.poi(poiId).hours, this.poiLens(poiId), volunteerIds, errors);
   }
@@ -227,7 +236,134 @@ export class Simulation {
     const p = this.previewAnalysis(poiId, volunteerIds);
     if (p.errors.length) throw new Error(p.errors.join('; '));
     this.poiState(poiId).status = 'in-analisi';
+    const poi = this.poi(poiId);
+    for (const id of volunteerIds) this.state.surveyPos[id] = { x: poi.x, y: poi.y };
     return this.launch('analisi', poiId, volunteerIds, p as DurationResult, now);
+  }
+
+  // ---------- perlustrazione: i punti sospetti si scoprono passandoci vicino ----------
+
+  /** Dove aspetta un volontario prima di entrare nel terreno: sul marciapiede davanti, in fila. */
+  surveyHome(volunteerId: string): TilePos {
+    const g = this.state.grid;
+    const i = Math.max(0, this.state.volunteers.findIndex((v) => v.id === volunteerId));
+    return { x: i % g.width, y: g.height + Math.floor(i / g.width) };
+  }
+
+  /** Tile dove sta un volontario nel sopralluogo (fermo; chi cammina è dove si è fermato l'ultima volta). */
+  surveyPosition(volunteerId: string): TilePos {
+    return this.state.surveyPos[volunteerId] ?? this.surveyHome(volunteerId);
+  }
+
+  /**
+   * Dove si vede un volontario adesso, in tile (anche a metà tra due tile se
+   * cammina): per la scena del parco.
+   */
+  surveySpot(volunteerId: string, now: number): TilePos {
+    const a = this.state.active.find((x) => x.kind === 'perlustrazione' && x.volunteerIds.includes(volunteerId));
+    if (!a?.path || a.path.length < 2) return this.surveyPosition(volunteerId);
+    const f = Math.min(a.path.length - 1, Math.max(0, (now - a.startedAt) / this.walkStepMs));
+    const k = Math.floor(f);
+    const from = a.path[k];
+    const to = a.path[Math.min(k + 1, a.path.length - 1)];
+    return { x: from.x + (to.x - from.x) * (f - k), y: from.y + (to.y - from.y) * (f - k) };
+  }
+
+  private get walkStepMs(): number {
+    return SURVEY.walkHoursPerTile * this.state.msPerHour;
+  }
+
+  /** Percorso a passi di una tile (anche in diagonale), partenza e meta comprese. */
+  walkPath(from: TilePos, to: TilePos): TilePos[] {
+    const n = Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y));
+    const out: TilePos[] = [];
+    for (let k = 0; k <= n; k++) {
+      out.push({ x: from.x + Math.round(((to.x - from.x) * k) / (n || 1)), y: from.y + Math.round(((to.y - from.y) * k) / (n || 1)) });
+    }
+    return out;
+  }
+
+  /** Punti ancora nascosti abbastanza vicini a una tile da essere notati. */
+  private hiddenNear(at: TilePos): PoiDef[] {
+    const r = SURVEY.noticeRadius;
+    return this.site.pois.filter((p) => this.poiState(p.id).status === 'nascosto' && Math.abs(p.x - at.x) <= r && Math.abs(p.y - at.y) <= r);
+  }
+
+  previewWalk(x: number, y: number, volunteerIds: string[]): Preview {
+    const errors: string[] = [];
+    const g = this.state.grid;
+    if (this.state.stage !== 'sopralluogo') errors.push('Si perlustra nel sopralluogo');
+    if (x < 0 || y < 0 || x >= g.width || y >= g.height) errors.push('Il punto è fuori dal terreno');
+    if (volunteerIds.length > 1) errors.push('Si perlustra un volontario alla volta');
+    if (errors.length || volunteerIds.length === 0) return this.previewTeam(0, null, volunteerIds, errors);
+    const path = this.walkPath(this.surveyPosition(volunteerIds[0]), { x, y });
+    if (path.length < 2) errors.push(`${this.volunteer(volunteerIds[0]).name} è già lì`);
+    return this.previewTeam((path.length - 1) * SURVEY.walkHoursPerTile, null, volunteerIds, errors);
+  }
+
+  /** Manda un volontario a camminare fino a (x, y): chi passa vicino a un indizio si ferma e lo segnala. */
+  startWalk(x: number, y: number, volunteerIds: string[], now: number): ActiveTask {
+    this.tick(now);
+    const p = this.previewWalk(x, y, volunteerIds);
+    if (p.errors.length) throw new Error(p.errors.join('; '));
+    const task = this.launch('perlustrazione', `${x},${y}`, volunteerIds, p as DurationResult, now);
+    task.path = this.walkPath(this.surveyPosition(volunteerIds[0]), { x, y });
+    return task;
+  }
+
+  /** Primo passo della perlustrazione da cui si vede un punto ancora nascosto, con l'ora in cui ci arriva. */
+  private walkStop(a: ActiveTask): { step: number; at: number } | null {
+    const path = a.path ?? [];
+    for (let k = 1; k < path.length; k++) if (this.hiddenNear(path[k]).length) return { step: k, at: a.startedAt + k * this.walkStepMs };
+    return null;
+  }
+
+  /** Il volontario si ferma al passo `step`: le ore non camminate tornano a lui. */
+  private stopWalk(a: ActiveTask, step: number, at: number): void {
+    const walked = step * SURVEY.walkHoursPerTile;
+    for (const id of a.volunteerIds) this.volunteer(id).hoursUsed -= a.hours - walked;
+    a.path = a.path!.slice(0, step + 1);
+    a.hours = walked;
+    a.endsAt = at;
+  }
+
+  /** Chi è fermo in `at` nota i punti nascosti lì vicino: il giocatore deciderà se approfondire. */
+  private notice(volunteerId: string, at: TilePos): PoiDef[] {
+    const seen = this.hiddenNear(at);
+    for (const p of seen) {
+      const st = this.poiState(p.id);
+      st.status = 'notato';
+      st.noticedBy = volunteerId;
+    }
+    return seen;
+  }
+
+  private completeWalk(a: ActiveTask, t: number): void {
+    const id = a.volunteerIds[0];
+    const end = a.path!.at(-1)!;
+    this.state.surveyPos[id] = { ...end };
+    const stopped = a.refId !== `${end.x},${end.y}`;
+    if (this.notice(id, end).length === 0 && !stopped) {
+      this.report(t, 'Perlustrazione: niente di strano', [`${this.volunteer(id).name} ha camminato per ${formatHours(a.hours)} senza notare niente.`]);
+    }
+  }
+
+  /** Punti notati che aspettano la decisione: approfondire o lasciar perdere. */
+  pendingNotices(): { poi: PoiDef; volunteerId: string }[] {
+    return this.site.pois
+      .filter((p) => this.state.stage === 'sopralluogo' && this.poiState(p.id).status === 'notato')
+      .map((p) => ({ poi: p, volunteerId: this.poiState(p.id).noticedBy! }));
+  }
+
+  /**
+   * Risposta alla domanda su un punto notato. In tutti e due i casi il punto
+   * resta segnato sulla mappa e si può analizzare anche più tardi; per
+   * approfondire subito, la HUD apre l'analisi con chi l'ha notato.
+   */
+  answerNotice(poiId: string): void {
+    const st = this.poiState(poiId);
+    if (st.status !== 'notato') throw new Error('Non c\'è niente da decidere su questo punto');
+    st.status = 'da-analizzare';
   }
 
   /** Numero pseudo-casuale in [0, 1) dal generatore con seme salvato nello stato (mulberry32). */
@@ -252,6 +388,8 @@ export class Simulation {
     const poi = this.poi(a.refId);
     const st = this.poiState(poi.id);
     st.status = 'analizzato';
+    // Finita l'analisi, chi era lì si guarda intorno.
+    for (const id of a.volunteerIds) this.notice(id, { x: poi.x, y: poi.y });
     const lines = [squad, `Durata: ${formatHours(a.hours)}`];
     if (poi.hazard) {
       const h = this.hazard(poi.hazard);
@@ -274,13 +412,15 @@ export class Simulation {
       .filter((p) => p.hazard && this.poiState(p.id).found === null)
       .map((p) => ({ poiId: p.id, hazardId: p.hazard!, tiles: this.areaTiles(p) }));
     const found = s.survey.filter((p) => p.found).length;
-    const skipped = s.survey.filter((p) => p.status === 'da-analizzare').length;
+    const skipped = s.survey.filter((p) => p.status === 'da-analizzare' || p.status === 'notato').length;
+    s.surveyPos = {};
     s.stage = 'progettazione';
     s.sessionUsedH = 0;
     for (const v of s.volunteers) v.hoursUsed = 0;
     this.report(t, 'Sopralluogo concluso', [
       `Insidie trovate: ${found}`,
-      skipped > 0 ? `Punti non analizzati: ${skipped}. Quello che c'è sotto si scoprirà in cantiere.` : 'Tutti i punti sono stati analizzati.',
+      skipped > 0 ? `Punti notati ma non analizzati: ${skipped}.` : 'Ogni punto notato è stato analizzato.',
+      "Quello che non avete visto o analizzato si scoprirà in cantiere.",
       'Ora si progetta il parco: le zone a rischio sono segnate sulla mappa.',
     ]);
   }
@@ -435,7 +575,7 @@ export class Simulation {
    * materiali vengono dal piano completo: elementi, preparazione del terreno e
    * messa in sicurezza delle insidie note sotto il progetto.
    */
-  designSummary(): Estimate & { appeal: number; problems: string[]; riskTiles: number; shortfallEur: number } {
+  designSummary(): Estimate & { appeal: number; problems: string[]; riskTiles: number; shortfallEur: number; weeks: number } {
     const g = this.state.grid;
     const est = estimate(g, this.content);
     const plan = generatePlan(g, this.content);
@@ -446,23 +586,27 @@ export class Simulation {
     if (g.placements.length === 0) problems.push('Il progetto è vuoto');
     // Un preventivo oltre la cassa non blocca: i fondi mancanti si recuperano in cantiere, prima di ordinare.
     const shortfallEur = Math.max(0, costEur - this.state.budget);
-    return { ...est, costEur, hours, materials: plan.materials, appeal: expectedAppeal(g, this.content), problems, riskTiles, shortfallEur };
+    // Settimane di lavoro che il progetto concederebbe: si fissano alla conferma.
+    const weeks = deadlineWeeks(hours);
+    return { ...est, costEur, hours, materials: plan.materials, appeal: expectedAppeal(g, this.content), problems, riskTiles, shortfallEur, weeks };
   }
 
   /** Conferma il progetto: nascono piano di cantiere e pratiche, si apre il cantiere. */
   confirmProject(now: number): void {
     this.requireDesign();
-    const { problems } = this.designSummary();
+    const { problems, weeks } = this.designSummary();
     if (problems.length) throw new Error(problems.join('; '));
     const plan = generatePlan(this.state.grid, this.content);
     const s = this.state;
     s.plan = plan.tasks;
+    s.deadlineWeek = s.week - 1 + weeks;
     s.pratiche = gamePratiche(this.content, plan.pratiche).map((id) => ({ id, status: 'da-avviare', waitRemainingH: 0 }));
     s.stage = 'cantiere';
     s.lastTick = Math.max(s.lastTick, now);
     this.report(now, 'Progetto confermato', [
       `Compiti nel piano di cantiere: ${plan.tasks.length}`,
       `Pratiche da avviare: ${s.pratiche.length}`,
+      `Data di consegna: entro il weekend della settimana ${s.deadlineWeek}. Per inaugurare serve almeno il ${Math.round(INAUGURATION.minProgress * 100)}% del progetto.`,
       'Si comincia con la parte burocratica: pratiche e ordini dei materiali.',
     ]);
   }
@@ -698,7 +842,7 @@ export class Simulation {
     const gradimento = Math.round((appeal / 100) * P.gradimento);
     const qualita = g.built.length === 0 ? 0 : Math.round((high / g.built.length) * P.qualita);
     const cassa = Math.round(Math.min(1, Math.max(0, s.budget) / INAUGURATION.cassaFull) * P.cassa);
-    const rapidita = Math.max(0, P.rapidita - INAUGURATION.rapiditaPerWeek * (s.week - 1));
+    const rapidita = rapidityPoints(s.week, s.deadlineWeek ?? s.week);
     const base = realizzazione + gradimento + qualita + cassa + rapidita;
     const multiplier = this.site.scoreMultiplier;
     return { week: s.week, progress, realizzazione, gradimento, qualita, cassa, rapidita, base, multiplier, total: Math.round(base * multiplier) };
@@ -709,15 +853,26 @@ export class Simulation {
     this.tick(now);
     const problems = this.inaugurationProblems();
     if (problems.length) throw new Error(problems.join('; '));
+    return this.closeGame(now, false);
+  }
+
+  private closeGame(t: number, atDeadline: boolean): FinalScore {
     const f = this.score();
     this.state.finale = f;
     this.state.stage = 'inaugurato';
-    this.report(now, 'Il parco è inaugurato!', [
-      `${this.site.name}: progetto realizzato al ${Math.round(f.progress * 100)}% in ${f.week} settimane.`,
+    this.report(t, 'Il parco è inaugurato!', [
+      ...(atDeadline ? ['È arrivata la data di consegna: il parco si inaugura così com\'è.'] : []),
+      `${this.site.name}: progetto realizzato al ${Math.round(f.progress * 100)}% in ${f.week} ${f.week === 1 ? 'settimana' : 'settimane'}.`,
       `Punteggio: ${f.total} (${f.base} × ${f.multiplier.toLocaleString('it-IT')})`,
       'Grazie a tutta la squadra!',
     ]);
     return f;
+  }
+
+  /** Settimane che restano, quella in corso compresa (null prima di confermare il progetto). */
+  get weeksLeft(): number | null {
+    const d = this.state.deadlineWeek;
+    return d === null ? null : Math.max(0, d - this.state.week + 1);
   }
 
   private previewTeam(total: number, skill: string | null, ids: string[], errors: string[]): Preview {
@@ -815,7 +970,7 @@ export class Simulation {
   private nextEventTime(): number {
     const s = this.state;
     let next = Infinity;
-    for (const a of s.active) next = Math.min(next, a.endsAt);
+    for (const a of s.active) next = Math.min(next, a.endsAt, a.kind === 'perlustrazione' ? (this.walkStop(a)?.at ?? Infinity) : Infinity);
     if (s.stage === 'cantiere' && s.phase === 'burocratica' && s.active.length > 0) {
       for (const p of s.pratiche) {
         if (p.status === 'in-attesa') next = Math.min(next, s.lastTick + p.waitRemainingH * s.msPerHour);
@@ -850,6 +1005,12 @@ export class Simulation {
 
   private processEvents(t: number): void {
     const s = this.state;
+    // Chi perlustra e arriva vicino a un indizio si ferma lì.
+    for (const a of s.active) {
+      if (a.kind !== 'perlustrazione') continue;
+      const stop = this.walkStop(a);
+      if (stop && stop.at <= t) this.stopWalk(a, stop.step, stop.at);
+    }
     const done = s.active.filter((a) => a.endsAt <= t);
     s.active = s.active.filter((a) => a.endsAt > t);
     for (const a of done) this.complete(a, t);
@@ -886,6 +1047,8 @@ export class Simulation {
       if ('tiles' in def) this.revealHazards(def, t);
     } else if (a.kind === 'analisi') {
       this.completeAnalysis(a, t, squad);
+    } else if (a.kind === 'perlustrazione') {
+      this.completeWalk(a, t);
     } else if (a.kind === 'ordine') {
       const order = this.openOrder(a.refId);
       if (order) {
@@ -980,17 +1143,79 @@ export class Simulation {
       const done = s.completedTasks.length;
       const raised = s.fundraising.filter((f) => f.week === s.week).reduce((sum, f) => sum + f.eur, 0);
       const inaugurable = this.projectProgress + EPS >= INAUGURATION.minProgress;
+      s.weekLog.push({ week: s.week, progress: this.projectProgress });
+      const last = s.deadlineWeek !== null && s.week >= s.deadlineWeek;
+      const left = s.deadlineWeek !== null ? s.deadlineWeek - s.week : null;
       this.report(t, `Fine della settimana ${s.week}`, [
         `Compiti completati finora: ${done}`,
         `Progetto realizzato: ${Math.round(this.projectProgress * 100)}%${inaugurable ? ' · si può inaugurare' : ''}`,
         `In cassa: ${s.budget} €${raised > 0 ? ` (raccolti questa settimana: ${raised} €)` : ''}`,
-        'Le ore dei volontari ripartono da zero',
+        ...(last ? [] : ['Le ore dei volontari ripartono da zero']),
+        ...(left !== null && !last ? [left === 1 ? 'Attenzione: la prossima è l\'ultima settimana prima della consegna.' : `Settimane rimaste prima della consegna: ${left}`] : []),
       ]);
+      if (last) {
+        // Data di consegna: si inaugura con quello che c'è, oppure la partita è persa.
+        if (inaugurable) this.closeGame(t, true);
+        else this.fail(t);
+        return;
+      }
       s.week += 1;
       s.phase = 'burocratica';
       s.sessionUsedH = 0;
       for (const v of s.volunteers) v.hoursUsed = 0;
     }
+  }
+
+  // ---------- benvenuto e tutorial ----------
+
+  get tutorialTexts(): TutorialDef {
+    return this.content.tutorial;
+  }
+
+  /** Il benvenuto si mostra finché non si sceglie se avere il tutorial. */
+  get needsWelcome(): boolean {
+    return this.state.tutorial === null;
+  }
+
+  /** Risposta al benvenuto, o cambio dal menu: il pannello del passaggio in corso compare se non è già stato chiuso. */
+  setTutorial(on: boolean): void {
+    this.state.tutorial = { on, seen: this.state.tutorial?.seen ?? [] };
+  }
+
+  /** Pannello del tutorial da mostrare adesso (null se spento, già visto o senza pannello). */
+  tutorialPanel(): TutorialStepDef | null {
+    return currentTutorial(this.state, this.content.tutorial);
+  }
+
+  /** C'è un pannello del tutorial per il passaggio in corso (anche se già chiuso)? */
+  hasTutorialStep(): boolean {
+    const id = tutorialStepOf(this.state);
+    return id !== null && this.content.tutorial.steps.some((x) => x.id === id);
+  }
+
+  /** Dal menu: riaccende il tutorial e rimostra il pannello del passaggio in corso. */
+  replayTutorial(): void {
+    const id = tutorialStepOf(this.state);
+    const seen = (this.state.tutorial?.seen ?? []).filter((x) => x !== id);
+    this.state.tutorial = { on: true, seen };
+  }
+
+  /** Chiude il pannello del passaggio in corso: non ricompare più. */
+  dismissTutorial(): void {
+    const id = tutorialStepOf(this.state);
+    const t = this.state.tutorial;
+    if (id && t && !t.seen.includes(id)) t.seen.push(id);
+  }
+
+  /** Consegna mancata: il parco non è abbastanza avanti alla data fissata. */
+  private fail(t: number): void {
+    this.state.stage = 'fallito';
+    const min = Math.round(INAUGURATION.minProgress * 100);
+    this.report(t, 'Consegna mancata', [
+      `Alla data di consegna il progetto è realizzato al ${Math.round(this.projectProgress * 100)}%: ne serviva almeno il ${min}%.`,
+      'La concessione del terreno scade e il cantiere si chiude.',
+      'Prova con un progetto più piccolo, una squadra più adatta o un piano più ordinato.',
+    ]);
   }
 
   private report(at: number, title: string, lines: string[]): void {

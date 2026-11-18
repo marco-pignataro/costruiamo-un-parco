@@ -55,7 +55,13 @@ export function selectionLabel(sim: Simulation, sel: MapSelection, title: string
   if (!sel) return '';
   if (sel.type === 'volontario') {
     const v = sim.volunteer(sel.volunteer);
-    const hint = sim.state.stage === 'squadra' ? 'Clicca di nuovo per la scheda' : "Clicca un'attività sulla mappa, o di nuovo per la scheda";
+    const stage = sim.state.stage;
+    const hint =
+      stage === 'squadra'
+        ? 'Clicca di nuovo per la scheda'
+        : stage === 'sopralluogo'
+          ? 'Clicca un punto del terreno per mandarlo a perlustrare, un indizio per analizzarlo, o di nuovo per la scheda'
+          : "Clicca un'attività sulla mappa, o di nuovo per la scheda";
     return `<strong>${esc(v.name)}</strong> · ${esc(sim.archetype(v.archetypeId).name)}${v.busy ? ' · al lavoro' : ''}<br><small>${hint}</small>`;
   }
   const head = title ? `<strong>${esc(title)}</strong><br>` : '';

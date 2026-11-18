@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { SURVEY } from '../src/config';
 import { defaultContent as c } from '../src/core/content';
-import { surveyGame, T0 } from './helpers';
+import { surveyGame as freshSurvey, T0 } from './helpers';
+
+/** Sopralluogo con tutti i punti già notati: per i test sulle analisi (la perlustrazione sta in walk.test.ts). */
+function surveyGame() {
+  const sim = freshSurvey();
+  for (const p of sim.state.survey) p.status = 'da-analizzare';
+  return sim;
+}
 
 const H = 3_600_000;
 const at = (h: number) => T0 + h * H;
@@ -15,12 +22,12 @@ const areaTiles = (id: string) => {
 };
 
 describe('Fase 3: sopralluogo', () => {
-  it('dopo la squadra si fa il sopralluogo: una giornata di 8 ore con i punti sospetti del terreno', () => {
-    const sim = surveyGame();
+  it('dopo la squadra si fa il sopralluogo: una giornata di 8 ore con i punti sospetti del terreno, ancora nascosti', () => {
+    const sim = freshSurvey();
     expect(sim.state.stage).toBe('sopralluogo');
     expect(sim.sessionLimitH).toBe(SURVEY.hours);
     expect(sim.state.survey.map((p) => p.id)).toEqual(site.pois.map((p) => p.id));
-    expect(sim.state.survey.every((p) => p.status === 'da-analizzare')).toBe(true);
+    expect(sim.state.survey.every((p) => p.status === 'nascosto')).toBe(true);
   });
 
   it('con lo specialista giusto l’insidia si trova sempre e finisce sulla mappa dei rischi', () => {

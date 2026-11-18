@@ -171,7 +171,7 @@ Il sopralluogo è una fase di esplorazione a tempo: il giocatore manda 3-4 volon
 **Come funziona**
 
 - **Un giorno di sopralluogo:** ogni analisi è un compito a timer reale (es. 2-6 ore complessive), più breve se la fa un volontario con la skill giusta.
-- **Punti d'interesse:** sulla mappa compaiono gli indizi in superficie (crepe, terreno smosso, tombini, odori, rifiuti affioranti, avvallamenti).
+- **Punti d'interesse:** gli indizi in superficie (crepe, terreno smosso, tombini, odori, rifiuti affioranti, avvallamenti) non sono segnati in partenza: compaiono sulla mappa solo quando un volontario ci passa vicino, e il giocatore decide se approfondire o lasciar perdere.
 - **Assegnazione, non pilotaggio:** il giocatore sceglie quali punti fa analizzare a ciascun volontario e con quali strumenti (metro, vanga, rilevatore di cavi, macchina fotografica); i volontari si muovono da soli.
 - **Skill come "lenti":** il geometra vede pendenze e confini, l'agronomo legge il terreno e le piante, l'elettricista individua cavi e sottoservizi. Un volontario base può analizzare, ma con probabilità di errore.
 - **Falsi allarmi:** non ogni indizio nasconde un problema; le ore non bastano per analizzare tutto, bisogna scegliere.
@@ -192,6 +192,8 @@ Il sopralluogo è una fase di esplorazione a tempo: il giocatore manda 3-4 volon
 **Esito:** la scheda terreno si completa e nasce la **mappa dei rischi**, che in Fase 4 appare come livello sovrapposto alla griglia. Le insidie non scoperte restano nascoste e possono emergere in cantiere come eventi. Un secondo sopralluogo si può fare, ma costa una settimana e morale.
 
 **Prototipo.** Il sopralluogo viene subito dopo la squadra ed è una giornata di 8 ore di sessione. Ogni terreno ha 4-6 punti sospetti (`pois` in `src/data/sites.json`), con un indizio, le ore di analisi e, se non è un falso allarme, l'area dell'insidia. Ogni analisi è un compito a timer per al massimo 2 volontari. Ogni insidia ha una skill che fa da lente (`src/data/hazards.json`): con lo specialista l'esito è sempre giusto, senza c'è una probabilità di non vederla (20-40%) e il resoconto dice "niente di preoccupante". Il caso usa un generatore con seme salvato nella partita. Le insidie trovate colorano di rosso le tile nella mappa dei rischi; in progettazione costruirci sopra aggiunge una lavorazione di messa in sicurezza (scavo dei rifiuti interrati, scavo a mano vicino ai sottoservizi, drenaggio, consolidamento) con ore e materiali, che entra nel preventivo. Le insidie non trovate emergono in cantiere quando un lavoro tocca le loro tile: arriva un resoconto "Imprevisto", nasce il compito di messa in sicurezza con i suoi materiali da ordinare e i lavori sopra quella zona lo aspettano. A messa in sicurezza finita il rischio sparisce dalla mappa. Reperti, specie protette e confini contesi (che fermano i lavori o aprono pratiche) e il secondo sopralluogo arriveranno dopo.
+
+**Perlustrazione (deciso il 18/11/2026).** All'inizio del sopralluogo nessun punto sospetto è visibile. Il giocatore clicca un volontario e poi una tile del terreno: il volontario parte dal marciapiede (o da dove si è fermato l'ultima volta) e cammina in linea retta fino a lì, un passo per tile anche in diagonale, a 10 minuti per passo (`SURVEY.walkHoursPerTile`). È un compito a timer come gli altri: un volontario alla volta, consuma ore di sessione e del suo monte ore, e deve finire nelle ore rimaste. Se passa entro una tile da un indizio ancora nascosto (`SURVEY.noticeRadius`) si ferma lì, le ore non camminate gli tornano e una finestra chiede: **Approfondisci** (si apre l'analisi con lui già scelto, se ne può aggiungere un secondo) o **Lascia perdere**. In tutti e due i casi il punto resta segnato sulla mappa e nella lista "Indizi notati", e si può analizzare anche più tardi. Se arriva in fondo senza notare niente, un resoconto lo dice. Finita un'analisi, chi era sul punto nota anche gli indizi lì vicino. A gioco chiuso il volontario si ferma comunque al punto giusto e la domanda aspetta alla riapertura. Le posizioni dei volontari stanno nello stato (`surveyPos`), così la scena li mostra dove sono; chi cammina avanza a piccoli passi. I punti mai notati diventano insidie nascoste del cantiere, come quelli non analizzati.
 
 ## Fase 4 — Progettazione del parco
 
@@ -375,6 +377,12 @@ La partita si vince inaugurando il parco con almeno il 70% del progetto realizza
 
 **Condizioni di sconfitta:** budget in rosso per 4 settimane consecutive, squadra sotto il minimo operativo, concessione scaduta prima dell'inaugurazione.
 
+**Data di consegna (deciso il 18/11/2026).** Ogni partita ha una data di consegna: la partita non dura più "quanto serve", va pianificata per starci dentro. Le settimane di lavoro si calcolano dal progetto, e quindi dal terreno (che decide quanta preparazione serve: bonifica, cemento da rompere, sfalcio, messa in sicurezza delle insidie note) e dagli arredi:
+
+`settimane = 1 (pratiche e ordini) + ⌈ore del piano / 30⌉ + 1 (margine per gli imprevisti)`
+
+I valori stanno in `DEADLINE` dentro `src/config.ts`; 30 ore è il lavoro che una squadra media porta a termine in un weekend. In progettazione la consegna prevista si vede nel preventivo e nella timeline e cambia mentre si disegna; si fissa alla conferma del progetto e non cambia più, nemmeno se in cantiere emergono insidie sfuggite al sopralluogo (per questo il sopralluogo conta). Con i progetti proposti: Giardino dietro la scuola 5 settimane, Ex deposito sul torrente 6, Collina sullo Stretto 6. Il resoconto di fine settimana dice quante ne restano e avvisa prima dell'ultima. Alla fine del weekend dell'ultima settimana: con almeno il 70% del progetto realizzato il parco si inaugura da solo, con il punteggio; sotto, la partita è persa ("Consegna mancata": la concessione scade e il cantiere si chiude) e resta solo "Nuova partita". Si può sempre inaugurare prima con "Taglia il nastro". L'avanzamento di ogni settimana conclusa resta nello stato (`weekLog`) per la timeline.
+
 **Prototipo.** Si inaugura con almeno il 70% del progetto realizzato e nessun compito in corso, con il pulsante "Taglia il nastro". Il punteggio è la somma di cinque voci, moltiplicata per la difficoltà del terreno:
 
 | Voce | Punti | Come si calcola |
@@ -383,9 +391,9 @@ La partita si vince inaugurando il parco con almeno il 70% del progetto realizza
 | Gradimento | fino a 300 | gradimento degli elementi costruiti (0-100) × 3 |
 | Qualità | fino a 150 | 150 × quota degli elementi costruiti con qualità alta |
 | Cassa avanzata | fino a 100 | 1 punto ogni 3 € in cassa |
-| Rapidità | fino a 100 | 100 meno 10 punti per ogni settimana dopo la prima |
+| Rapidità | fino a 100 | 100 × (settimane d'anticipo sulla consegna + 1) / settimane concesse: pieni nella prima settimana, una frazione nell'ultima |
 
-La schermata finale mostra le voci, il totale e il pulsante per sostenere l'associazione. Morale, volontari persi e condizioni di sconfitta non ci sono ancora.
+La schermata finale mostra le voci, il totale e il pulsante per sostenere l'associazione. Morale e volontari persi non ci sono ancora; delle condizioni di sconfitta c'è solo la data di consegna mancata, la cui schermata non ha il pulsante donazioni (sta solo nel menu iniziale e all'inaugurazione).
 
 **Dopo l'inaugurazione (proposta):** una modalità *manutenzione* senza fine, in cui il parco va curato, difeso dai vandalismi e animato con eventi.
 
@@ -407,7 +415,7 @@ A fine parte burocratica il gioco passa da solo al parco, con una breve transizi
 - **In alto:** una sola scheda con titolo del gioco, settimana e parte della settimana e, come ultimo elemento, la barra della sessione con le ore usate (senza etichetta).
 - **A sinistra:** la squadra, con monte ore residuo e stato (libero, al lavoro, dove). In fondo alla colonna la scheda della cassa (cassa e progetto realizzato, PV in Fase 2, cassa e preventivo in progettazione) e sotto il pulsante di completamento della fase, sempre lì in ogni fase.
 - **A destra:** prima i compiti in corso con il loro timer, poi le attività da fare, poi registro delle pratiche e magazzino.
-- **In basso:** il menu della partita a sinistra (notifiche, esporta salvataggio, nuova partita) e lo zoom a destra.
+- **In basso:** il menu della partita a sinistra (tutorial, notifiche, esporta salvataggio, nuova partita) e lo zoom a destra.
 
 I pannelli di sinistra e di destra si possono richiudere per vedere più mappa; la cassa e il pulsante della fase restano visibili. Le colonne cambiano nome con la fase: Terreni; Squadra e Candidati; Squadra e Attività (sopralluogo e cantiere); Arredi e Preventivo (progettazione).
 
@@ -419,7 +427,16 @@ La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque r
 
 **Prototipo della HUD.** Ogni attività avviabile ha una voce nella lista "Da fare" a destra, con il primo motivo per cui è bloccata; cliccandola si apre la modale centrale. La modale si chiude con Annulla, con Esc o cliccando fuori.
 
-**Zoom e trascinamento.** Il pulsante di zoom alterna due soli livelli: la visuale intera della scena e un ingrandimento fisso, non regolabile. Da ingranditi la mappa si sposta cliccando e trascinando, entro i bordi della scena.
+**Benvenuto e tutorial (deciso il 18/11/2026).** Una nuova partita si apre con un pannello di benvenuto: cos'è il gioco, come si gioca a fasi, che il tempo è vero e come si vince; poi chiede se si vuole il tutorial. Con il tutorial, all'inizio di ogni passaggio (terreno, squadra, sopralluogo, progettazione, giorni feriali, weekend) compare un pannello breve con cosa fare; quelli dei giorni feriali e del weekend solo nella prima settimana. Ogni pannello compare una volta, si chiude con "Ho capito" o spegnendo il tutorial. Dal Menu si accende o si spegne e si rivede il pannello della fase in corso. I testi stanno in `src/data/tutorial.json`, la scelta e i pannelli già visti nello stato della partita (`tutorial`). La finestra in primo piano mostra una cosa alla volta: resoconti in coda, benvenuto, tutorial, domande del sopralluogo. Chi aveva già una partita prima di questa versione non vede il benvenuto e gioca senza tutorial.
+
+**Timeline delle settimane (deciso il 18/11/2026).** Dalla progettazione in poi la HUD mostra le settimane di lavoro fino alla consegna, sempre consultabili. Ogni settimana ha due barre (lunga i giorni feriali, corta il weekend), passate, in corso (che pulsa) o future, e una nota: l'avanzamento a fine settimana per quelle passate, la parte in corso, i materiali in arrivo quel weekend; l'ultima è segnata in rosso come consegna. In testa: settimana N di M, settimane che restano (questa compresa) e progetto realizzato rispetto al 70%. In progettazione è "Consegna prevista" e segue il progetto disegnato.
+
+- **Desktop:** scheda orizzontale in alto al centro. Chiusa mostra la settimana in corso, la precedente e la successiva; un clic la apre su tutte, da scorrere in orizzontale e centrata sulla settimana in corso; un clic sull'intestazione (o Esc) la richiude.
+- **Telefono:** scheda "Settimane" nella barra in basso; si apre a tutto schermo con le settimane in verticale, centrata sulla settimana in corso e da scorrere per vederle tutte.
+
+Il modello della timeline (settimane, stati, finestra delle tre) sta in `src/ui/timeline.ts`, puro e testato.
+
+**Zoom e trascinamento. Il pulsante di zoom alterna due soli livelli: la visuale intera della scena e un ingrandimento fisso, non regolabile. Da ingranditi la mappa si sposta cliccando e trascinando, entro i bordi della scena.
 
 **Punta e clicca.** Il giocatore assegna, non pilota.
 
@@ -427,7 +444,7 @@ La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque r
 - **Prima il volontario:** cliccando un volontario compaiono nome e ruolo e resta selezionato; cliccando poi un elemento interagibile si apre la modale dell'attività con quel volontario già scelto. Un secondo clic sullo stesso volontario apre la sua scheda (vedi Fase 2).
 - **Prima l'elemento:** il primo clic mostra sopra l'elemento l'attività da fare; il secondo apre la modale.
 - **La modale** sta al centro dello schermo: dati dell'attività (ore, skill, materiali, pratiche, durata e qualità previste, euro se è una raccolta), elenco dei volontari da spuntare e pulsante per avviare. Gli errori di avvio sono gli stessi della HUD.
-- **Clic a vuoto:** cliccare un punto non interagibile della mappa toglie la selezione.
+- **Clic a vuoto:** cliccare un punto non interagibile della mappa toglie la selezione. Nel sopralluogo, con un volontario scelto, ogni tile del terreno senza attività è una meta da perlustrare.
 - Le stesse attività restano avviabili anche dalla HUD.
 
 **La città.** Una piccola Messina, sempre la stessa in ogni partita (in `src/data/city.json`), con strade, piazze e lo Stretto. I monumenti (Duomo e campanile, Fontana di Orione, Madonnina del porto, traghetti sullo Stretto) fanno da scenografia; gli uffici stanno in edifici generici, mai in palazzi istituzionali reali riconoscibili.

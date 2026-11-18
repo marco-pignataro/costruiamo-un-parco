@@ -1,7 +1,9 @@
 import type { Content } from './content';
 import { gridFromSite } from './grid';
 import { gamePratiche, generatePlan } from './plan';
-import type { ActiveTask, GameState, PraticaState, Report, Volunteer } from './types';
+import type { ActiveTask, GameState, PlanTask, PraticaState, Report, Volunteer } from './types';
+import { deadlineWeeks } from './deadline';
+import { DEADLINE } from '../config';
 
 type AnyState = Record<string, unknown> & { version?: number };
 
@@ -13,8 +15,8 @@ type AnyState = Record<string, unknown> & { version?: number };
 export function migrate(raw: unknown, c: Content): GameState {
   let s = raw as AnyState;
   const start = s.version;
-  if (start === 9) return s as unknown as GameState;
-  if (typeof start !== 'number' || start < 1 || start > 8) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (start === 11) return s as unknown as GameState;
+  if (typeof start !== 'number' || start < 1 || start > 10) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
   if (s.version === 1) s = v1to2(s, c);
   if (s.version === 2) s = v2to3(s, c);
   if (s.version === 3) s = { ...s, version: 4, stage: 'cantiere' }; // v3 → v4: le partite esistenti sono già in cantiere
@@ -23,6 +25,8 @@ export function migrate(raw: unknown, c: Content): GameState {
   if (s.version === 6) s = v6to7(s);
   if (s.version === 7) s = v7to8(s);
   if (s.version === 8) s = v8to9(s, c);
+  if (s.version === 9) s = v9to10(s);
+  if (s.version === 10) s = v10to11(s);
   return dropUnknownActive(s as unknown as GameState, c);
 }
 
@@ -96,12 +100,48 @@ function v8to9(s: AnyState, c: Content): AnyState {
   return { ...s, version: 9, volunteers };
 }
 
+/**
+ * v9 → v10: benvenuto e tutorial, punti sospetti da scoprire perlustrando.
+ * Chi ha già una partita non rivede il benvenuto e gioca senza tutorial (si
+ * attiva dal menu); i punti sospetti di un sopralluogo in corso restano visibili.
+ */
+function v9to10(s: AnyState): AnyState {
+  return { ...s, version: 10, surveyPos: {}, tutorial: { on: false, seen: [] } };
+}
+
+/**
+ * v10 → v11: data di consegna. Per un cantiere già aperto si calcola dai
+ * lavori che restano, a partire dalla settimana in corso (senza la settimana
+ * iniziale di pratiche e ordini, già passata); un parco inaugurato la ha
+ * nella settimana dell'inaugurazione.
+ */
+function v10to11(s: AnyState): AnyState {
+  let deadlineWeek: number | null = null;
+  const week = s.week as number;
+  if (s.stage === 'cantiere') {
+    const done = new Set(s.completedTasks as string[]);
+    const left = (s.plan as PlanTask[]).filter((t) => !done.has(t.id)).reduce((sum, t) => sum + t.hours, 0);
+    deadlineWeek = week - 1 + deadlineWeeks(left) - DEADLINE.setupWeeks;
+  } else if (s.stage === 'inaugurato') deadlineWeek = week;
+  const out = { ...s, version: 11, deadlineWeek, weekLog: [] };
+  if (s.stage === 'cantiere') {
+    addReport(out, 'Arriva la data di consegna', [
+      `Il parco va consegnato entro il weekend della settimana ${deadlineWeek}.`,
+      'A quella data si inaugura con quello che c\'è; sotto il 70% del progetto la partita è persa.',
+      'La timeline delle settimane è in alto (su telefono nella scheda Settimane).',
+    ]);
+  }
+  return out;
+}
+
 function dropUnknownActive(s: GameState, c: Content): GameState {
   const known = (a: ActiveTask) =>
     a.kind === 'richiesta'
       ? c.pratiche.some((p) => p.id === a.refId)
       : a.kind === 'analisi'
         ? c.sites.some((site) => site.pois.some((p) => p.id === a.refId))
+        : a.kind === 'perlustrazione'
+          ? true
         : c.tasks.some((t) => t.id === a.refId) || s.plan.some((t) => t.id === a.refId);
   const dropped = s.active.filter((a) => !known(a));
   if (dropped.length === 0) return s;

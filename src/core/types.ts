@@ -138,15 +138,24 @@ export interface ActiveTask {
   uid: number;
   /**
    * lavoro: compito; richiesta: pratica a timer; ordine: ordine al fornitore per un
-   * compito del piano; analisi: punto sospetto del sopralluogo.
+   * compito del piano; analisi: punto sospetto del sopralluogo; perlustrazione:
+   * un volontario cammina sul terreno del sopralluogo (refId = "x,y" della meta).
    */
-  kind: 'lavoro' | 'richiesta' | 'ordine' | 'analisi';
+  kind: 'lavoro' | 'richiesta' | 'ordine' | 'analisi' | 'perlustrazione';
   refId: string;
   volunteerIds: string[];
   startedAt: number;
   endsAt: number;
   hours: number;
   quality: Quality;
+  /** Perlustrazione: le tile attraversate, dalla partenza alla meta, una ogni passo. */
+  path?: TilePos[];
+}
+
+/** Posizione su una tile del terreno (y = altezza del terreno: il marciapiede davanti). */
+export interface TilePos {
+  x: number;
+  y: number;
 }
 
 export type MaterialStock = Record<string, number>;
@@ -171,11 +180,18 @@ export interface Report {
   seen: boolean;
 }
 
-export type Stage = 'terreno' | 'squadra' | 'sopralluogo' | 'progettazione' | 'cantiere' | 'inaugurato';
+export type Stage = 'terreno' | 'squadra' | 'sopralluogo' | 'progettazione' | 'cantiere' | 'inaugurato' | 'fallito';
 
 export interface SurveyPoiState {
   id: string;
-  status: 'da-analizzare' | 'in-analisi' | 'analizzato';
+  /**
+   * nascosto: nessuno ci è ancora passato vicino; notato: un volontario l'ha
+   * visto e si aspetta la decisione del giocatore (approfondire o lasciar
+   * perdere); da-analizzare: notato, si può analizzare quando si vuole.
+   */
+  status: 'nascosto' | 'notato' | 'da-analizzare' | 'in-analisi' | 'analizzato';
+  /** Chi l'ha notato. */
+  noticedBy?: string;
   /** Esito dell'analisi: insidia trovata, oppure null (niente, o non vista). */
   found: string | null;
 }
@@ -188,13 +204,41 @@ export interface HiddenHazard {
   tiles: number[];
 }
 
+/** Tutorial: null finché il giocatore non risponde al benvenuto. */
+export interface TutorialState {
+  on: boolean;
+  /** Pannelli già chiusi. */
+  seen: string[];
+}
+
+/** Un pannello del tutorial, mostrato all'inizio di un passaggio. */
+export interface TutorialStepDef {
+  id: string;
+  title: string;
+  lines: string[];
+}
+
+/** Testi del benvenuto e del tutorial (`tutorial.json`). {titolo} e {associazione} si sostituiscono nella HUD. */
+export interface TutorialDef {
+  welcome: { intro: string; lines: string[]; question: string };
+  steps: TutorialStepDef[];
+}
+
+/** Com'era il progetto alla fine di una settimana (per la timeline). */
+export interface WeekLog {
+  week: number;
+  /** Quota del progetto realizzata, 0-1. */
+  progress: number;
+}
+
 export interface GameState {
-  version: 9;
+  version: 11;
   /**
    * terreno: scelta del terreno (Fase 1); squadra: reclutamento con i PV (Fase 2);
    * sopralluogo: analisi dei punti sospetti (Fase 3); progettazione: si disegna
    * il parco (Fase 4); cantiere: turni settimanali (Fase 5); inaugurato: partita
-   * conclusa con il punteggio finale.
+   * conclusa con il punteggio finale; fallito: data di consegna arrivata senza
+   * abbastanza progetto realizzato.
    */
   stage: Stage;
   siteId: string;
@@ -223,6 +267,8 @@ export interface GameState {
   orders: Order[];
   /** Punti sospetti del sopralluogo e il loro esito. */
   survey: SurveyPoiState[];
+  /** Dove sta ogni volontario sul terreno durante il sopralluogo (assente = al marciapiede). */
+  surveyPos: Record<string, TilePos>;
   hiddenHazards: HiddenHazard[];
   /** Stato del generatore casuale (con seme): la stessa partita dà gli stessi esiti. */
   rng: number;
@@ -232,6 +278,11 @@ export interface GameState {
   taskQuality: Record<string, Quality>;
   /** Punteggio, dopo l'inaugurazione. */
   finale: FinalScore | null;
+  tutorial: TutorialState | null;
+  /** Settimana entro il cui weekend va consegnato il parco (null prima di confermare il progetto). */
+  deadlineWeek: number | null;
+  /** Avanzamento a fine di ogni settimana conclusa. */
+  weekLog: WeekLog[];
 }
 
 // ---------- Progettazione del parco (Fase 4) ----------

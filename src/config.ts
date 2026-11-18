@@ -32,8 +32,13 @@ export const ORDERS = {
   deliveryWeeks: 1,
 } as const;
 
-/** Sopralluogo (Fase 3): una giornata di 8 ore di sessione, al massimo 2 volontari per punto. */
-export const SURVEY = { hours: 8, maxVolunteers: 2 } as const;
+/**
+ * Sopralluogo (Fase 3): una giornata di 8 ore di sessione, al massimo 2
+ * volontari per punto. I punti sospetti si scoprono perlustrando: un passo
+ * da una tile all'altra (anche in diagonale) costa walkHoursPerTile, e chi
+ * passa entro noticeRadius tile da un indizio lo nota.
+ */
+export const SURVEY = { hours: 8, maxVolunteers: 2, walkHoursPerTile: 1 / 6, noticeRadius: 1 } as const;
 
 /** Squadra minima per aprire il cantiere (sotto, in futuro, si perde). */
 export const MIN_TEAM = 3;
@@ -73,9 +78,19 @@ export const INAUGURATION = {
   points: { realizzazione: 400, gradimento: 300, qualita: 150, cassa: 100, rapidita: 100 },
   /** Euro di cassa che valgono il massimo dei punti cassa. */
   cassaFull: 300,
-  /** Punti di rapidità persi per ogni settimana dopo la prima. */
-  rapiditaPerWeek: 10,
 } as const;
+
+/**
+ * Data di consegna, fissata quando si conferma il progetto:
+ * settimane = setupWeeks + ⌈ore del piano / hoursPerWeek⌉ + marginWeeks.
+ * Le ore del piano comprendono la preparazione del terreno, quindi contano
+ * sia il terreno scelto sia gli arredi. hoursPerWeek è quanto lavoro (ore
+ * complessive) una squadra media porta a termine in un weekend; setupWeeks
+ * copre la prima settimana di pratiche e ordini, marginWeeks gli imprevisti.
+ * Alla fine del weekend dell'ultima settimana, con almeno il minimo per
+ * inaugurare si inaugura da soli, altrimenti la partita è persa.
+ */
+export const DEADLINE = { setupWeeks: 1, hoursPerWeek: 30, marginWeeks: 1 } as const;
 
 /** Gradimento previsto: bonus per ogni tipo di elemento diverso nel progetto (varietà). */
 export const APPEAL_VARIETY_BONUS = 5;

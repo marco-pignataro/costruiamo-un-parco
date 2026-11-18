@@ -1,0 +1,76 @@
+{
+  "welcome": {
+    "intro": "Benvenuto! Guidi una squadra di volontari di {associazione}: dalla scelta di un terreno abbandonato all'inaugurazione di un parco.",
+    "lines": [
+      "Si va per fasi: scegli il terreno, componi la squadra, fai il sopralluogo, progetta il parco e poi apri il cantiere, una settimana dopo l'altra.",
+      "Nei giorni feriali la squadra gira per la città tra pratiche, ordini e raccolte fondi; nel weekend lavora al parco.",
+      "Il tempo è vero: un lavoro da 5 ore dura 5 ore, anche a gioco chiuso. Quando torni trovi i resoconti di quello che è successo.",
+      "Ogni progetto ha una data di consegna. Dal 70% del progetto realizzato puoi tagliare il nastro; se la data arriva prima, il cantiere fallisce. Il punteggio premia un parco completo, gradito, ben fatto e consegnato in anticipo."
+    ],
+    "question": "Vuoi il tutorial? Un pannello breve ti spiega ogni fase quando ci arrivi."
+  },
+  "steps": [
+    {
+      "id": "terreno",
+      "title": "Fase 1 · Il terreno",
+      "lines": [
+        "A destra trovi i terreni abbandonati. Clicca \"Guarda sulla mappa\" per vederne uno con il progetto che ti proponiamo.",
+        "Più un terreno è difficile, più cassa e punti volontariato (PV) ti dà, e più vale il punteggio finale.",
+        "I \"?\" sono cose che non si vedono dalla strada: le scoprirai con il sopralluogo.",
+        "Quando hai deciso, premi \"Scegli questo terreno\"."
+      ]
+    },
+    {
+      "id": "squadra",
+      "title": "Fase 2 · La squadra",
+      "lines": [
+        "Recluta i volontari dall'elenco a destra spendendo i PV del terreno. Se cambi idea, \"Congeda\" restituisce i PV.",
+        "Gli specialisti costano di più ma lavorano più in fretta e guidano fino a 2 volontari senza la loro skill.",
+        "Presidente e segretario/a sono uno solo; servono almeno 3 volontari.",
+        "Clicca un volontario della squadra per sceglierne nome e aspetto. Poi premi \"Conferma la squadra\"."
+      ]
+    },
+    {
+      "id": "sopralluogo",
+      "title": "Fase 3 · Il sopralluogo",
+      "lines": [
+        "Hai una giornata (8 ore) per esplorare il terreno e scoprire cosa nasconde.",
+        "Clicca un volontario e poi un punto del terreno: ci va camminando. Chi passa vicino a qualcosa di strano lo nota e ti chiede se approfondire.",
+        "Approfondire costa ore, e non tutti gli indizi nascondono un problema. Con lo specialista giusto l'analisi non sbaglia.",
+        "Le insidie trovate finiscono in rosso sulla mappa dei rischi; quelle sfuggite si scopriranno in cantiere, quando costano di più."
+      ]
+    },
+    {
+      "id": "progettazione",
+      "title": "Fase 4 · Il progetto",
+      "lines": [
+        "Sulla mappa c'è il progetto proposto: puoi cambiarlo come vuoi. Scegli un arredo a sinistra e clicca sul terreno per posarlo.",
+        "Senza strumento scelto, clicca un arredo già posato per spostarlo; la gomma (o il tasto destro) lo toglie.",
+        "A destra il preventivo: materiali, ore di lavoro e pratiche. Costruire sulle zone rosse aggiunge la messa in sicurezza.",
+        "Più arredi e più terreno da preparare vogliono più settimane: la consegna prevista è nel preventivo e nella timeline in alto.",
+        "Il gradimento premia la varietà. Quando sei pronto conferma il progetto: diventa il piano del cantiere e la data di consegna si fissa."
+      ]
+    },
+    {
+      "id": "burocratica",
+      "title": "Il cantiere · I giorni feriali",
+      "lines": [
+        "Ogni settimana comincia in città: 20 ore di sessione, che passano solo mentre qualcuno lavora.",
+        "Clicca un volontario e poi un edificio (o usa \"Da fare\" a destra): avvia le pratiche negli uffici, ordina i materiali dal fornitore, fai la raccolta fondi alla sede.",
+        "Le pratiche richiedono qualche giorno di attesa: avviale presto. I materiali ordinati arrivano il weekend della settimana dopo.",
+        "Ogni volontario ha un monte ore per la settimana. Puoi chiudere i giorni feriali in anticipo: le attese delle pratiche avanzano lo stesso.",
+        "La timeline in alto (su telefono la scheda Settimane) mostra le settimane fino alla consegna e quando arrivano i materiali: cliccala per vederle tutte."
+      ]
+    },
+    {
+      "id": "operativa",
+      "title": "Il cantiere · Il weekend",
+      "lines": [
+        "Nel weekend si lavora al parco: 8 ore di sessione.",
+        "Clicca un volontario e poi un lavoro sulla mappa. Un lavoro parte se le pratiche sono approvate, i materiali sono in magazzino e i lavori che vengono prima sono finiti.",
+        "Con uno specialista il lavoro viene meglio e chi lo affianca rende il doppio.",
+        "A fine weekend arriva il resoconto della settimana e le ore dei volontari ripartono da zero."
+      ]
+    }
+  ]
+}

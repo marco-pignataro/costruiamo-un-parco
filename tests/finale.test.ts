@@ -44,7 +44,8 @@ describe('inaugurazione e punteggio', () => {
     sim.state.week = 6;
     sim.state.taskQuality = {};
     const slow = sim.score();
-    expect(slow.rapidita).toBe(50);
+    expect(sim.state.deadlineWeek).toBe(6); // 97 h di piano: 1 + 4 + 1 settimane
+    expect(slow.rapidita).toBe(17); // nell'ultima settimana resta 1/6 dei punti
     expect(slow.qualita).toBe(0);
     expect(slow.total).toBeLessThan(fast.total);
   });

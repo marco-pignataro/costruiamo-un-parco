@@ -3,7 +3,7 @@ import type { Simulation } from '../core/simulation';
 import type { ActiveTask } from '../core/types';
 
 /** Tipi di attività che si avviano scegliendo dei volontari. */
-export type Kind = 'lavoro' | 'richiesta' | 'ordine' | 'analisi' | 'sidequest';
+export type Kind = 'lavoro' | 'richiesta' | 'ordine' | 'analisi' | 'sidequest' | 'perlustrazione';
 
 /** Un'attività avviabile adesso: cosa, come si chiama e cosa la blocca (con nessun volontario scelto). */
 export interface Activity {
@@ -25,6 +25,7 @@ export function listActivities(sim: Simulation): Activity[] {
   const s = sim.state;
   const blockers = (errors: string[]) => errors.filter((e) => e !== NO_TEAM);
   if (s.stage === 'sopralluogo') {
+    // Solo i punti già notati da qualcuno: gli altri non si vedono ancora.
     return sim.pois
       .filter((p) => sim.poiState(p.id).status === 'da-analizzare')
       .map((p) => ({ kind: 'analisi' as const, id: p.id, name: p.clue, meta: `${p.hours} h complessive`, blockers: blockers(sim.previewAnalysis(p.id, []).errors) }));
@@ -64,6 +65,10 @@ export function listActivities(sim: Simulation): Activity[] {
  * che al parco non hanno un posto.
  */
 export function activityTiles(sim: Simulation, a: { kind: Kind; id: string }): number[] {
+  if (a.kind === 'perlustrazione') {
+    const t = walkTarget(a.id);
+    return [t.y * sim.state.grid.width + t.x];
+  }
   if (a.kind === 'analisi') {
     const p = sim.poi(a.id);
     return [p.y * sim.state.grid.width + p.x];
@@ -71,6 +76,28 @@ export function activityTiles(sim: Simulation, a: { kind: Kind; id: string }): n
   if (a.kind !== 'lavoro') return [];
   const def = sim.taskDef(a.id);
   return 'tiles' in def ? def.tiles : [];
+}
+
+/** Id di una perlustrazione ("x,y") e la sua meta. */
+export const walkId = (x: number, y: number) => `${x},${y}`;
+export function walkTarget(id: string): { x: number; y: number } {
+  const [x, y] = id.split(',').map(Number);
+  return { x, y };
+}
+
+/** Una perlustrazione verso una tile libera del terreno, come attività da aprire nella modale. */
+export function walkActivity(x: number, y: number): Activity {
+  return { kind: 'perlustrazione', id: walkId(x, y), name: 'Perlustra fin qui', meta: 'cammina e guarda', blockers: [] };
+}
+
+/**
+ * Si può tenere aperta adesso questa attività? Quelle della lista, più la
+ * perlustrazione durante il sopralluogo (che non sta in lista: si sceglie la
+ * meta sulla mappa).
+ */
+export function activityAvailable(sim: Simulation, a: { kind: Kind; id: string }): boolean {
+  if (a.kind === 'perlustrazione') return sim.state.stage === 'sopralluogo';
+  return listActivities(sim).some((x) => x.kind === a.kind && x.id === a.id);
 }
 
 /**
