@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anteprima grafica del parco</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: una colonna da fascicolo; la scena in testa, poi le schede di volontari, superfici e palette. */
+:root {
+  --bg: #e9ece6;
+  --paper: #f8f7f2;
+  --ink: #1d2530;
+  --muted: #5a6470;
+  --line: #d2d6cc;
+  --accent: #2a5fa8;
+  --stage: #173554;
+  --chip: #e1e6ee;
+  --display: 'Pixelify Sans', 'Courier New', monospace;
+  --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --paper: #19202a; --ink: #e6e9ee; --muted: #9aa4b1; --line: #2b3441;
+    --accent: #86aee6; --stage: #0d2135; --chip: #233044; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --paper: #19202a; --ink: #e6e9ee; --muted: #9aa4b1; --line: #2b3441;
+  --accent: #86aee6; --stage: #0d2135; --chip: #233044; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+main { max-width: 1000px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2 { font-family: var(--display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+p { margin: 0; max-width: 68ch; }
+.lead { color: var(--muted); }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+section { display: grid; gap: 14px; }
+.sheet { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.stage { background: var(--stage); border-radius: 6px; overflow: hidden; display: flex; justify-content: center; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.controls label { font-weight: 600; font-size: 14px; }
+#progress { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+button {
+  font: 500 14px var(--body); color: var(--ink); background: var(--chip); border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 12px; cursor: pointer;
+}
+button[aria-pressed="true"] { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.state { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; min-width: 15ch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; }
+.grid.small { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+figure { margin: 0; display: grid; gap: 6px; justify-items: center; text-align: center; min-width: 0; }
+figure .pair { display: flex; gap: 6px; justify-content: center; }
+figure canvas { background: var(--chip); border-radius: 4px; }
+figcaption { font-size: 13px; line-height: 1.35; }
+figcaption small { display: block; color: var(--muted); font-size: 12px; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.sw { display: flex; gap: 8px; align-items: center; font-size: 13px; min-width: 0; }
+.sw i { width: 22px; height: 22px; border-radius: 3px; flex: none; border: 1px solid var(--line); }
+.sw span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw code { color: var(--muted); font-size: 11px; }
+ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72ch; }
+.err { color: #c0392b; font-family: monospace; white-space: pre-wrap; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Puli-AMO Messina · anteprima della grafica</div>
+    <h1>Il parco sullo Stretto, dal degrado all'inaugurazione</h1>
+    <p class="lead">Una prova di stile, non la grafica finale: tile isometrici da 32×16, volontari da 16×24 e una palette di circa 32 colori presi da Messina. Sposta il cursore per vedere il terreno passare dal cemento al verde.</p>
+  </header>
+
+  <section class="sheet" aria-label="Scena del parco">
+    <div class="stage" id="stageWrap"><canvas id="scene" width="480" height="288" aria-label="Scena isometrica del parco con lo Stretto sullo sfondo"></canvas></div>
+    <div class="controls">
+      <label for="progress">Avanzamento del cantiere</label>
+      <input id="progress" type="range" min="0" max="100" value="45">
+      <span class="state" id="stateLabel"></span>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Momenti della partita">
+        <button type="button" data-p="0">Sopralluogo</button>
+        <button type="button" data-p="45">Cantiere</button>
+        <button type="button" data-p="100">Inaugurazione</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Volontari</h2>
+    <p class="lead">Un corpo comune; l'archetipo si riconosce dall'accessorio. In città ognuno ha la maglietta del suo ruolo; sul campo tutti indossano quella blu di Puli-AMO, con il logo sul cuore e la scritta sulla schiena.</p>
+    <div class="sheet">
+      <div class="grid" id="archetypes"></div>
+    </div>
+    <div class="sheet">
+      <p><strong>Animazioni per gesto.</strong> Ogni compito userà una di queste, indicata nel suo JSON.</p>
+      <div class="grid small" id="anims"></div>
+    </div>
+    <div class="sheet">
+      <p><strong>Varietà con lo scambio di palette.</strong> Stesso sprite, pelle e capelli diversi presi da <code>appearance.json</code>.</p>
+      <div class="grid small" id="swaps"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Superfici</h2>
+    <p class="lead">Il terreno è disegnato a pixel sulle coordinate del mondo, così le superfici si fondono tra un tile e l'altro e sentieri e aiuole possono avere bordi morbidi.</p>
+    <div class="sheet"><div class="grid" id="surfaces"></div></div>
+  </section>
+
+  <section>
+    <h2>Palette</h2>
+    <div class="sheet"><div class="swatches" id="palette"></div></div>
+  </section>
+
+  <section>
+    <h2>Cosa resta da decidere</h2>
+    <div class="sheet">
+      <ul class="notes">
+        <li>Questa anteprima è generata in codice. Quella definitiva passerà da Aseprite, con le animazioni su livelli separati, ma stile, proporzioni e palette sono quelli che vedi qui.</li>
+        <li>Volontari: testa grande e leggibile a 16×24. Se li preferisci più slanciati si può passare a 16×32.</li>
+        <li>Contorno scuro su personaggi e rifiuti, niente contorno su terreno e arredi. Si può uniformare in un senso o nell'altro.</li>
+        <li>Sfondo: Stretto con traghetto, costa calabra con il pilone, Madonnina del porto, lungomare con palme e ringhiera.</li>
+      </ul>
+      <div class="err" id="err"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+const errors = [];
+
+/* ---------- Palette ---------- */
+const PAL = {
+  k: '#241a26', '1': '#2b2d38', '2': '#4b4e5a', '3': '#7d7f86', '4': '#b3b0a6', '5': '#ece6d6',
+  A: '#173554', a: '#24527d', q: '#3b7fb0', Q: '#8cc6e0', K: '#cfe8ef',
+  G: '#1e3a2a', g: '#2e5e37', e: '#4a8a3a', E: '#84b84a', i: '#c4d96a',
+  x: '#7f9468', X: '#55704a',
+  o: '#3f2a20', O: '#6e4630', u: '#a06b3c', U: '#d3a25e',
+  r: '#6e2a22', R: '#b5452e', y: '#f2c94c', Y: '#ef8a2b', v: '#8c6bc0', n: '#c2416e',
+  l: '#9a6234', L: '#5c3a22', j: '#e0b030', B: '#2a5fa8',
+};
+const PAL_NAMES = [
+  ['k', 'Contorno'], ['1', 'Asfalto'], ['2', 'Basalto'], ['3', 'Cemento'], ['4', 'Pietra'], ['5', 'Calce'],
+  ['A', 'Stretto profondo'], ['a', 'Stretto'], ['q', 'Mare vicino'], ['Q', 'Cielo'], ['K', 'Foschia e spuma'],
+  ['G', 'Macchia scura'], ['g', 'Macchia'], ['e', 'Prato'], ['E', 'Prato al sole'], ['i', 'Erba nuova'],
+  ['X', 'Ulivo in ombra'], ['x', 'Ulivo'],
+  ['o', 'Terra bagnata'], ['O', 'Terra'], ['u', 'Ocra'], ['U', 'Sentiero'],
+  ['r', 'Coppo in ombra'], ['R', 'Coppo'], ['y', 'Ginestra'], ['Y', 'Arancio'], ['v', 'Lavanda'], ['n', 'Bouganville'],
+  ['l', 'Legno'], ['L', 'Legno scuro'], ['j', 'Oro della Madonnina'], ['B', 'Maglietta Puli-AMO'],
+];
+
+const SKINS = ['#f2c9a5', '#e8b48a', '#c98e62', '#9a6440', '#6b4329'];
+const HAIRS = ['#22201e', '#3b2a1e', '#6b4423', '#a4482a', '#d9b25c', '#9a9a96', '#e6e3dc'];
+const UNIFORM = '#2a5fa8';
+
+const rgbCache = new Map();
+function rgb(hex) {
+  let v = rgbCache.get(hex);
+  if (!v) { const n = parseInt(hex.slice(1), 16); v = [n >> 16 & 255, n >> 8 & 255, n & 255]; rgbCache.set(hex, v); }
+  return v;
+}
+function toHex(r, g, b) { return '#' + [r, g, b].map(c => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join(''); }
+/** Ombra: più scuro e un po' più freddo, come si fa a mano. */
+function shade(hex, f = 0.74) { const [r, g, b] = rgb(hex); return toHex(r * f, g * (f + 0.02), b * (f + 0.1) + 8); }
+
+/* ---------- Rumore ---------- */
+function hash(x, y, s = 0) {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 982451653)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function noise(x, y, s = 0) {
+  const xi = Math.floor(x), yi = Math.floor(y);
+  const xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi, s), b = hash(xi + 1, yi, s), c = hash(xi, yi + 1, s), d = hash(xi + 1, yi + 1, s);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - 0.47);
+const bayer = (x, y) => BAYER[(y & 3) * 4 + (x & 3)];
+
+/* ---------- Buffer di pixel ---------- */
+function makeBuf(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const img = ctx.createImageData(w, h);
+  const d = img.data;
+  return {
+    c, w, h,
+    set(x, y, col, a = 255) {
+      x |= 0; y |= 0;
+      if (x < 0 || y < 0 || x >= w || y >= h || !col) return;
+      const i = (y * w + x) * 4, [r, g, b] = rgb(col);
+      d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = a;
+    },
+    has(x, y) { return x >= 0 && y >= 0 && x < w && y < h && d[(y * w + x) * 4 + 3] > 0; },
+    flush() { ctx.putImageData(img, 0, 0); return c; },
+  };
+}
+
+/** Sprite da griglia di caratteri; '.' è trasparente. Ancora in basso al centro. */
+function gridSprite(rows, map = {}, name = '') {
+  const h = rows.length, w = Math.max(...rows.map(r => r.length));
+  const b = makeBuf(w, h);
+  rows.forEach((row, y) => {
+    if (row.length !== w) errors.push(`${name}: riga ${y} lunga ${row.length} invece di ${w}`);
+    [...row].forEach((ch, x) => {
+      if (ch === '.') return;
+      const col = map[ch] ?? PAL[ch];
+      if (!col) { errors.push(`${name}: colore '${ch}' sconosciuto`); return; }
+      b.set(x, y, col);
+    });
+  });
+  return { canvas: b.flush(), ax: Math.floor(w / 2), ay: h - 1 };
+}
+
+/* ---------- Modelli isometrici a scatole ---------- */
+// Coordinate del mondo: 16 unità per tile; schermo: sx = x - y, sy = (x + y) / 2 - z.
+const proj = (x, y, z) => [x - y, (x + y) / 2 - z];
+function fillPoly(b, pts, col, ox, oy) {
+  const xs = pts.map(p => p[0] + ox), ys = pts.map(p => p[1] + oy);
+  const x0 = Math.floor(Math.min(...xs)), x1 = Math.ceil(Math.max(...xs));
+  const y0 = Math.floor(Math.min(...ys)), y1 = Math.ceil(Math.max(...ys));
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const px = x + 0.5, py = y + 0.5;
+    let inside = false;
+    for (let i = 0, j = xs.length - 1; i < xs.length; j = i++) {
+      if ((ys[i] > py) !== (ys[j] > py) && px < (xs[j] - xs[i]) * (py - ys[i]) / (ys[j] - ys[i]) + xs[i]) inside = !inside;
+    }
+    if (inside) b.set(x, y, typeof col === 'function' ? col(x, y) : col);
+  }
+}
+/** box: {x,y,z,w,d,h, top,left,right}; left = faccia verso +y, right = faccia verso +x. */
+function model(boxes) {
+  let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+  for (const bx of boxes) for (const [dx, dy, dz] of [[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1],[1,0,1],[0,1,1],[1,1,1]]) {
+    const [sx, sy] = proj(bx.x + dx * bx.w, bx.y + dy * bx.d, (bx.z || 0) + dz * bx.h);
+    minx = Math.min(minx, sx); maxx = Math.max(maxx, sx); miny = Math.min(miny, sy); maxy = Math.max(maxy, sy);
+  }
+  const ox = -Math.floor(minx), oy = -Math.floor(miny);
+  const b = makeBuf(Math.ceil(maxx) + ox + 1, Math.ceil(maxy) + oy + 1);
+  const sorted = [...boxes].sort((p, q) => (p.x + p.w / 2 + p.y + p.d / 2) - (q.x + q.w / 2 + q.y + q.d / 2) || (p.z || 0) - (q.z || 0));
+  for (const bx of sorted) {
+    const { x, y, w, d, h } = bx, z = bx.z || 0;
+    const P = (a, c, e) => proj(a, c, e);
+    if (h > 0) {
+      fillPoly(b, [P(x, y + d, z + h), P(x + w, y + d, z + h), P(x + w, y + d, z), P(x, y + d, z)], bx.left, ox, oy);
+      fillPoly(b, [P(x + w, y, z + h), P(x + w, y + d, z + h), P(x + w, y + d, z), P(x + w, y, z)], bx.right, ox, oy);
+    }
+    fillPoly(b, [P(x, y, z + h), P(x + w, y, z + h), P(x + w, y + d, z + h), P(x, y + d, z + h)], bx.top, ox, oy);
+  }
+  return { canvas: b.flush(), ax: ox, ay: oy };
+}
+const tone = (top, left, right) => ({ top, left, right });
+const noisy = (cols, s) => (x, y) => cols[Math.min(cols.length - 1, Math.floor((hash(x, y, s) * 0.6 + noise(x / 2, y / 2, s) * 0.6) * cols.length * 0.85))];
+
+/* ---------- Volontari 16×24 ---------- */
+const HEAD_F = [
+  '................',
+  '......kkkk......',
+  '....kkhhhhkk....',
+  '...khhhhhhhhk...',
+  '..khhhhhhhhhhk..',
+  '..khhhhhhhhhHk..',
+  '..khhssssshhHk..',
+  '..khsssssssshk..',
+  '..khskssssksSk..',
+  '..kssssssssSSk..',
+  '...ksssssssSk...',
+  '....kkSssSkk....',
+];
+const HEAD_B = [
+  '................',
+  '......kkkk......',
+  '....kkhhhhkk....',
+  '...khhhhhhhhk...',
+  '..khhhhhhhhhhk..',
+  '..khhhhhhhhhHk..',
+  '..khhhhhhhhhHk..',
+  '..khhhhhhhhhHk..',
+  '..kshhhhhhhhSk..',
+  '..kHhhhhhhhHHk..',
+  '...kHHhhhHHHk...',
+  '....kkSssSkk....',
+];
+const TORSO_F = [
+  '...kcccccccCk...',
+  '..kccccccwwcCk..',
+  '..kcCccccccCCk..',
+  '..kcCccccccCCk..',
+  '..kscccccccCsk..',
+  '..ksppppppPPsk..',
+];
+const TORSO_B = [
+  '...kcccccccCk...',
+  '..kcwwwwwwwCCk..',
+  '..kccccccccCCk..',
+  '..kcwcwwcwcCCk..',
+  '..kscccccccCsk..',
+  '..ksppppppPPsk..',
+];
+const LEGS = {
+  stand: ['...kpppppPPPk...', '...kpppkkpPPk...', '...kppk..kpPk...', '...kppk..kpPk...', '...kbbk..kbbk...', '....kk....kk....'],
+  a:     ['...kpppppPPPk...', '...kpppkkpPPk...', '...kppk..kpPk...', '...kbbk..kpPk...', '....kk...kbbk...', '..........kk....'],
+  b:     ['...kpppppPPPk...', '...kpppkkpPPk...', '...kppk..kpPk...', '...kppk..kbbk...', '...kbbk...kk....', '....kk..........'],
+};
+// Accessori (righe assolute, '.' = lascia il corpo).
+const ACC = {
+  cappello: {
+    front: { 1: '....kkkkkkkk....', 2: '...kUUUUUUUUk...', 3: '...kRRRRRRRRk...', 4: '.kkUUUUUUUUUUkk.', 5: '.kuuuuuuuuuuuuk.' },
+  },
+  berretto: {
+    front: { 2: '....kkkkkkkk....', 3: '...kqqqqqqqqk...', 4: '..kqqqqqqqqqqk..', 5: '..kaaaaaaaaaakk.' },
+    back: { 2: '....kkkkkkkk....', 3: '...kqqqqqqqqk...', 4: '..kqqqqqqqqqqk..', 5: '..kaqqqqqqqqak..' },
+  },
+  occhiali: { front: { 7: '...kkkk..kkkk...', 8: '...k5k....k5k...' }, back: {} },
+  tesserino: { front: { 12: '......y..y......', 13: '.......yy.......', 14: '.......55.......', 15: '.......55.......' }, back: { 12: '......y..y......' } },
+  gilet: {
+    front: { 12: '....YY....YY....', 13: '...YYYY..YYYY...', 14: '...YYYY..YYYY...', 15: '...5555..5555...', 16: '....YYY..YYY....' },
+    back: { 12: '...YYYYYYYYYY...', 13: '..kYYYYYYYYYYk..', 14: '..kYYYYYYYYYYk..', 15: '..k5555555555k..', 16: '....YYYYYYYY....' },
+  },
+  cassetta: {
+    front: { 16: '.............kk.', 17: '............kRRk', 18: '............kRRk', 19: '............kkkk' },
+    back: { 16: '.kk.............', 17: 'kRRk............', 18: 'kRRk............', 19: 'kkkk............' },
+  },
+  cartellina: { front: { 13: '..kuuuk.........', 14: '..ku5uk.........', 15: '..ku5uk.........', 16: '..kuuuk.........', 17: '...kkk..........' }, back: {} },
+  telefono: { front: { 15: '............kk..', 16: '............kqk.', 17: '............kkk.' }, back: {} },
+  scatola: {
+    front: { 13: '...kkkkkkkkkk...', 14: '...kuuUUUUuuk...', 15: '..skuuuuuuuuks..', 16: '..skuuuuuuuuks..', 17: '...kkkkkkkkkk...' },
+    back: { 13: '..u..........u..', 16: '...c........C...', 17: '...p........P...' },
+  },
+  sacco: {
+    front: { 12: '.......kk.......', 13: '....kk2kk2kk....', 14: '...k22222232k...', 15: '..sk22222322ks..', 16: '..sk22223222ks..', 17: '...kkkkkkkkkk...' },
+    back: { 13: '..2..........2..', 16: '...c........C...', 17: '...p........P...' },
+  },
+};
+// Attrezzi in coordinate finali (dopo il sobbalzo del corpo).
+const TOOLS = {
+  pala1: { 7: '..............k.', 8: '..............L.', 9: '..............L.', 10: '..............L.', 11: '..............L.', 12: '.............sL.', 13: '..............L.', 14: '..............L.', 15: '.............sL.', 16: '..............L.', 17: '.............k4k', 18: '.............k3k', 19: '.............k3k', 20: '..............k.' },
+  pala2: { 10: '..............k.', 11: '..............L.', 12: '..............L.', 13: '.............sL.', 14: '..............L.', 15: '..............L.', 16: '.............sL.', 17: '..............L.', 18: '..............L.', 19: '.............k4k', 20: '.............k3k', 21: '.............k3k', 22: '............OOOO', 23: '...........uOuOu' },
+  pala3: { 7: '..............k.', 8: '..............L.', 9: '..............L.', 10: '..............L.', 11: '..............L.', 12: '.............sL.', 13: '..............L.', 14: '..............L.', 15: '.............sL.', 16: '.............OuO', 17: '.............k4k', 18: '.............k3k', 19: '.............k3k', 20: '..............k.' },
+  zolle: { 22: '............OO..', 23: '...........uOuO.' },
+};
+function overlay(rows, ov, name) {
+  for (const [r, s] of Object.entries(ov || {})) {
+    if (s.length !== 16) errors.push(`${name}: riga ${r} lunga ${s.length}`);
+    const row = [...rows[r]];
+    [...s].forEach((ch, i) => { if (ch !== '.') row[i] = ch; });
+    rows[r] = row.join('');
+  }
+}
+function lookColors(look) {
+  const shirt = look.uniform ? UNIFORM : look.shirt;
+  return {
+    s: look.skin, S: shade(look.skin, 0.8), h: look.hair, H: shade(look.hair, 0.72),
+    c: shirt, C: shade(shirt, 0.72), w: look.uniform ? '#f4f1e8' : shirt,
+    p: '#34405e', P: '#262f47', b: '#2a2224',
+  };
+}
+function charFrame(look, { back = false, legs = 'stand', bob = 0, carry = null, tool = null }) {
+  let rows = [...(back ? HEAD_B : HEAD_F), ...(back ? TORSO_B : TORSO_F), ...LEGS[legs]];
+  const accs = [...(look.acc || []), ...(carry ? [carry] : [])];
+  for (const a of accs) {
+    const def = ACC[a];
+    overlay(rows, back ? (def.back ?? def.front) : def.front, a);
+  }
+  if (bob) rows = ['................', ...rows.slice(0, 18), ...rows.slice(19)];
+  if (tool) overlay(rows, TOOLS[tool], tool);
+  return gridSprite(rows, lookColors(look), 'volontario');
+}
+const ANIMS = {
+  attesa: [{}, {}, {}, { bob: 1 }, { bob: 1 }, { bob: 1 }],
+  camminaF: [{ legs: 'a' }, { bob: 1 }, { legs: 'b' }, { bob: 1 }],
+  camminaB: [{ back: true, legs: 'a' }, { back: true, bob: 1 }, { back: true, legs: 'b' }, { back: true, bob: 1 }],
+  scavare: [{ tool: 'pala1' }, { tool: 'pala1' }, { bob: 1, tool: 'pala2' }, { bob: 1, tool: 'pala2' }, { tool: 'pala3' }, { tool: 'pala3' }],
+  portaF: [{ legs: 'a', carry: 'sacco' }, { bob: 1, carry: 'sacco' }, { legs: 'b', carry: 'sacco' }, { bob: 1, carry: 'sacco' }],
+  portaB: [{ back: true, legs: 'a', carry: 'sacco' }, { back: true, bob: 1, carry: 'sacco' }, { back: true, legs: 'b', carry: 'sacco' }, { back: true, bob: 1, carry: 'sacco' }],
+  scatolaF: [{ legs: 'a', carry: 'scatola' }, { bob: 1, carry: 'scatola' }, { legs: 'b', carry: 'scatola' }, { bob: 1, carry: 'scatola' }],
+};
+const frameCache = new Map();
+function frames(look, anim) {
+  const key = JSON.stringify(look) + anim;
+  if (!frameCache.has(key)) frameCache.set(key, ANIMS[anim].map(f => charFrame(look, f)));
+  return frameCache.get(key);
+}
+
+/* ---------- Vegetazione e oggetti ---------- */
+function blob(w, h, circles, cols, seed) {
+  const b = makeBuf(w, h);
+  const inC = (x, y) => circles.find(c => ((x + 0.5 - c[0]) / c[2]) ** 2 + ((y + 0.5 - c[1]) / (c[3] ?? c[2])) ** 2 <= 1);
+  return { b, inC, paint() {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const c = inC(x, y);
+      if (!c) continue;
+      const nx = (x + 0.5 - c[0]) / c[2], ny = (y + 0.5 - c[1]) / (c[3] ?? c[2]);
+      let l = -(nx * 0.55 + ny * 0.85) + (noise(x / 2.3, y / 2.3, seed) - 0.5) * 1.1 + bayer(x, y) * 0.35;
+      let idx = l > 0.5 ? 3 : l > -0.05 ? 2 : l > -0.6 ? 1 : 0;
+      if (!inC(x, y + 1) || !inC(x + 1, y + 1)) idx = Math.min(idx, 0);
+      b.set(x, y, cols[idx]);
+    }
+  } };
+}
+function shadowSprite(rx, ry) {
+  const w = rx * 2 + 1, h = ry * 2 + 1, b = makeBuf(w, h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (((x - rx) / (rx + 0.5)) ** 2 + ((y - ry) / (ry + 0.5)) ** 2 <= 1) b.set(x, y, '#10202a', 70);
+  }
+  return { canvas: b.flush(), ax: rx, ay: ry };
+}
+function pino(seed) {
+  const w = 36, h = 38;
+  const t = blob(w, h, [[18, 9, 16, 6], [9, 10, 8, 5], [27, 10, 8, 5], [18, 6, 11, 4.5], [13, 7, 6, 4]], ['#1e3a2a', '#2e5e37', '#3f7a35', '#6f9f45'], seed);
+  for (let y = 12; y < h; y++) {
+    const x = 17 + Math.round((h - y) * 0.06);
+    t.b.set(x, y, '#5c3a22'); t.b.set(x + 1, y, '#8a5a34');
+    if (y > h - 4) t.b.set(x - 1, y, '#5c3a22');
+  }
+  t.paint();
+  return { canvas: t.b.flush(), ax: 18, ay: h - 1 };
+}
+function ulivo(seed) {
+  const w = 28, h = 28;
+  const t = blob(w, h, [[9, 9, 7, 6], [17, 6, 7, 5], [21, 11, 6, 5], [13, 12, 7, 5], [5, 13, 4, 3]], ['#3f5636', '#55704a', '#7f9468', '#a9b98e'], seed);
+  for (let y = 12; y < h; y++) {
+    const x = 13 + Math.round(Math.sin(y / 2.6) * 1.3);
+    t.b.set(x - 1, y, '#4a3a2c'); t.b.set(x, y, '#6e5a45'); t.b.set(x + 1, y, '#8c775e');
+  }
+  t.b.set(10, 15, '#6e5a45'); t.b.set(11, 14, '#6e5a45'); t.b.set(16, 14, '#6e5a45'); t.b.set(17, 13, '#6e5a45');
+  t.paint();
+  return { canvas: t.b.flush(), ax: 13, ay: h - 1 };
+}
+function palma(seed) {
+  const w = 34, h = 48, b = makeBuf(w, h);
+  const top = 14;
+  for (let y = top; y < h; y++) {
+    const k = (h - y) / (h - top);
+    const x = 16 + Math.round(k * k * 3);
+    const ring = y % 3 === 0;
+    b.set(x, y, ring ? '#5c3a22' : '#8a6a48'); b.set(x + 1, y, ring ? '#4a2f20' : '#6e5038');
+  }
+  const cx = 19, cy = top;
+  const fronds = [[-2.9, 13, 1], [-2.4, 12, 1], [-1.9, 9, 0.6], [-1.2, 9, 0.6], [-0.6, 12, 1], [-0.15, 13, 1.1], [3.0, 11, 1.2], [0.4, 11, 1.4], [2.5, 10, 1.4]];
+  fronds.forEach(([a, len, droop], n) => {
+    for (let t = 0; t <= len; t++) {
+      const px = cx + Math.cos(a) * t, py = cy + Math.sin(a) * t * 0.55 + t * t * 0.045 * droop;
+      const col = t < 3 ? '#2e5e37' : (t + n) % 3 === 0 ? '#84b84a' : '#4a8a3a';
+      b.set(Math.round(px), Math.round(py), col);
+      if (t > 2 && t % 2 === 0) b.set(Math.round(px), Math.round(py) + 1, '#2e5e37');
+    }
+  });
+  b.set(cx, cy + 1, '#c97a2a'); b.set(cx - 1, cy + 1, '#a0521f'); b.set(cx, cy + 2, '#a0521f');
+  return { canvas: b.flush(), ax: 17, ay: h - 1 };
+}
+function cespuglio(flower, seed) {
+  const w = 11, h = 8;
+  const t = blob(w, h, [[5.5, 4.5, 5.5, 3.6]], ['#1e3a2a', '#2e5e37', '#4a8a3a', '#6f9f45'], seed);
+  t.paint();
+  for (let y = 0; y < 5; y++) for (let x = 0; x < w; x++) {
+    if (t.inC(x, y) && hash(x, y, seed + 9) > (y < 3 ? 0.35 : 0.7)) t.b.set(x, y, hash(x, y, seed + 4) > 0.5 ? flower : shade(flower, 0.8));
+  }
+  return { canvas: t.b.flush(), ax: 5, ay: h - 2 };
+}
+function erbacce(seed) {
+  const w = 9, h = 8, b = makeBuf(w, h);
+  const cols = ['#6b6a2e', '#857f38', '#a19544', '#4f5a28'];
+  for (let k = 0; k < 7; k++) {
+    const x = 1 + k, hh = 3 + Math.floor(hash(k, 1, seed) * 5), lean = hash(k, 2, seed) > 0.5 ? 1 : -1;
+    const col = cols[Math.floor(hash(k, 3, seed) * 4)];
+    for (let y = 0; y < hh; y++) b.set(x + (y > hh - 2 ? lean : 0), h - 1 - y, col);
+  }
+  return { canvas: b.flush(), ax: 4, ay: h - 1 };
+}
+const RIFIUTI = {
+  sacco: ['...kk...', '..k22k..', '.k2222k.', 'k222322k', 'k223222k', 'k222222k', '.kkkkkk.'],
+  pneumatico: ['..kkkkkk..', '.k111111k.', 'k11kkkk11k', 'k1k....k1k', 'k11kkkk11k', '.k111111k.', '..kkkkkk..'],
+  bottiglie: ['.k...', 'kgk.k', 'kgkkE', 'kgkkE', 'kkkkk'],
+  cartello: ['..kkk..', '.kRRRk.', 'kR555Rk', 'kRkkkRk', 'kR555Rk', '.kRRRk.', '..kkk..', '...2...', '...2...', '...2...', '...2...', '...2...', '...2...', '...2...', '..k2k..'],
+};
+const WOOD = tone('#b07a43', '#8a5a2e', '#6a4322');
+const WOOD_OLD = tone('#9a8a76', '#766a5a', '#5a5045');
+const IRON = tone('#3a4a40', '#2e3b33', '#222c27');
+function panchina(alongY) {
+  const B = [
+    { x: 1, y: 2, w: 1, d: 4, h: 5, ...IRON }, { x: 12, y: 2, w: 1, d: 4, h: 5, ...IRON },
+    { x: 0, y: 0, z: 5, w: 14, d: 1, h: 6, ...WOOD },
+    { x: 0, y: 1, z: 5, w: 14, d: 5, h: 1, ...WOOD },
+  ];
+  return model(alongY ? B.map(b => ({ ...b, x: b.y, y: b.x, w: b.d, d: b.w, left: b.right, right: b.left })) : B);
+}
+const MODELS = {
+  panchinaRotta: () => model([
+    { x: 1, y: 2, w: 1, d: 4, h: 5, ...tone('#6b5a4a', '#55473a', '#3f352b') },
+    { x: 0, y: 1, z: 5, w: 5, d: 5, h: 1, ...WOOD_OLD },
+    { x: 9, y: 1, z: 2, w: 5, d: 5, h: 1, ...WOOD_OLD },
+    { x: 4, y: 8, z: 0, w: 9, d: 2, h: 1, ...WOOD_OLD },
+  ]),
+  frigo: () => model([{ x: 0, y: 0, w: 8, d: 7, h: 16, ...tone('#e2ddd0', '#c9c3b3', '#a8a293') }, { x: 7.2, y: 2, z: 7, w: 1, d: 4, h: 1, ...tone('#7d7f86', '#7d7f86', '#5d5f66') }]),
+  materasso: () => model([{ x: 0, y: 0, w: 20, d: 11, h: 3, top: (x, y) => ((x + 2 * y) >> 2) % 2 ? '#c9b9a0' : '#b3a088', left: '#8f7f6a', right: '#7a6b58' }]),
+  muretto: () => model([
+    { x: 0, y: 0, w: 6, d: 4, h: 9, ...tone('#a8a6a0', '#8a8b8f', '#6d6e74') },
+    { x: 6, y: 0, w: 5, d: 4, h: 5, ...tone('#a8a6a0', '#8a8b8f', '#6d6e74') },
+    { x: 11, y: 0, w: 4, d: 4, h: 2, ...tone('#a8a6a0', '#8a8b8f', '#6d6e74') },
+    { x: 13, y: 6, w: 3, d: 3, h: 2, ...tone('#a8a6a0', '#8a8b8f', '#6d6e74') },
+  ]),
+  lampione: () => model([
+    { x: -1, y: -1, w: 4, d: 4, h: 3, ...IRON },
+    { x: 0, y: 0, w: 2, d: 2, h: 27, ...IRON },
+    { x: -1, y: -1, z: 27, w: 4, d: 4, h: 4, top: '#2e3b33', left: '#f6e7a1', right: '#e2c76a' },
+    { x: -1.5, y: -1.5, z: 31, w: 5, d: 5, h: 1, ...IRON },
+  ]),
+  differenziata: () => model([
+    { x: 0, y: 0, w: 5, d: 5, h: 8, top: '#1d1f26', left: '#e0b030', right: '#b88a1e' },
+    { x: 6, y: 0, w: 5, d: 5, h: 8, top: '#1d1f26', left: '#2a6fb5', right: '#1f5590' },
+    { x: 12, y: 0, w: 5, d: 5, h: 8, top: '#1d1f26', left: '#8a8b8f', right: '#6d6e74' },
+  ]),
+  fontanella: () => model([
+    { x: -3, y: -3, w: 10, d: 10, h: 2, ...tone('#d8d4c8', '#b3b0a6', '#9b988f') },
+    { x: -1, y: -1, z: 2, w: 6, d: 6, h: 1, top: '#5aa3c8', left: '#b3b0a6', right: '#9b988f' },
+    { x: 1, y: 1, z: 2, w: 2, d: 2, h: 13, ...tone('#3f7a55', '#2e5e43', '#224634') },
+    { x: 1, y: 3, z: 12, w: 2, d: 2, h: 1, ...tone('#3f7a55', '#2e5e43', '#224634') },
+  ]),
+  altalena: () => model([
+    { x: 0, y: 0, w: 2, d: 2, h: 20, ...tone('#e05a3a', '#c0392b', '#962d22') },
+    { x: 20, y: 0, w: 2, d: 2, h: 20, ...tone('#e05a3a', '#c0392b', '#962d22') },
+    { x: 0, y: 0, z: 20, w: 22, d: 2, h: 2, ...tone('#e05a3a', '#c0392b', '#962d22') },
+    { x: 6, y: 0.5, z: 6, w: 1, d: 1, h: 14, ...tone('#9b988f', '#7d7f86', '#5d5f66') },
+    { x: 14, y: 0.5, z: 6, w: 1, d: 1, h: 14, ...tone('#9b988f', '#7d7f86', '#5d5f66') },
+    { x: 5, y: -1, z: 5, w: 4, d: 4, h: 1, ...tone('#f2c94c', '#d9a930', '#b88a1e') },
+    { x: 13, y: -1, z: 5, w: 4, d: 4, h: 1, ...tone('#f2c94c', '#d9a930', '#b88a1e') },
+  ]),
+};
+function siepe(w, d) {
+  return model([{ x: 0, y: 0, w, d, h: 6, top: noisy(['#6f9f45', '#4a8a3a', '#4a8a3a', '#3f7a35'], 3), left: noisy(['#3f7a35', '#2e5e37', '#2e5e37'], 5), right: noisy(['#2e5e37', '#1e3a2a', '#1e3a2a'], 6) }]);
+}
+function ringhiera(alongY, len) {
+  const B = [{ x: 0, y: 0, z: 7, w: len, d: 1, h: 1, ...tone('#ece6d6', '#d8d4c8', '#b3b0a6') }];
+  for (let k = 0; k <= len; k += 6) B.push({ x: k, y: 0, w: 1, d: 1, h: 7, ...tone('#ece6d6', '#d8d4c8', '#9b988f') });
+  return model(alongY ? B.map(b => ({ ...b, x: b.y, y: b.x, w: b.d, d: b.w, left: b.right, right: b.left })) : B);
+}
+
+/* ---------- Mondo ---------- */
+const W = 480, H = 288, OX = 240, OY = 60, HORIZON = 50;
+const PARK = 48, PARK_SIZE = 160; // tile da 3 a 12
+const toScreen = (X, Y, Z = 0) => [OX + (X - Y), OY + (X + Y) / 2 - Z];
+const tileT = (i, j) => ((i + j) / 18) * 0.85 + hash(i, j, 3) * 0.15;
+const pathY = lx => 80 + 6 * Math.sin(lx / 22);
+const pathX = ly => 80 + 6 * Math.sin(ly / 22 + 1);
+const AIUOLE = [[112, 44, 16, 11], [44, 112, 11, 16], [128, 118, 9, 9]];
+const COURT = [92, 14, 150, 66];
+
+function parkType(lx, ly, p) {
+  const i = Math.floor(lx / 16), j = Math.floor(ly / 16);
+  const t = tileT(i, j) + (noise(lx / 5, ly / 5, 11) - 0.5) * 0.07;
+  if (p <= t) {
+    if (lx > COURT[0] && lx < COURT[2] && ly > COURT[1] && ly < COURT[3]) return 'cemento';
+    if (noise(lx / 30, ly / 30, 2) > 0.62) return 'cemento';
+    return noise(lx / 13, ly / 13, 4) > 0.48 ? 'erbacce' : 'terra';
+  }
+  if (p <= t + 0.08) return 'vangata';
+  const dp = Math.hypot(lx - 80, ly - 80);
+  if (dp < 20) return 'sentiero';
+  if (dp < 22.5) return 'cordolo';
+  const dy = Math.abs(ly - pathY(lx)), dx = Math.abs(lx - pathX(ly));
+  if (dy < 7 || dx < 7) return 'sentiero';
+  if (dy < 8.2 || dx < 8.2) return 'bordo';
+  for (const [ax, ay, rx, ry] of AIUOLE) if (((lx - ax) / rx) ** 2 + ((ly - ay) / ry) ** 2 < 1) return 'aiuola';
+  return 'prato';
+}
+function worldType(X, Y, p) {
+  const tx = Math.floor(X / 16), ty = Math.floor(Y / 16);
+  if (tx >= 14 || ty >= 14) return 'asfalto';
+  if (tx === 0 || ty === 0) return 'basolato';
+  if (tx === 1 || ty === 1) return 'passeggiata';
+  if (tx === 2 || ty === 2 || tx === 13 || ty === 13) return 'marciapiede';
+  return parkType(X - PARK, Y - PARK, p);
+}
+function surfaceColor(type, X, Y) {
+  const ix = Math.floor(X), iy = Math.floor(Y), h = hash(ix, iy, 1), h2 = hash(ix, iy, 2);
+  switch (type) {
+    case 'terra': return h2 > 0.97 ? '#b3b0a6' : h < 0.16 ? '#4f3425' : h > 0.86 ? '#8a5a38' : '#6e4630';
+    case 'erbacce': { const n = noise(X / 3, Y / 3, 5) + h * 0.5; return n > 1.15 ? '#a19544' : n > 0.85 ? '#857f38' : n > 0.55 ? '#6b6a2e' : h2 > 0.5 ? '#5e4a2c' : '#6e4630'; }
+    case 'cemento': {
+      if (Math.abs(noise(X / 9, Y / 9, 7) - 0.5) < 0.022) return '#4b4e5a';
+      if (ix % 32 === 0 || iy % 32 === 0) return '#6d6e74';
+      if (noise(X / 6, Y / 6, 8) > 0.74) return h > 0.5 ? '#6f7066' : '#76776c';
+      return h < 0.2 ? '#7d7f86' : h > 0.85 ? '#a3a3a0' : '#8f9093';
+    }
+    case 'vangata': return (ix + iy) % 4 === 0 ? '#3a251b' : h > 0.8 ? '#6e4630' : '#553626';
+    case 'prato': {
+      if (h2 > 0.992) return h > 0.5 ? '#ece6d6' : '#f2c94c';
+      const n = noise(X / 10, Y / 10, 9) * 0.6 + h * 0.6;
+      return n > 0.95 ? '#84b84a' : n > 0.62 ? '#5d9a3f' : n > 0.3 ? '#4a8a3a' : '#3f7a35';
+    }
+    case 'sentiero': return h2 > 0.975 ? '#9a8a70' : h < 0.18 ? '#c18f50' : h > 0.88 ? '#e3bb7c' : '#d3a25e';
+    case 'bordo': return '#9a6a3c';
+    case 'cordolo': return h > 0.5 ? '#d8d4c8' : '#c6c1b4';
+    case 'aiuola': return h < 0.3 ? '#3a251b' : h > 0.8 ? '#5c3a22' : '#4a2f22';
+    case 'marciapiede': return (ix % 8 === 0 || iy % 8 === 0) ? '#9b988f' : h > 0.9 ? '#c6c2b6' : '#b3b0a6';
+    case 'passeggiata': { const c = ((ix >> 3) + (iy >> 3)) & 1; return (ix % 8 === 0 || iy % 8 === 0) ? '#a4927a' : c ? (h > 0.85 ? '#d6c6a8' : '#c9b89a') : (h > 0.85 ? '#c9b89a' : '#bba98a'); }
+    case 'basolato': return (X < 2 || Y < 2) ? '#d8d4c8' : ((ix % 12 === 0) || (iy % 6 === 0)) ? '#3a3c46' : h > 0.8 ? '#5a5d69' : '#4b4e5a';
+    case 'asfalto': {
+      if (Math.abs(Y - 248) < 0.8 && X < 216 && Math.floor(X / 10) % 2 === 0) return '#d8d4c8';
+      if (Math.abs(X - 248) < 0.8 && Y < 216 && Math.floor(Y / 10) % 2 === 0) return '#d8d4c8';
+      if ((Math.floor(X / 16) === 14 && Y < 224 && X < 226) || (Math.floor(Y / 16) === 14 && X < 224 && Y < 226)) return '#8a8b8f';
+      return h < 0.2 ? '#33353e' : h > 0.9 ? '#4b4e5a' : '#3a3c46';
+    }
+  }
+  return '#ff00ff';
+}
+
+function renderGround(p) {
+  const b = makeBuf(W, H);
+  for (let sy = HORIZON; sy < H; sy++) for (let sx = 0; sx < W; sx++) {
+    const dx = sx + 0.5 - OX, dy = sy + 0.5 - OY;
+    const X = (dx + 2 * dy) / 2, Y = (2 * dy - dx) / 2;
+    if (X < 0 || Y < 0) {
+      if (X > -2.5 && Y > -2.5 && hash(sx, sy, 40) > 0.45) b.set(sx, sy, '#cfe8ef');
+      continue;
+    }
+    b.set(sx, sy, surfaceColor(worldType(X, Y, p), X, Y));
+  }
+  return b.flush();
+}
+
+/* ---------- Sfondo: cielo, Calabria, Stretto ---------- */
+const FERRY = gridSprite([
+  '..........kk..................',
+  '..........jj..................',
+  '......kkkkjjkkkkk.............',
+  '.....k5555555555k.............',
+  '...kk5K5K5K5K5K5kkkkkkk.......',
+  '..k555555555555555555555kk....',
+  '.kBBBBBBBBBBBBBBBBBBBBBBBBBk..',
+  'k5555555555555555555555555555k',
+  '.k4444444444444444444444444kk.',
+  '..kkkkkkkkkkkkkkkkkkkkkkkkkk..',
+], {}, 'traghetto');
+const GULL = [gridSprite(['k...k', '.k.k.', '..k..'], {}, 'gabbiano'), gridSprite(['.....', 'kk.kk', '..k..'], {}, 'gabbiano')];
+
+function renderBackdrop() {
+  const b = makeBuf(W, H);
+  const sky = [[0, '#7fb2d6'], [13, '#93c1df'], [26, '#accfe6'], [38, '#c6e1ec']];
+  for (let y = 0; y < HORIZON; y++) {
+    let k = 0;
+    while (k + 1 < sky.length && y >= sky[k + 1][0]) k++;
+    for (let x = 0; x < W; x++) {
+      let col = sky[k][1];
+      if (k + 1 < sky.length && sky[k + 1][0] - y <= 2 && (x + y) % 2 === 0) col = sky[k + 1][1];
+      b.set(x, y, col);
+    }
+  }
+  // nuvole
+  for (const [cx, cy, r] of [[90, 12, 8], [104, 10, 6], [330, 18, 9], [346, 15, 6], [360, 19, 5]]) {
+    for (let y = cy - r; y <= cy + 2; y++) for (let x = cx - r * 2; x <= cx + r * 2; x++) {
+      if (((x - cx) / (r * 2)) ** 2 + ((y - cy) / r) ** 2 <= 1 && y <= cy + 2) b.set(x, y, y > cy ? '#dcebf0' : '#f4f8f8');
+    }
+  }
+  // costa calabra
+  const far = x => HORIZON - 24 + 7 * noise(x / 55, 0.3, 21) + 4 * noise(x / 16, 0.7, 22) - (x > 380 ? (x - 380) * 0.05 : 0);
+  const near = x => HORIZON - 13 + 6 * noise(x / 38, 0.3, 23) + 3 * noise(x / 10, 0.6, 24);
+  for (let x = 0; x < W; x++) {
+    for (let y = Math.floor(far(x)); y < HORIZON; y++) b.set(x, y, '#9db4c4');
+    for (let y = Math.floor(near(x)); y < HORIZON; y++) b.set(x, y, hash(x, y, 25) > 0.85 ? '#7290a6' : '#7f9bb0');
+    for (let y = HORIZON - 3; y < HORIZON; y++) {
+      const hh = hash(x, y, 26);
+      if (hh > 0.7) b.set(x, y, hh > 0.9 ? '#e8e2d4' : hh > 0.8 ? '#d9b49a' : '#b9c4c9');
+    }
+  }
+  // pilone sulla costa calabra
+  const px = 420, base = Math.floor(near(px)) + 1;
+  for (let k = 0; k < 26; k++) {
+    const half = Math.round((k / 26) * 3);
+    b.set(px - half, base - 26 + k, '#5f7383'); b.set(px + half, base - 26 + k, '#5f7383');
+    if (k % 4 === 0) for (let x = px - half; x <= px + half; x++) b.set(x, base - 26 + k, '#6f8393');
+  }
+  b.set(px - 2, base - 25, '#5f7383'); b.set(px + 2, base - 25, '#5f7383');
+  // mare
+  const sea = [[HORIZON, '#6aa6cf'], [HORIZON + 6, '#4f90c0'], [HORIZON + 20, '#3f82b4'], [HORIZON + 50, '#3576a8'], [HORIZON + 100, '#2c6898']];
+  for (let y = HORIZON; y < H; y++) {
+    let k = 0;
+    while (k + 1 < sea.length && y >= sea[k + 1][0]) k++;
+    for (let x = 0; x < W; x++) {
+      let col = sea[k][1];
+      if (k + 1 < sea.length && sea[k + 1][0] - y <= 2 && (x + y) % 2 === 0) col = sea[k + 1][1];
+      b.set(x, y, col);
+    }
+  }
+  b.flush();
+  // Madonnina del porto sul molo
+  const ctx = b.c.getContext('2d');
+  const mole = gridSprite([
+    '.......kjk........',
+    '.......jjj........',
+    '........j.........',
+    '.......k5k........',
+    '.......k5k........',
+    ...Array(16).fill('.......k54k.......'.slice(0, 18)),
+    '......k5544k......',
+    '.....k555444k.....',
+    'kkkkk44444444kkkkk',
+    '4444444433333333kk',
+    '3333333322222222..',
+  ], {}, 'madonnina');
+  ctx.drawImage(mole.canvas, 54, HORIZON + 8 - mole.canvas.height);
+  return b.c;
+}
+const SPARKLES = Array.from({ length: 90 }, (_, n) => ({ x: Math.floor(hash(n, 1, 50) * W), y: HORIZON + 2 + Math.floor(hash(n, 2, 50) ** 1.6 * (H - HORIZON - 4)), ph: hash(n, 3, 50) * 6.28, len: 1 + Math.floor(hash(n, 4, 50) * 3) }));
+
+/* ---------- Oggetti della scena ---------- */
+const SH = { grande: shadowSprite(11, 4), media: shadowSprite(7, 3), piccola: shadowSprite(5, 2) };
+function buildObjects() {
+  const objs = [];
+  const add = (spr, X, Y, show, shadow, extra = {}) => objs.push({ spr, X, Y, show, shadow, key: extra.key ?? X + Y, ...extra });
+  const always = () => true;
+  const prima = (i, j) => p => p <= tileT(i, j);
+  const dopo = (i, j) => p => p > tileT(i, j) + 0.08;
+  const tileOf = (lx, ly) => [Math.min(9, Math.floor(lx / 16)), Math.min(9, Math.floor(ly / 16))];
+  // lungomare
+  add(ringhiera(false, 262), 0, 1, always, null, { key: 0 });
+  add(ringhiera(true, 262), 1, 0, always, null, { key: 0 });
+  for (const k of [3, 7, 11]) {
+    add(palma(k), 22, k * 16 + 8, always, SH.media);
+    add(palma(k + 5), k * 16 + 8, 22, always, SH.media);
+  }
+  for (const k of [5, 9, 13]) {
+    add(MODELS.lampione(), 24, k * 16, always, null);
+    add(MODELS.lampione(), k * 16, 24, always, null);
+  }
+  // prima: rifiuti, erbacce, cemento rotto
+  for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) {
+    const r = hash(i, j, 7), X = PARK + i * 16, Y = PARK + j * 16, show = prima(i, j);
+    const jx = 3 + hash(i, j, 8) * 10, jy = 3 + hash(i, j, 9) * 10;
+    if (r < 0.14) add(gridSprite(RIFIUTI.sacco, {}, 'sacco'), X + jx, Y + jy, show, SH.piccola);
+    else if (r < 0.19) add(gridSprite(RIFIUTI.pneumatico, {}, 'pneumatico'), X + jx, Y + jy, show, null);
+    else if (r < 0.26) add(gridSprite(RIFIUTI.bottiglie, {}, 'bottiglie'), X + jx, Y + jy, show, null);
+    const tufts = Math.floor(hash(i, j, 10) * 4);
+    for (let t = 0; t < tufts; t++) add(erbacce(i * 31 + j * 7 + t), X + 2 + hash(i, t, 12) * 12, Y + 2 + hash(j, t, 13) * 12, show, null);
+  }
+  add(MODELS.frigo(), PARK + 58, PARK + 108, prima(3, 6), SH.piccola);
+  add(MODELS.materasso(), PARK + 118, PARK + 132, prima(7, 8), null);
+  add(MODELS.panchinaRotta(), PARK + 40, PARK + 60, prima(2, 3), null);
+  add(MODELS.muretto(), PARK + 96, PARK + 70, prima(6, 4), null);
+  add(MODELS.muretto(), PARK + 20, PARK + 140, prima(1, 8), null);
+  add(gridSprite(RIFIUTI.cartello, {}, 'cartello'), PARK + 152, PARK + 150, prima(9, 9), SH.piccola);
+  // dopo: progetto
+  const D = (spr, lx, ly, shadow, extra) => { const [i, j] = tileOf(lx, ly); add(spr, PARK + lx, PARK + ly, dopo(i, j), shadow, extra); };
+  D(ulivo(1), 28, 28, SH.grande); D(ulivo(2), 140, 142, SH.grande); D(ulivo(3), 112, 124, SH.grande);
+  D(pino(4), 134, 26, SH.grande); D(pino(5), 26, 136, SH.grande);
+  for (const [ax, ay, rx, ry] of AIUOLE) {
+    for (let k = 0; k < 6; k++) {
+      const a = k * 1.05 + ax, rr = 0.25 + hash(k, ax, 30) * 0.5;
+      D(cespuglio(k % 2 ? '#f2c94c' : '#8c6bc0', k + ax), ax + Math.cos(a) * rx * rr, ay + Math.sin(a) * ry * rr, null);
+    }
+  }
+  D(panchina(false), 46, 62, null); D(panchina(false), 98, 62, null); D(panchina(true), 60, 104, null);
+  D(MODELS.differenziata(), 28, 62, null);
+  D(MODELS.lampione(), 66, 66, null); D(MODELS.lampione(), 94, 94, null); D(MODELS.lampione(), 66, 140, null);
+  D(MODELS.fontanella(), 79, 79, null);
+  D(MODELS.altalena(), 118, 92, null, { key: PARK * 2 + 118 + 92 + 10 });
+  // siepe sul perimetro, aperta dove arrivano i sentieri
+  for (let k = 0; k < 10; k++) {
+    if (k === 4 || k === 5) continue;
+    D(siepe(16, 4), k * 16, 0, null, { key: PARK * 2 + k * 16 + 10 });
+    D(siepe(4, 16), 0, k * 16, null, { key: PARK * 2 + k * 16 + 10 });
+    D(siepe(16, 4), k * 16, 156, null, { key: PARK * 2 + k * 16 + 156 + 10 });
+    D(siepe(4, 16), 156, k * 16, null, { key: PARK * 2 + k * 16 + 156 + 10 });
+  }
+  return objs;
+}
+
+/* ---------- Volontari in scena ---------- */
+const CREW = [
+  { skin: SKINS[1], hair: HAIRS[1], shirt: '#27ae60', uniform: true, acc: ['cappello'] },
+  { skin: SKINS[3], hair: HAIRS[0], shirt: '#2e9e5b', uniform: true, acc: [] },
+  { skin: SKINS[0], hair: HAIRS[3], shirt: '#e84393', uniform: true, acc: ['gilet'] },
+  { skin: SKINS[2], hair: HAIRS[4], shirt: '#16a085', uniform: true, acc: ['berretto'] },
+];
+function crewPlacement(p, time) {
+  const out = [];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pingpong = (t, len) => { const m = t % (2 * len); return m < len ? [m, 1] : [2 * len - m, -1]; };
+  if (p <= 0.02) {
+    out.push({ look: CREW[2], anim: 'attesa', X: PARK + 128, Y: PARK + 150 });
+    out.push({ look: CREW[0], anim: 'attesa', X: PARK + 112, Y: PARK + 146 });
+    out.push({ look: CREW[1], anim: 'attesa', X: PARK + 140, Y: PARK + 136 });
+    const [m, dir] = pingpong(time * 6, 70);
+    out.push({ look: CREW[3], anim: dir > 0 ? 'camminaF' : 'camminaB', X: PARK + 30 + m, Y: PARK + 100 });
+    return out;
+  }
+  if (p >= 0.99) {
+    out.push({ look: CREW[0], anim: 'attesa', X: PARK + 66, Y: PARK + 86 });
+    out.push({ look: CREW[1], anim: 'attesa', X: PARK + 92, Y: PARK + 78 });
+    out.push({ look: CREW[2], anim: 'attesa', X: PARK + 84, Y: PARK + 96 });
+    const [m, dir] = pingpong(time * 6, 110);
+    out.push({ look: CREW[3], anim: dir > 0 ? 'camminaF' : 'camminaB', X: PARK + pathX(20 + m) , Y: PARK + 20 + m, flip: true });
+    return out;
+  }
+  const S = clamp((p - 0.075) / 0.85 * 18, 0, 18);
+  const c = S * 8 + 8;
+  out.push({ look: CREW[0], anim: 'scavare', X: PARK + clamp(c + 14, 8, 152), Y: PARK + clamp(c - 14, 8, 152) });
+  const [m, dir] = pingpong(time * 7, 50);
+  const ax = clamp(c - 10, 8, 110), ay = clamp(c + 12, 8, 150);
+  out.push({ look: CREW[1], anim: dir > 0 ? 'portaF' : 'portaB', X: PARK + ax + m, Y: PARK + ay });
+  out.push({ look: CREW[2], anim: 'attesa', X: PARK + 146, Y: PARK + 166 });
+  const [m2, dir2] = pingpong(time * 5, 70);
+  out.push({ look: CREW[3], anim: dir2 > 0 ? 'scatolaF' : 'camminaB', X: PARK + 176, Y: PARK + 70 + m2, flip: true });
+  return out;
+}
+
+/* ---------- Disegno della scena ---------- */
+const scene = document.getElementById('scene');
+const sctx = scene.getContext('2d');
+sctx.imageSmoothingEnabled = false;
+const backdrop = renderBackdrop();
+const objects = buildObjects();
+let progress = 0.45, ground = renderGround(progress);
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function drawSprite(ctx, spr, sx, sy, flip = false) {
+  const x = Math.round(sx - spr.ax), y = Math.round(sy - spr.ay);
+  if (!flip) { ctx.drawImage(spr.canvas, x, y); return; }
+  ctx.save(); ctx.translate(x + spr.canvas.width, y); ctx.scale(-1, 1); ctx.drawImage(spr.canvas, 0, 0); ctx.restore();
+}
+function drawScene(time) {
+  const tick = Math.max(0, Math.floor(time * 8));
+  sctx.drawImage(backdrop, 0, 0);
+  for (const s of SPARKLES) {
+    if (Math.sin(time * 2 + s.ph) > 0.55) { sctx.fillStyle = '#cfe8ef'; sctx.fillRect(s.x, s.y, s.len, 1); }
+  }
+  const fx = ((time * 4 + 150) % (W + 120)) - 60;
+  sctx.fillStyle = '#cfe8ef';
+  for (let k = 0; k < 14; k += 2) sctx.fillRect(Math.round(fx - 4 - k * 2), HORIZON + 17 + (k % 4 ? 0 : 1), 2, 1);
+  sctx.drawImage(FERRY.canvas, Math.round(fx), HORIZON + 9);
+  sctx.drawImage(ground, 0, 0);
+  const items = objects.filter(o => o.show(progress));
+  const crew = crewPlacement(progress, time).map(v => ({ ...v, key: v.X + v.Y, spr: frames(v.look, v.anim)[tick % ANIMS[v.anim].length], shadow: SH.piccola }));
+  const all = [...items, ...crew];
+  for (const o of all) if (o.shadow) { const [sx, sy] = toScreen(o.X, o.Y); drawSprite(sctx, o.shadow, sx, sy); }
+  all.sort((a, b) => a.key - b.key);
+  for (const o of all) { const [sx, sy] = toScreen(o.X, o.Y); drawSprite(sctx, o.spr, sx, sy, o.flip && o.anim && o.anim.startsWith('cammina') ? false : false); }
+  for (let g = 0; g < 2; g++) {
+    const gx = ((time * (9 + g * 3) + g * 210) % (W + 40)) - 20, gy = 18 + g * 14 + Math.sin(time + g) * 3;
+    sctx.drawImage(GULL[(tick + g) % 2].canvas, Math.round(gx), Math.round(gy));
+  }
+}
+
+/* ---------- Comandi ---------- */
+const slider = document.getElementById('progress');
+const stateLabel = document.getElementById('stateLabel');
+const buttons = [...document.querySelectorAll('[data-p]')];
+function labelFor(v) { return v <= 2 ? 'terreno abbandonato' : v >= 99 ? 'parco inaugurato' : `cantiere al ${v}%`; }
+function setProgress(v) {
+  slider.value = v; progress = v / 100; ground = renderGround(progress);
+  stateLabel.textContent = labelFor(+v);
+  buttons.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p === +v)));
+}
+let pending = null;
+slider.addEventListener('input', () => { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => setProgress(+slider.value)); });
+buttons.forEach(b => b.addEventListener('click', () => setProgress(+b.dataset.p)));
+setProgress(45);
+
+function fitStage() {
+  const wrap = document.getElementById('stageWrap');
+  const w = wrap.clientWidth;
+  const scale = w >= W ? Math.min(3, Math.floor(w / W)) : w / W;
+  scene.style.width = `${W * scale}px`; scene.style.height = `${H * scale}px`;
+}
+new ResizeObserver(fitStage).observe(document.getElementById('stageWrap'));
+fitStage();
+
+/* ---------- Schede: volontari ---------- */
+const ARCH = [
+  { name: 'Presidente', note: 'tesserino e occhiali', shirt: '#c0392b', skin: SKINS[1], hair: HAIRS[5], acc: ['occhiali', 'tesserino'] },
+  { name: 'Segretaria', note: 'cartellina', shirt: '#8e44ad', skin: SKINS[0], hair: HAIRS[2], acc: ['cartellina'] },
+  { name: 'Giardiniere', note: 'cappello di paglia', shirt: '#27ae60', skin: SKINS[2], hair: HAIRS[1], acc: ['cappello'] },
+  { name: 'Falegname', note: 'cassetta degli attrezzi', shirt: '#d35400', skin: SKINS[3], hair: HAIRS[0], acc: ['cassetta'] },
+  { name: 'Comunicatrice', note: 'berretto e telefono', shirt: '#2980b9', skin: SKINS[4], hair: HAIRS[0], acc: ['berretto', 'telefono'] },
+  { name: 'Coordinatore', note: 'gilet ad alta visibilità', shirt: '#e84393', skin: SKINS[1], hair: HAIRS[3], acc: ['gilet'] },
+];
+const living = [];
+function spriteCanvas(frameList, scale = 4, every = 1) {
+  const c = document.createElement('canvas');
+  const f0 = frameList[0].canvas;
+  c.width = f0.width * scale; c.height = f0.height * scale;
+  const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  living.push({ ctx, frameList, scale, every, c });
+  return c;
+}
+function fig(parent, canvases, title, note) {
+  const f = document.createElement('figure');
+  const pair = document.createElement('div'); pair.className = 'pair';
+  canvases.forEach(c => pair.appendChild(c));
+  const cap = document.createElement('figcaption');
+  cap.innerHTML = `${title}${note ? `<small>${note}</small>` : ''}`;
+  f.append(pair, cap); parent.appendChild(f);
+}
+const archEl = document.getElementById('archetypes');
+for (const a of ARCH) {
+  const city = { skin: a.skin, hair: a.hair, shirt: a.shirt, uniform: false, acc: a.acc };
+  const field = { ...city, uniform: true };
+  fig(archEl, [spriteCanvas(frames(city, 'attesa'), 3), spriteCanvas(frames(field, 'camminaB'), 3, 2)], a.name, `${a.note}<br>in città · sul campo`);
+}
+const animEl = document.getElementById('anims');
+const base = { skin: SKINS[1], hair: HAIRS[2], shirt: '#2e9e5b', uniform: true, acc: [] };
+for (const [anim, name, note, every] of [
+  ['attesa', 'Attesa', '', 1], ['camminaF', 'Camminata', 'verso chi guarda', 2], ['camminaB', 'Camminata', 'di schiena', 2],
+  ['scavare', 'Scavare', 'vangatura, bonifica', 1], ['portaF', 'Trasportare', 'sacchi dei rifiuti', 2], ['scatolaF', 'Trasportare', 'materiali', 2],
+]) fig(animEl, [spriteCanvas(frames(base, anim), 4, every)], name, note);
+const swapEl = document.getElementById('swaps');
+const appearanceNames = ['Chiara', 'Olivastra', 'Ambrata', 'Bruna', 'Scura'];
+const hairNames = ['neri', 'castano scuro', 'castani', 'rossi', 'biondi', 'grigi', 'bianchi'];
+[[0, 4], [1, 1], [2, 3], [3, 0], [4, 6], [1, 5]].forEach(([s, h]) => {
+  fig(swapEl, [spriteCanvas(frames({ skin: SKINS[s], hair: HAIRS[h], shirt: UNIFORM, uniform: true, acc: [] }, 'attesa'), 4)], appearanceNames[s], `capelli ${hairNames[h]}`);
+});
+
+/* ---------- Schede: superfici ---------- */
+const surfEl = document.getElementById('surfaces');
+for (const [type, name] of [
+  ['cemento', 'Cemento crepato'], ['terra', 'Terra battuta'], ['erbacce', 'Erbacce'], ['vangata', 'Terra vangata'],
+  ['prato', 'Prato'], ['sentiero', 'Sentiero'], ['aiuola', 'Aiuola'], ['passeggiata', 'Lungomare'], ['basolato', 'Basolato'],
+]) {
+  const b = makeBuf(64, 32);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 64; x++) {
+    const dx = x + 0.5 - 32, dy = y + 0.5;
+    const X = (dx + 2 * dy) / 2, Y = (2 * dy - dx) / 2;
+    if (X < 0 || Y < 0 || X >= 32 || Y >= 32) continue;
+    b.set(x, y, surfaceColor(type, X + 64, Y + 80));
+  }
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false; ctx.drawImage(b.flush(), 0, 0, 128, 64);
+  fig(surfEl, [c], name, '2×2 tile');
+}
+
+/* ---------- Palette ---------- */
+const palEl = document.getElementById('palette');
+for (const [k, name] of PAL_NAMES) {
+  const d = document.createElement('div'); d.className = 'sw';
+  d.innerHTML = `<i style="background:${PAL[k]}"></i><span>${name} <code>${PAL[k]}</code></span>`;
+  palEl.appendChild(d);
+}
+
+/* ---------- Ciclo ---------- */
+const t0 = performance.now();
+function loop(now) {
+  const time = reduce ? 0 : Math.max(0, (now - t0) / 1000);
+  drawScene(time);
+  const tick = Math.floor(time * 6);
+  for (const l of living) {
+    const f = l.frameList[Math.floor(tick / l.every) % l.frameList.length].canvas;
+    l.ctx.clearRect(0, 0, l.c.width, l.c.height);
+    l.ctx.drawImage(f, 0, 0, f.width * l.scale, f.height * l.scale);
+  }
+  if (!reduce) requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+if (errors.length) document.getElementById('err').textContent = [...new Set(errors)].join('\n');
+</script>
+</body>
+</html>
