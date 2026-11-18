@@ -29,7 +29,7 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
-Terza prova, griglia dei candidati (18/11), commit: COMMIT.
+Terza prova, griglia dei candidati (18/11), commit: 96fbd50.
 
 - [x] In fase di selezione volontari la griglia cambia in continuazione man mano che li seleziono. Non va bene, deve avere numero di colonne fisso. E nel mobile massimo due colonne se no esce fuori dallo schermo e diventa inutilizzabile.
 
