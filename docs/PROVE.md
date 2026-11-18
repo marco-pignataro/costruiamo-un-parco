@@ -29,7 +29,7 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
-Progettazione e sopralluogo (18/11), commit: COMMIT.
+Progettazione e sopralluogo (18/11), commit: c938533.
 
 - [x] In fase sopralluogo il tasto "Chiudi il sopralluogo" è ancora nell tab "Squadra". Non ha senso, va dentro Attività.
 - [x] In fase di progettazione, metti una barra scorrevole di card come quelle dei volontari, ma in queste mettici gli arredi, solo con nome e prezzo, e gli altri dettagli si vedono in modale cliccando sulla card selezionata.
