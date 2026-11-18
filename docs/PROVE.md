@@ -29,7 +29,7 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
-Seconda prova (18/11), commit: COMMIT_PROVA.
+Seconda prova (18/11), commit: 0832479.
 
 - [x] Le modali nel mobile riportano troppo spesso lo scroll in alto, è fastidioso.
 - [x] Ora che c'è la timeline del tempo, i tasti "Chiudi weekend/chiudi e vai al weekend" e "Taglia il nastro", e la percentuale di progetto realizzato vanno spostati nella timeline delle settimane.
