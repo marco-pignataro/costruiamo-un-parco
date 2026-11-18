@@ -29,7 +29,7 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
-Terza prova (18/11), commit: COMMIT.
+Terza prova (18/11), commit: 1a7f3cd.
 
 - [x] nel mobile la riga con le card dei volontari non scorre, e l'HUD superiore esce dallo schermo, o forse l'HUD in generale, non so, verifica tu.
 - [x] Nel mobile, nella barra con le card dei volontari, rimuovi la card "speciale" col volontario selezionato, distinguiamo semplicemente la card del volontario selezionato con un bordo colorato.
