@@ -40,15 +40,16 @@ export interface HudActions {
   onChange: () => void;
   onNewGame: () => void;
   onExport: () => void;
-  /** Alterna visuale intera e ingrandimento. */
-  onZoom: () => void;
-  isZoomed: () => boolean;
+  /** Volontario scelto dalla barra della squadra: la scena lo seleziona anche sulla mappa. */
+  onSelectVolunteer: (volunteerId: string) => void;
   /** La HUD occupa questo spazio sui bordi: la scena lascia libera la zona in mezzo. */
   onInsets: (insets: Insets) => void;
 }
 
-type Region = 'top' | 'left' | 'right' | 'bottom';
+type Region = 'top' | 'left' | 'right' | 'bottom' | 'center';
 type Side = 'left' | 'right';
+/** Su mobile: pannello aperto a tutto schermo dalla barra delle schede. */
+type Sheet = Side | 'timeline' | 'inventory';
 
 /** Contenuto della HUD per una fase: in fondo alla colonna sinistra cassa e pulsante della fase. */
 interface Parts {
@@ -56,12 +57,19 @@ interface Parts {
   left?: string;
   leftFoot?: string;
   right?: string;
+  /** Finestra al centro dello schermo, dentro la HUD (in Fase 2 i candidati). */
+  center?: string;
+  /** Inventario (cassa, magazzino, ordini in arrivo): in fondo a sinistra su desktop, scheda a sé su mobile. */
+  inventory?: string;
 }
+
+/** Fasi con la barra della squadra in basso. */
+const CREW_STAGES: Stage[] = ['squadra', 'sopralluogo', 'cantiere'];
 
 /** Nome delle due colonne in ogni fase: titolo della linguetta su desktop e della scheda su mobile. */
 const COLUMN_NAMES: Record<Stage, Partial<Record<Side, string>>> = {
   terreno: { right: 'Terreni' },
-  squadra: { left: 'Squadra', right: 'Candidati' },
+  squadra: {},
   sopralluogo: { left: 'Squadra', right: 'Attività' },
   progettazione: { left: 'Arredi', right: 'Preventivo' },
   cantiere: { left: 'Squadra', right: 'Attività' },
@@ -74,10 +82,10 @@ const svg = (d: string) => `<svg viewBox="0 0 20 20" width="20" height="20" fill
 const ICONS: Record<string, string> = {
   Menu: svg('<path d="M3 5h14M3 10h14M3 15h14"/>'),
   Squadra: svg('<circle cx="7" cy="7" r="2.5"/><circle cx="14" cy="8" r="2"/><path d="M2.5 16c.5-3 2.3-4.5 4.5-4.5s4 1.5 4.5 4.5M11.5 13c.7-1.2 1.6-1.8 2.5-1.8 1.7 0 3 1.3 3.5 3.8"/>'),
-  Candidati: svg('<circle cx="8" cy="7" r="2.8"/><path d="M2.5 16.5c.6-3.2 2.7-5 5.5-5s4.9 1.8 5.5 5M15.5 5v5M13 7.5h5"/>'),
   Attività: svg('<path d="M8 5h9M8 10h9M8 15h9"/><path d="m2.5 5 1.2 1.2L6 4M2.5 10l1.2 1.2L6 9M2.5 15l1.2 1.2L6 14"/>'),
   Arredi: svg('<path d="M3 10h14M4 13.5h12M5 10v6M15 10v6M4 6.5h12v3.5H4z"/>'),
   Preventivo: svg('<rect x="4" y="2.5" width="12" height="15" rx="1.5"/><path d="M7 6.5h6M7 10h6M7 13.5h3"/>'),
+  Inventario: svg('<path d="M3 6.5 10 3l7 3.5v7L10 17l-7-3.5z"/><path d="m3 6.5 7 3.5 7-3.5M10 10v7"/>'),
   Settimane: svg('<rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3M6.5 11.5h2M11.5 11.5h2M6.5 14.5h2"/>'),
   Terreni: svg('<path d="M10 17.5s5.5-5.2 5.5-9.3A5.5 5.5 0 0 0 4.5 8.2c0 4.1 5.5 9.3 5.5 9.3z"/><circle cx="10" cy="8.2" r="2"/>'),
 };
@@ -89,8 +97,8 @@ const isMobile = () => globalThis.matchMedia?.(MOBILE).matches ?? false;
 /**
  * HUD attorno alla scena: ogni blocco è una scheda con un posto fisso su un
  * bordo dello schermo (in alto stato e comandi della giornata, a sinistra la
- * squadra, a destra le attività e i registri, in basso i compiti in corso e
- * lo zoom). Le attività si avviano da una modale al centro.
+ * squadra, a destra le attività e i registri, in basso la barra della squadra,
+ * in alto a destra il menu). Le attività si avviano da una modale al centro.
  */
 export class Hud {
   private regions: Record<Region, HTMLElement>;
@@ -106,7 +114,7 @@ export class Hud {
   private profile: string | null = null;
   private menuOpen = false;
   /** Su mobile: pannello aperto a tutto schermo. */
-  private sheet: Side | 'timeline' | null = null;
+  private sheet: Sheet | null = null;
   /** Su desktop: timeline aperta su tutte le settimane (chiusa mostra la precedente, quella in corso e la successiva). */
   private timelineOpen = false;
   /** Al prossimo disegno la timeline va centrata sulla settimana in corso (appena aperta). */
@@ -114,7 +122,10 @@ export class Hud {
   /** In alto: la scheda del titolo e, accanto, la timeline (aggiornate a parte, così la timeline non perde lo scorrimento). */
   private brandEl!: HTMLElement;
   private timelineEl!: HTMLElement;
+  private menuEl!: HTMLElement;
   private wasMobile = isMobile();
+  /** Volontario inquadrato nel riquadro grande in basso a sinistra (di base il presidente). */
+  private selected: string | null = null;
 
   constructor(
     root: HTMLElement,
@@ -131,12 +142,20 @@ export class Hud {
       root.append(el);
       return el;
     };
-    this.regions = { top: make('header', 'hud-top'), left: make('aside', 'hud-left'), right: make('aside', 'hud-right'), bottom: make('footer', 'hud-bottom') };
+    this.regions = {
+      top: make('header', 'hud-top'),
+      left: make('aside', 'hud-left'),
+      right: make('aside', 'hud-right'),
+      center: make('section', 'hud-center'),
+      bottom: make('footer', 'hud-bottom'),
+    };
     this.brandEl = document.createElement('div');
     this.brandEl.className = 'top-brand';
     this.timelineEl = document.createElement('div');
     this.timelineEl.className = 'top-timeline';
-    this.regions.top.append(this.brandEl, this.timelineEl);
+    this.menuEl = document.createElement('div');
+    this.menuEl.className = 'top-menu';
+    this.regions.top.append(this.brandEl, this.timelineEl, this.menuEl);
     this.toast = document.createElement('div');
     this.toast.id = 'hud-toast';
     root.append(this.toast);
@@ -163,9 +182,6 @@ export class Hud {
         else if (this.sheet) this.sheet = null;
         else if (this.timelineOpen) this.timelineOpen = false;
         else return;
-        this.render();
-      } else if ((e.key === 'z' || e.key === 'Z') && !(e.target instanceof HTMLInputElement) && !e.ctrlKey && !e.metaKey) {
-        this.actions.onZoom();
         this.render();
       }
     });
@@ -201,6 +217,13 @@ export class Hud {
     this.render();
   }
 
+  /** Un volontario scelto sulla mappa finisce nel riquadro grande della barra della squadra. */
+  selectVolunteer(volunteerId: string): void {
+    if (!this.sim.state.volunteers.some((v) => v.id === volunteerId) || this.selected === volunteerId) return;
+    this.selected = volunteerId;
+    this.render();
+  }
+
   // ---------- disegno ----------
 
   render(): void {
@@ -221,10 +244,12 @@ export class Hud {
 
     const mobile = isMobile();
     const names = COLUMN_NAMES[stage];
-    const html: Record<Region, string> = { top: parts.top ?? '', left: '', right: '', bottom: '' };
+    const html: Record<Region, string> = { top: parts.top ?? '', left: '', right: '', bottom: '', center: parts.center ?? '' };
     for (const side of ['left', 'right'] as Side[]) {
       const body = parts[side] ?? '';
-      const foot = side === 'left' && parts.leftFoot ? `<div class="col-foot">${parts.leftFoot}</div>` : '';
+      // Su desktop l'inventario sta in fondo alla colonna sinistra; su mobile ha la sua scheda.
+      const footHtml = side === 'left' ? (parts.leftFoot ?? '') + (!mobile && parts.inventory ? parts.inventory : '') : '';
+      const foot = footHtml ? `<div class="col-foot">${footHtml}</div>` : '';
       if (!body && !foot) {
         if (this.sheet === side) this.sheet = null;
         continue;
@@ -240,13 +265,22 @@ export class Hud {
       this.regions[side].classList.toggle('collapsed', collapsed);
     }
     const timeline = buildTimeline(sim);
-    if (this.sheet === 'timeline' ? !timeline : !html[this.sheet ?? 'top']) this.sheet = null;
+    const inventory = mobile ? parts.inventory ?? '' : '';
+    if (this.sheet === 'timeline' ? !timeline : this.sheet === 'inventory' ? !inventory : !html[this.sheet ?? 'top']) this.sheet = null;
     if (!timeline) this.timelineOpen = false;
-    html.bottom = this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline);
-    this.regions.top.parentElement!.dataset.sheet = mobile && this.sheet ? this.sheet : '';
+    const tabs = !!html.left || !!html.right || !!timeline || !!inventory;
+    const invSheet =
+      inventory && this.sheet === 'inventory'
+        ? `<section class="inv-sheet"><div class="sheet-head card"><strong>Inventario</strong><button data-sheet="inventory" title="Chiudi">✕</button></div>${inventory}</section>`
+        : '';
+    html.bottom = this.crewBar() + (tabs ? this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline, !!inventory) : '') + invSheet;
+    const root = this.regions.top.parentElement!;
+    root.dataset.sheet = mobile && this.sheet ? this.sheet : '';
+    root.dataset.tabs = tabs ? '1' : '';
     setHTML(this.brandEl, html.top);
     setHTML(this.timelineEl, timeline ? this.timelineHtml(timeline, mobile) : '');
-    for (const r of ['left', 'right', 'bottom'] as Region[]) setHTML(this.regions[r], html[r]);
+    setHTML(this.menuEl, this.menu());
+    for (const r of ['left', 'right', 'center', 'bottom'] as Region[]) setHTML(this.regions[r], html[r]);
     if (this.centerTimeline) {
       this.centerTimeline = false;
       this.scrollTimelineToNow();
@@ -279,7 +313,11 @@ export class Hud {
     // Su mobile i pannelli si aprono sopra la mappa e non le tolgono spazio; in basso c'è la barra delle schede.
     const left = mobile ? null : r(this.regions.left);
     const right = mobile ? null : r(this.regions.right);
-    const bottom = mobile ? this.regions.bottom.querySelector<HTMLElement>('.tabbar')?.getBoundingClientRect() ?? null : r(this.regions.bottom);
+    // In basso la barra della squadra e, su mobile, la barra delle schede: conta la più alta delle due.
+    const lows = [this.regions.bottom.querySelector<HTMLElement>('.crew-bar'), mobile ? this.regions.bottom.querySelector<HTMLElement>('.tabbar') : null]
+      .filter((el): el is HTMLElement => !!el)
+      .map((el) => el.getBoundingClientRect().top);
+    const bottom = lows.length ? { top: Math.min(...lows) } : null;
     const insets: Insets = {
       top: top ? Math.round(top.bottom) : 0,
       left: left ? Math.round(left.right) : 0,
@@ -296,18 +334,22 @@ export class Hud {
     return `<section class="card brand"><h1>${esc(GAME_TITLE)}</h1><p>${subtitle}</p>${extra}</section>`;
   }
 
-  /**
-   * In basso: menu della partita a sinistra e zoom a destra. Su mobile la
-   * stessa barra diventa una fila di schede (menu e le due colonne) e lo zoom
-   * va in alto a destra.
-   */
-  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>, hasTimeline: boolean): string {
+  /** Su mobile, in basso, la barra delle schede: le due colonne e la timeline. */
+  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>, hasTimeline: boolean, hasInventory: boolean): string {
     const tab = (side: Side) => {
       const label = names[side] ?? '';
       return `<button class="tab-btn side ${this.sheet === side ? 'on' : ''}" data-sheet="${side}">${ICONS[label] ?? ''}<span>${esc(label)}</span></button>`;
     };
-    const zoomed = this.actions.isZoomed();
-    const menu = this.menuOpen
+    return `<nav class="tabbar">
+        ${has.left ? tab('left') : ''}${has.right ? tab('right') : ''}
+        ${hasInventory ? `<button class="tab-btn side ${this.sheet === 'inventory' ? 'on' : ''}" data-sheet="inventory">${ICONS.Inventario}<span>Inventario</span></button>` : ''}
+        ${hasTimeline ? `<button class="tab-btn side ${this.sheet === 'timeline' ? 'on' : ''}" data-sheet="timeline">${ICONS.Settimane}<span>Settimane</span></button>` : ''}
+      </nav>`;
+  }
+
+  /** In alto a destra, su tutti gli schermi: il pulsante del menu della partita e il menu aperto. */
+  private menu(): string {
+    const sheet = this.menuOpen
       ? `<section class="card menu-sheet">
           <div class="sheet-head"><strong>Menu</strong><button data-act="menu" title="Chiudi">✕</button></div>
           <div class="menu-items">
@@ -320,14 +362,49 @@ export class Hud {
           </div>
         </section>`
       : '';
-    return `<nav class="tabbar">
-        <button class="tab-btn menu-btn card ${this.menuOpen ? 'on' : ''}" data-act="menu">${ICONS.Menu}<span>Menu</span></button>
-        ${has.left ? tab('left') : ''}${has.right ? tab('right') : ''}
-        ${hasTimeline ? `<button class="tab-btn side ${this.sheet === 'timeline' ? 'on' : ''}" data-sheet="timeline">${ICONS.Settimane}<span>Settimane</span></button>` : ''}
-      </nav>
-      <button data-act="zoom" class="card zoom" title="Alterna visuale intera e ingrandimento (tasto Z)" aria-label="${zoomed ? 'Visuale intera' : 'Ingrandisci'}">
-        <span class="long">${zoomed ? '− Visuale intera' : '+ Ingrandisci'}</span><span class="short">${zoomed ? '−' : '+'}</span></button>
-      ${menu}`;
+    return `<button class="menu-btn card ${this.menuOpen ? 'on' : ''}" data-act="menu" title="Menu">${ICONS.Menu}<span>Menu</span></button>${sheet}`;
+  }
+
+  // ---------- barra della squadra ----------
+
+  /** "Foto" del volontario: lo sprite su un fondo di cielo e prato. */
+  private photo(v: Volunteer, scale: number): string {
+    return `<span class="photo"><img alt="" src="${volunteerPortrait(volunteerLook(this.sim, v, inUniform(this.sim)), scale)}"></span>`;
+  }
+
+  /**
+   * In basso: a sinistra il riquadro grande con il volontario scelto (nome,
+   * mansione, cosa sta facendo), accanto un riquadro piccolo per ognuno.
+   * Su desktop i riquadri che non ci stanno vanno in una fila sopra; su
+   * telefono restano in una riga che si scorre col dito.
+   */
+  private crewBar(): string {
+    const sim = this.sim;
+    const s = sim.state;
+    if (!CREW_STAGES.includes(s.stage) || !s.volunteers.length) return '';
+    if (!s.volunteers.some((v) => v.id === this.selected)) this.selected = (s.volunteers.find((v) => v.archetypeId === 'presidente') ?? s.volunteers[0]).id;
+    const doing = new Map<string, string>();
+    for (const a of s.active) for (const id of a.volunteerIds) doing.set(id, this.activeName(a));
+    const v = sim.volunteer(this.selected!);
+    const a = sim.archetype(v.archetypeId);
+    const what = doing.get(v.id);
+    const status =
+      s.stage === 'squadra'
+        ? `<small>${esc(v.skills.join(', ') || 'braccia')} · ${v.weeklyHours} h/sett</small>`
+        : `<small class="doing">${what ? `Al lavoro: ${esc(what)}` : 'Libero'}</small><small>${formatHours(sim.hoursLeft(v))} libere su ${v.weeklyHours} h</small>`;
+    const focus = `<section class="card crew-focus ${v.busy ? 'busy' : ''}" data-profile="${v.id}" title="Apri la scheda">
+        ${this.photo(v, 7)}
+        <div class="crew-info"><strong>${esc(v.name)}</strong><small class="role">${esc(a.name)}</small>${status}</div>
+      </section>`;
+    const members = s.volunteers
+      .map((m) => {
+        const busy = doing.has(m.id);
+        const dismiss = sim.canDismiss(m.id) ? `<button class="crew-x" data-dismiss="${m.id}" title="Congeda (restituisce i PV)" aria-label="Congeda ${esc(m.name)}">✕</button>` : '';
+        return `<li class="card crew-card ${m.id === this.selected ? 'on' : ''} ${busy ? 'busy' : ''}" data-pick="${m.id}" title="${m.id === this.selected ? 'Apri la scheda' : 'Seleziona'}">
+          ${this.photo(m, 4)}<strong>${esc(m.name)}</strong><small>${esc(sim.archetype(m.archetypeId).name)}</small>${busy ? '<i class="crew-dot" title="Al lavoro"></i>' : ''}${dismiss}</li>`;
+      })
+      .join('');
+    return `<div class="crew-bar">${focus}<ul class="crew-list">${members}</ul></div>`;
   }
 
   // ---------- timeline delle settimane ----------
@@ -351,13 +428,14 @@ export class Hud {
       ? 'Cambia con il progetto: si fissa quando lo confermi'
       : t.over
         ? `Progetto realizzato ${pct(t.progress)}`
-        : `${left === 1 ? 'Ultima settimana prima della consegna' : `Restano ${left} settimane, questa compresa`} · progetto ${pct(t.progress)} (serve ${pct(t.minProgress)})`;
+        : left === 1 ? 'Ultima settimana prima della consegna' : `Restano ${left} settimane, questa compresa`;
     const cells = (list: WeekCell[]) => list.map((w) => this.weekCell(w, t)).join('');
+    const actions = this.dayActions(t);
     if (mobile) {
       if (this.sheet !== 'timeline') return '';
       return `<section class="tl-sheet">
           <div class="sheet-head card"><strong>Settimane</strong><button data-sheet="timeline" title="Chiudi">✕</button></div>
-          <div class="card tl-info"><strong>${esc(title)}</strong><br><small>${esc(sub)}</small><br><small>In ogni settimana: barra lunga i giorni feriali, corta il weekend.</small></div>
+          <div class="card tl-info"><strong>${esc(title)}</strong><br><small>${esc(sub)}</small><br><small>In ogni settimana: barra lunga i giorni feriali, corta il weekend.</small>${actions}</div>
           <ol class="tl-weeks vertical">${cells(t.weeks)}</ol>
         </section>`;
     }
@@ -371,7 +449,26 @@ export class Hud {
     return `<section class="card timeline ${this.timelineOpen ? 'open' : ''}" ${this.timelineOpen ? '' : 'data-act="timeline" title="Mostra tutte le settimane"'}>
         <div class="tl-head" ${this.timelineOpen ? 'data-act="timeline" title="Chiudi la timeline"' : ''}><span><strong>${esc(title)}</strong> <small>${esc(sub)}</small></span>${more}</div>
         <ol class="tl-weeks">${!this.timelineOpen && a > 1 ? '<li class="tl-gap">…</li>' : ''}${cells(shown)}${!this.timelineOpen && b < t.total ? '<li class="tl-gap">…</li>' : ''}</ol>
+        ${actions}
       </section>`;
+  }
+
+  /**
+   * In cantiere, sotto le settimane: il progetto realizzato e i comandi della
+   * giornata (chiudere la parte della settimana, tagliare il nastro).
+   */
+  private dayActions(t: Timeline): string {
+    const sim = this.sim;
+    if (sim.state.stage !== 'cantiere' || t.over) return '';
+    const pct = Math.round(t.progress * 100);
+    const min = Math.round(t.minProgress * 100);
+    const label = sim.state.phase === 'burocratica' ? 'Chiudi e vai al weekend' : 'Chiudi il weekend';
+    return `<div class="tl-actions">
+        <div class="tl-progress" title="Per inaugurare serve almeno il ${min}%"><small>Progetto realizzato <strong>${pct}%</strong> · serve il ${min}%</small>
+          <div class="bar"><span style="width:${pct}%"></span><i style="left:${min}%"></i></div></div>
+        <button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I giorni rimanenti passano comunque e le attese avanzano">${label}</button>
+        ${this.inaugurateButton()}
+      </div>`;
   }
 
   private weekCell(w: WeekCell, t: Timeline): string {
@@ -442,15 +539,14 @@ export class Hud {
     const phaseName = surveying ? 'Sopralluogo (una giornata)' : s.phase === 'burocratica' ? 'Parte burocratica (infrasettimanale)' : 'Parte operativa (weekend)';
     const used = s.sessionUsedH;
     const limit = sim.sessionLimitH;
-    const closeLabel = surveying ? 'Chiudi il sopralluogo' : s.phase === 'burocratica' ? 'Chiudi e vai al weekend' : 'Chiudi il weekend';
-    const closeTitle = surveying ? 'I punti non analizzati restano un mistero' : 'I giorni rimanenti passano comunque e le attese avanzano';
 
     // In alto: titolo, settimana e parte della settimana, poi la barra della sessione.
     const session = `<div class="bar"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div>
       <small>${formatHours(used)} su ${limit} h${s.active.length ? '' : ' · ferma: nessun compito in corso'}</small>`;
     const top = this.brand(`${surveying ? `Fase 3 · ${esc(sim.siteName)}` : `Settimana ${s.week}`} · ${phaseName}`, session);
 
-    // A sinistra: la squadra, con ore e cosa sta facendo; in fondo cassa e chiusura della giornata.
+    // A sinistra: la squadra, con ore e cosa sta facendo; in fondo, nel sopralluogo, la chiusura della giornata
+    // (in cantiere i comandi della giornata stanno nella timeline e in fondo c'è l'inventario).
     const doing = new Map<string, string>();
     for (const a of s.active) for (const id of a.volunteerIds) doing.set(id, this.activeName(a));
     const vols = s.volunteers
@@ -463,11 +559,9 @@ export class Hud {
       })
       .join('');
     const left = `<section class="card"><h2>Squadra</h2><ul class="vols">${vols}</ul></section>`;
-    const leftFoot =
-      (surveying
-        ? ''
-        : `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Progetto realizzato <strong>${Math.round(sim.projectProgress * 100)}%</strong></p></section>`) +
-      `<section class="card day"><button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="${closeTitle}">${closeLabel}</button>${surveying ? '' : this.inaugurateButton()}</section>`;
+    const leftFoot = surveying
+      ? `<section class="card day"><button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I punti non analizzati restano un mistero">Chiudi il sopralluogo</button></section>`
+      : '';
 
     // A destra: prima i compiti in corso, poi cosa si può fare, poi i registri.
     const active = s.active
@@ -494,6 +588,7 @@ export class Hud {
     const todo = `<section class="card"><h2>${surveying ? 'Indizi notati' : 'Da fare'}</h2>
       <ul class="acts">${list || `<li><small>${empty}</small></li>`}</ul></section>`;
     let registers = '';
+    let inventory: string | undefined;
     if (surveying) {
       const done = sim.pois
         .filter((p) => ['in-analisi', 'analizzato'].includes(sim.poiState(p.id).status))
@@ -516,21 +611,27 @@ export class Hud {
         .join('');
       const inStock = Object.entries(s.stock).filter(([, q]) => q > 0);
       const incoming = s.orders.filter((o) => o.status !== 'consegnato');
-      const stock =
-        (inStock.length ? `<ul>${inStock.map(([id, q]) => `<li>${q} × ${esc(sim.materialName(id).toLowerCase())}</li>`).join('')}</ul>` : '<p><small>Vuoto.</small></p>') +
-        (incoming.length
-          ? `<ul class="orders">${incoming
-              .map((o) => {
-                const when = o.status === 'in-preparazione' ? 'ordine in preparazione' : `arriva il weekend della settimana ${o.arrivesWeek}`;
-                return `<li><small>${esc(sim.taskDef(o.taskId).name)}: ${when}</small></li>`;
-              })
-              .join('')}</ul>`
-          : '');
-      registers = `<section class="card"><h2>Registro delle pratiche</h2><ul class="pratiche">${pratiche || '<li><small>Nessuna pratica.</small></li>'}</ul></section>
-        <section class="card"><h2>Magazzino</h2>${stock}</section>`;
+      const mats = (list: { id: string; qty: number }[]) => list.map((m) => `${m.qty} × ${esc(sim.materialName(m.id).toLowerCase())}`).join(', ');
+      const stock = inStock.length
+        ? `<ul>${inStock.map(([id, q]) => `<li>${q} × ${esc(sim.materialName(id).toLowerCase())}</li>`).join('')}</ul>`
+        : '<p><small>Vuoto.</small></p>';
+      const arriving = incoming.length
+        ? `<ul class="orders">${incoming
+            .map((o) => {
+              const when = o.status === 'in-preparazione' ? 'ordine in compilazione' : `arriva il weekend della settimana ${o.arrivesWeek}`;
+              return `<li>${mats(o.materials)}<br><small>per ${esc(sim.taskDef(o.taskId).name)} · ${when}</small></li>`;
+            })
+            .join('')}</ul>`
+        : '<p><small>Nessun ordine in arrivo.</small></p>';
+      registers = `<section class="card"><h2>Registro delle pratiche</h2><ul class="pratiche">${pratiche || '<li><small>Nessuna pratica.</small></li>'}</ul></section>`;
+      inventory = `<section class="card inventory"><h2>Inventario</h2>
+          <p class="cash">In cassa <strong>${s.budget} €</strong></p>
+          <h3>In magazzino</h3>${stock}
+          <h3>In consegna</h3>${arriving}
+        </section>`;
     }
 
-    return { top, left, leftFoot, right: running + todo + registers };
+    return { top, left, leftFoot, right: running + todo + registers, inventory };
   }
 
   private inaugurateButton(): string {
@@ -682,7 +783,7 @@ export class Hud {
           </dl>
           <h3>Caratteristiche</h3>
           ${traits}
-          <div class="buttons"><button data-act="profile-close" class="confirm">Chiudi</button></div>
+          <div class="buttons">${sim.canDismiss(v.id) ? `<button data-dismiss="${v.id}">Congeda</button>` : ''}<button data-act="profile-close" class="confirm">${editable ? 'Fatto' : 'Chiudi'}</button></div>
         </div>
       </div>`;
   }
@@ -785,37 +886,45 @@ export class Hud {
     };
   }
 
-  /** Fase 2: la squadra a sinistra (un clic apre la scheda, dove si cambia l'aspetto), chi può unirsi a destra. */
+  /**
+   * Fase 2: al centro la finestra con chi può unirsi, in griglia (foto e dati
+   * sotto); chi entra in squadra compare nella barra in basso. Il presidente
+   * c'è già e non si congeda.
+   */
   private teamParts(): Parts {
     const sim = this.sim;
     const s = sim.state;
-    const row = (name: string, archetypeId: string, face: string, button: string, profile = '') => {
-      const a = sim.archetype(archetypeId);
-      const skills = a.skills.length ? a.skills.join(', ') : 'braccia';
-      return `<li class="cand" ${profile ? `data-profile="${profile}" title="Apri la scheda: nome e aspetto"` : ''}>${face}
-        <span><strong>${esc(name)}</strong> <small>${esc(a.name)}</small><br><small>${esc(skills)} · ${a.weeklyHours} h/sett · ${a.pvCost} PV</small></span>
-        ${button}</li>`;
-    };
-    const team = s.volunteers.map((v) => row(v.name, v.archetypeId, this.face(v), `<button data-dismiss="${v.id}">Congeda</button>`, v.id)).join('');
-    const pool = sim.candidates
+    const cards = sim.candidates
       .filter((m) => !s.volunteers.some((v) => v.id === m.id))
       .map((m) => {
+        const a = sim.archetype(m.archetypeId);
         const errors = sim.recruitErrors(m.id);
-        const face = `<img class="face" alt="" src="${volunteerPortrait(volunteerLook(sim, { ...m, skills: [], weeklyHours: 0, hoursUsed: 0, busy: false }, false), 2)}">`;
-        return row(m.name, m.archetypeId, face, `<button data-recruit="${m.id}" ${errors.length ? `disabled title="${esc(errors.join('; '))}"` : ''}>Recluta</button>`);
+        const skills = a.skills.length ? a.skills.join(', ') : 'braccia';
+        const look = volunteerLook(sim, { ...m, skills: [], weeklyHours: 0, hoursUsed: 0, busy: false }, false);
+        return `<li class="cand-card ${errors.length ? 'off' : ''}">
+            <span class="photo"><img alt="" src="${volunteerPortrait(look, 5)}"></span>
+            <strong>${esc(m.name)}</strong>
+            <small class="role">${esc(a.name)}</small>
+            <small>${esc(skills)}</small>
+            <small>${m.age} anni · ${a.weeklyHours} h/sett</small>
+            <button data-recruit="${m.id}" class="${errors.length ? '' : 'confirm'}" ${errors.length ? `disabled title="${esc(errors.join('; '))}"` : ''}>Recluta · ${a.pvCost} PV</button>
+          </li>`;
       })
       .join('');
     const problems = sim.teamProblems();
     return {
-      top: this.brand(
-        `Fase 2 · Componi la squadra · ${esc(sim.siteName)}`,
-        '<small>Gli specialisti costano di più ma lavorano meglio e guidano fino a 2 volontari senza la loro skill. Presidente e segretario/a: uno solo. Clicca un volontario per sceglierne nome e aspetto.</small>',
-      ),
-      left: `<section class="card"><h2>La squadra (${s.volunteers.length})</h2><ul class="cands">${team || '<li><small>Ancora nessuno.</small></li>'}</ul></section>`,
-      leftFoot: `<section class="card money"><p>Punti volontariato <strong>${s.pv} PV</strong></p></section>
-        <section class="card day">${problems.length ? `<ul class="errors">${problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
-          <button data-act="confirm-team" class="confirm" ${problems.length ? 'disabled' : ''}>Conferma la squadra</button></section>`,
-      right: `<section class="card"><h2>Chi può unirsi</h2><ul class="cands">${pool}</ul></section>`,
+      top: this.brand(`Fase 2 · Componi la squadra · ${esc(sim.siteName)}`),
+      center: `<section class="card recruit" aria-label="Chi può unirsi">
+          <header class="recruit-head">
+            <div><h2>Chi può unirsi</h2><small>Gli specialisti costano di più ma lavorano meglio e guidano fino a 2 volontari senza la loro skill. Segretario/a: uno solo. Clicca un volontario in basso per sceglierne nome e aspetto.</small></div>
+            <p class="pv">Punti volontariato<strong>${s.pv} PV</strong></p>
+          </header>
+          <ul class="cand-grid">${cards || '<li><small>Non c\'è più nessuno da reclutare.</small></li>'}</ul>
+          <footer class="recruit-foot">
+            ${problems.length ? `<ul class="errors">${problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : `<small>In squadra: ${s.volunteers.length}</small>`}
+            <button data-act="confirm-team" class="confirm" ${problems.length ? 'disabled' : ''}>Conferma la squadra</button>
+          </footer>
+        </section>`,
     };
   }
 
@@ -1014,7 +1123,7 @@ export class Hud {
     }
     const sheetBtn = target.closest<HTMLButtonElement>('button[data-sheet]');
     if (sheetBtn) {
-      const side = sheetBtn.dataset.sheet as Side | 'timeline';
+      const side = sheetBtn.dataset.sheet as Sheet;
       this.sheet = this.sheet === side ? null : side;
       this.centerTimeline = this.sheet === 'timeline';
       this.menuOpen = false;
@@ -1024,6 +1133,18 @@ export class Hud {
     const swatch = target.closest<HTMLButtonElement>('button[data-skin], button[data-hair]');
     if (swatch && this.profile) {
       this.customize(this.profile, swatch.dataset.skin ? { skin: swatch.dataset.skin } : { hair: swatch.dataset.hair });
+      return;
+    }
+    // Barra della squadra: un clic seleziona (anche sulla mappa), un secondo clic apre la scheda.
+    const member = target.closest<HTMLElement>('[data-pick]');
+    if (member && !target.closest('button')) {
+      const id = member.dataset.pick!;
+      if (this.selected === id) this.openProfile(id);
+      else {
+        this.selected = id;
+        this.actions.onSelectVolunteer(id);
+        this.render();
+      }
       return;
     }
     // Riga di un volontario: apre la sua scheda (ma non se si clicca un suo pulsante).
@@ -1045,7 +1166,10 @@ export class Hud {
       try {
         if (pick.dataset.site) this.sim.chooseSite(pick.dataset.site);
         else if (pick.dataset.recruit) this.sim.recruit(pick.dataset.recruit);
-        else if (pick.dataset.dismiss) this.sim.dismiss(pick.dataset.dismiss);
+        else if (pick.dataset.dismiss) {
+          this.sim.dismiss(pick.dataset.dismiss);
+          if (this.profile === pick.dataset.dismiss) this.profile = null;
+        }
         this.message = '';
       } catch (err) {
         this.message = (err as Error).message;
@@ -1069,7 +1193,7 @@ export class Hud {
       return;
     }
     // La timeline (scheda chiusa o intestazione di quella aperta) si apre e si chiude con un clic.
-    if (target.closest('[data-act="timeline"]') && !target.closest('button')) {
+    if (target.closest('[data-act="timeline"]') && !target.closest('button, .tl-actions')) {
       this.timelineOpen = !this.timelineOpen;
       this.centerTimeline = this.timelineOpen;
       this.render();
@@ -1109,10 +1233,6 @@ export class Hud {
           this.closeActivity();
           this.render();
           return;
-        case 'zoom':
-          this.actions.onZoom();
-          this.render();
-          return;
         case 'menu':
           this.menuOpen = !this.menuOpen;
           this.sheet = null;
@@ -1145,6 +1265,9 @@ export class Hud {
           break;
         case 'confirm-site':
           this.sim.confirmSite();
+          // Si comincia dal presidente, già in squadra: nome e aspetto, poi gli altri.
+          this.selected = this.sim.presidentCandidate.id;
+          this.profile = this.selected;
           break;
         case 'confirm-team':
           this.sim.confirmTeam();
@@ -1188,12 +1311,37 @@ export class Hud {
   }
 }
 
-/** Aggiorna un elemento solo se il contenuto cambia: niente sfarfallii, e lo scorrimento resta dov'è. */
+/**
+ * Aggiorna un elemento solo se il contenuto cambia: niente sfarfallii. Quando
+ * cambia, chi scorreva (la modale su telefono, una colonna, la timeline) resta
+ * dov'era: le posizioni si ritrovano seguendo lo stesso percorso nell'albero.
+ */
 const shown = new WeakMap<HTMLElement, string>();
 function setHTML(el: HTMLElement, html: string) {
   if (shown.get(el) === html) return;
   shown.set(el, html);
+  const kept = scrolled(el);
   el.innerHTML = html;
+  for (const { path, top, left } of kept) {
+    const node = path.reduce<Element | undefined>((n, i) => n?.children[i], el);
+    if (!(node instanceof HTMLElement)) continue;
+    node.scrollTop = top;
+    node.scrollLeft = left;
+  }
+}
+
+/** Elementi scorsi dentro `root` (radice esclusa), con il percorso per indici dei figli. */
+function scrolled(root: Element): { path: number[]; top: number; left: number }[] {
+  const out: { path: number[]; top: number; left: number }[] = [];
+  const walk = (node: Element, path: number[]) => {
+    [...node.children].forEach((child, i) => {
+      const p = [...path, i];
+      if (child.scrollTop || child.scrollLeft) out.push({ path: p, top: child.scrollTop, left: child.scrollLeft });
+      walk(child, p);
+    });
+  };
+  walk(root, []);
+  return out;
 }
 
 function shuffle<T>(a: T[]): T[] {

@@ -55,47 +55,66 @@ describe('Fase 1: scelta del terreno', () => {
 });
 
 describe('Fase 2: squadra con i PV', () => {
+  it('il presidente entra in squadra da solo, con i suoi PV, e non si congeda', () => {
+    const fresh0 = fresh();
+    const pv = fresh0.state.pv;
+    fresh0.confirmSite();
+    expect(fresh0.state.volunteers.map((v) => v.archetypeId)).toEqual(['presidente']);
+    expect(fresh0.state.pv).toBe(pv - 6);
+    const id = fresh0.state.volunteers[0].id;
+    expect(fresh0.canDismiss(id)).toBe(false);
+    expect(() => fresh0.dismiss(id)).toThrow('resta in squadra');
+    expect(fresh0.recruitErrors(id).join(' ')).toMatch(/già in squadra/);
+  });
+
+  it('tra i candidati c\'è un solo presidente', () => {
+    expect(c.candidates.filter((m) => m.archetypeId === 'presidente')).toHaveLength(1);
+  });
+
   it('reclutare costa i PV dell’archetipo; congedare li restituisce', () => {
     const sim = squad();
     const pv = sim.state.pv;
     sim.recruit('v3'); // falegname, 3 PV
     expect(sim.state.pv).toBe(pv - 3);
-    expect(sim.state.volunteers.map((v) => v.id)).toEqual(['v3']);
-    expect(sim.state.volunteers[0]).toMatchObject({ skills: ['legno'], weeklyHours: 10, busy: false });
+    expect(sim.state.volunteers.map((v) => v.id)).toEqual(['v1', 'v3']);
+    expect(sim.volunteer('v3')).toMatchObject({ skills: ['legno'], weeklyHours: 10, busy: false });
+    expect(sim.canDismiss('v3')).toBe(true);
     sim.dismiss('v3');
     expect(sim.state.pv).toBe(pv);
-    expect(sim.state.volunteers).toEqual([]);
+    expect(sim.state.volunteers.map((v) => v.id)).toEqual(['v1']);
   });
 
   it('senza PV sufficienti non si recluta', () => {
     const sim = squad();
-    sim.state.pv = 5;
-    expect(sim.recruitErrors('v1')).toEqual(['Servono 6 PV, ne restano 5']); // presidente
+    sim.state.pv = 4;
+    expect(sim.recruitErrors('v2')).toEqual(['Servono 5 PV, ne restano 4']); // segretaria
   });
 
-  it('presidente e segretario/a: al massimo uno', () => {
+  it('segretario/a: al massimo uno', () => {
     const sim = squad();
     sim.state.pv = 99;
-    sim.recruit('v1');
-    expect(sim.recruitErrors('v16').join(' ')).toMatch(/già un presidente/);
-    expect(sim.recruitErrors('v1').join(' ')).toMatch(/già in squadra/);
+    sim.recruit('v2');
+    expect(sim.recruitErrors('v2').join(' ')).toMatch(/già in squadra/);
+    const other = { ...c.candidates.find((m) => m.id === 'v2')!, id: 'altra' };
+    const sim2 = new Simulation(sim.state, { ...c, candidates: [...c.candidates, other] });
+    expect(sim2.recruitErrors('altra').join(' ')).toMatch(/già un/);
   });
 
   it(`serve una squadra di almeno ${MIN_TEAM} volontari per andare avanti`, () => {
     const sim = squad();
     sim.recruit('v5');
-    sim.recruit('v6');
     expect(sim.teamProblems()).toHaveLength(1);
     expect(() => sim.confirmTeam()).toThrow('almeno');
     sim.recruit('v15');
     sim.confirmTeam();
     expect(sim.state.stage).toBe('sopralluogo');
     expect(() => sim.recruit('v8')).toThrow('Fase 2');
+    expect(sim.canDismiss('v5')).toBe(false);
   });
 
   it('con i PV del terreno sul torrente ci sta la squadra storica dei test', () => {
     const sim = squad();
-    for (const id of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7']) sim.recruit(id);
+    for (const id of ['v2', 'v3', 'v4', 'v5', 'v6', 'v7']) sim.recruit(id);
     expect(sim.state.pv).toBe(0);
   });
 });
@@ -126,7 +145,7 @@ describe('Fase 2: aspetto dei volontari', () => {
 
   it('dopo la conferma della squadra l\'aspetto non cambia più', () => {
     const sim = squad();
-    for (const id of ['v1', 'v5', 'v6']) sim.recruit(id);
+    for (const id of ['v5', 'v6']) sim.recruit(id);
     sim.confirmTeam();
     expect(() => sim.customizeVolunteer('v5', { hair: 'rosso' })).toThrow('Fase 2');
   });

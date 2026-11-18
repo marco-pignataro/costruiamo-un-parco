@@ -11,7 +11,7 @@ export function surveyGame(content: Content = defaultContent, now = T0): Simulat
   const sim = Simulation.newGame(content, now);
   sim.confirmSite();
   sim.state.pv = 99; // i test sulla squadra stanno in team.test.ts
-  for (const id of TEST_TEAM) sim.recruit(id);
+  for (const id of TEST_TEAM) if (!sim.state.volunteers.some((v) => v.id === id)) sim.recruit(id); // il presidente c'è già
   sim.confirmTeam();
   return sim;
 }

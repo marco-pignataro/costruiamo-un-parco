@@ -38,8 +38,10 @@ async function boot() {
       a.download = 'costruiamo-un-parco-salvataggio.json';
       a.click();
     },
-    onZoom: () => view.camera?.toggleZoom(),
-    isZoomed: () => view.camera?.isZoomed ?? false,
+    onSelectVolunteer: (id) => {
+      const scene = current ? game.scene.getScene(current) : null;
+      if (scene instanceof ParkScene || scene instanceof CityScene) scene.selectVolunteer(id);
+    },
     onInsets: (insets) => {
       view.insets = insets;
       view.camera?.setInsets(insets);
@@ -56,6 +58,7 @@ async function boot() {
     },
     onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => hud.openActivity(kind, id, volunteerIds),
     onOpenProfile: (volunteerId: string) => hud.openProfile(volunteerId),
+    onSelectVolunteer: (volunteerId: string) => hud.selectVolunteer(volunteerId),
   };
   // Parco o città, secondo la fase: il cambio avviene da solo, con una dissolvenza.
   let current: 'city' | 'park' | null = null;
@@ -66,8 +69,10 @@ async function boot() {
     pixelArt: true,
     backgroundColor: '#1b1b1b',
     title: GAME_TITLE,
-    // La tela riempie il riquadro di gioco; la scena sceglie lo zoom (visuale intera o ingrandimento).
+    // La tela riempie il riquadro di gioco; la scena sceglie lo zoom (libero, dalla visuale intera in su).
     scale: { mode: Phaser.Scale.RESIZE },
+    // Due dita sul telefono per lo zoom a pizzico.
+    input: { activePointers: 2 },
     scene: [],
     callbacks: {
       postBoot: (g) => {

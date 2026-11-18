@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ISO, areaBounds, depthOf, footprintCenter, tileCenter, worldToTile, zoomLevels } from '../src/game/iso';
+import { ISO, areaBounds, depthOf, footprintCenter, tileCenter, worldToTile, zoomRange, clampZoom, scrollToKeep } from '../src/game/iso';
 
 describe('geometria isometrica', () => {
   it('ogni tile ha il centro dove la si ritrova con il clic', () => {
@@ -44,10 +44,25 @@ describe('geometria isometrica', () => {
     expect(depthOf(front.y)).toBeGreaterThan(depthOf(back.y));
   });
 
-  it("due soli livelli di zoom: l'intero (intero sopra 1) e il doppio", () => {
-    expect(zoomLevels(1000, 700, 420, 260)).toEqual({ full: 2, close: 4 });
-    expect(zoomLevels(300, 200, 420, 260).full).toBeCloseTo(300 / 420);
-    expect(zoomLevels(300, 200, 420, 260).close).toBe(2);
+  it("zoom libero: dalla visuale intera (intera sopra 1) fino a 4 volte", () => {
+    expect(zoomRange(1000, 700, 420, 260)).toEqual({ min: 2, max: 8 });
+    expect(zoomRange(300, 200, 420, 260).min).toBeCloseTo(300 / 420);
+    expect(zoomRange(300, 200, 420, 260).max).toBe(4);
+    expect(clampZoom(0.1, { min: 2, max: 8 })).toBe(2);
+    expect(clampZoom(20, { min: 2, max: 8 })).toBe(8);
+    expect(clampZoom(3.3, { min: 2, max: 8 })).toBe(3.3);
+  });
+
+  it("lo zoom tiene fermo il punto sotto il cursore", () => {
+    const size = { w: 800, h: 600 };
+    const world = { x: 120, y: 75 };
+    const screen = { x: 200, y: 450 };
+    for (const zoom of [1, 2.5, 6]) {
+      const s = scrollToKeep(world, screen, zoom, size);
+      // Phaser: mondo = scroll + metà vista + (schermo − metà vista) / zoom
+      expect(s.x + size.w / 2 + (screen.x - size.w / 2) / zoom).toBeCloseTo(world.x);
+      expect(s.y + size.h / 2 + (screen.y - size.h / 2) / zoom).toBeCloseTo(world.y);
+    }
   });
 });
 

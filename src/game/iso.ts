@@ -67,15 +67,39 @@ export function depthOf(footY: number): number {
   return LAYER.objects + footY;
 }
 
+/** Quante volte si può ingrandire al massimo rispetto alla visuale intera (e mai meno di 4×). */
+export const MAX_ZOOM_FACTOR = 4;
+
 /**
- * I due soli livelli di zoom: la visuale intera della scena e un
- * ingrandimento fisso, il doppio. Sopra 1 lo zoom è intero, così i pixel
- * restano tutti uguali.
+ * Limiti dello zoom libero: `min` è la visuale intera della scena (intera sopra 1,
+ * così da lontano i pixel restano tutti uguali), `max` l'ingrandimento massimo.
  */
-export function zoomLevels(viewW: number, viewH: number, worldW: number, worldH: number): { full: number; close: number } {
+export function zoomRange(viewW: number, viewH: number, worldW: number, worldH: number): { min: number; max: number } {
   const fit = Math.min(viewW / worldW, viewH / worldH);
-  const full = fit >= 1 ? Math.floor(fit) : fit;
-  return { full, close: Math.max(2, Math.round(full * 2)) };
+  const min = fit >= 1 ? Math.floor(fit) : fit;
+  return { min, max: Math.max(4, min * MAX_ZOOM_FACTOR) };
+}
+
+/** Riporta uno zoom entro i limiti. */
+export function clampZoom(zoom: number, range: { min: number; max: number }): number {
+  return Math.min(range.max, Math.max(range.min, zoom));
+}
+
+/**
+ * Scorrimento della telecamera (angolo in alto a sinistra, in coordinate del mondo)
+ * perché il punto del mondo `world` resti sotto il punto dello schermo `screen`
+ * con lo zoom dato. `size` è la dimensione della vista in pixel.
+ */
+export function scrollToKeep(
+  world: { x: number; y: number },
+  screen: { x: number; y: number },
+  zoom: number,
+  size: { w: number; h: number },
+): { x: number; y: number } {
+  return {
+    x: world.x - size.w / 2 - (screen.x - size.w / 2) / zoom,
+    y: world.y - size.h / 2 - (screen.y - size.h / 2) / zoom,
+  };
 }
 
 /** Il punto sta dentro il poligono (pari e dispari sui lati): serve a cliccare la sagoma di un edificio. */

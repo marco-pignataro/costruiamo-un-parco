@@ -14,6 +14,5 @@
   {"id": "v13", "name": "Enzo", "archetypeId": "carte", "age": 66, "skin": "chiara", "hair": "bianco"},
   {"id": "v14", "name": "Agata", "archetypeId": "coordinatore", "age": 41, "skin": "scura", "hair": "nero"},
   {"id": "v15", "name": "Ninni", "archetypeId": "base", "age": 24, "skin": "bruna", "hair": "castano"},
-  {"id": "v16", "name": "Pippo", "archetypeId": "presidente", "age": 61, "skin": "olivastra", "hair": "castano-scuro"},
   {"id": "v17", "name": "Mimma", "archetypeId": "giardiniere", "age": 49, "skin": "ambrata", "hair": "biondo"}
 ]

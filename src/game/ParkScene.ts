@@ -60,6 +60,8 @@ interface SceneData {
   onOpenActivity: (kind: Kind, id: string, volunteerIds: string[]) => void;
   /** Secondo clic su un volontario: apre la sua scheda. */
   onOpenProfile: (volunteerId: string) => void;
+  /** Volontario selezionato sulla mappa: la HUD lo inquadra nella barra della squadra. */
+  onSelectVolunteer: (volunteerId: string) => void;
 }
 
 /** Trasparenza dell'elemento che si sta spostando, nel suo posto vecchio. */
@@ -401,8 +403,15 @@ export class ParkScene extends Phaser.Scene {
     this.apply(clickMap(this.selection, this.hitAt(p, over)));
   }
 
+  /** Volontario scelto dalla barra della squadra: resta selezionato come se lo si fosse cliccato. */
+  selectVolunteer(volunteerId: string): void {
+    this.selection = { type: 'volontario', volunteer: volunteerId };
+    this.drawFocus();
+  }
+
   private apply(r: ReturnType<typeof clickMap>) {
     this.selection = r.selection;
+    if (r.selection?.type === 'volontario') this.initData.onSelectVolunteer(r.selection.volunteer);
     if (r.profile) this.initData.onOpenProfile(r.profile);
     if (r.open) this.initData.onOpenActivity(r.open.activity.kind, r.open.activity.id, r.open.volunteerIds);
     this.drawFocus();

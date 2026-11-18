@@ -24,10 +24,10 @@
       "id": "squadra",
       "title": "Fase 2 · La squadra",
       "lines": [
-        "Recluta i volontari dall'elenco a destra spendendo i PV del terreno. Se cambi idea, \"Congeda\" restituisce i PV.",
+        "Il presidente è già in squadra e ci resta: scegli il suo nome e il suo aspetto, poi recluta gli altri dalla finestra al centro spendendo i PV del terreno.",
+        "Chi entra compare nella barra in basso: un clic lo seleziona, un secondo clic apre la sua scheda (nome, aspetto e \"Congeda\", che restituisce i PV).",
         "Gli specialisti costano di più ma lavorano più in fretta e guidano fino a 2 volontari senza la loro skill.",
-        "Presidente e segretario/a sono uno solo; servono almeno 3 volontari.",
-        "Clicca un volontario della squadra per sceglierne nome e aspetto. Poi premi \"Conferma la squadra\"."
+        "Il segretario/a è uno solo; servono almeno 3 volontari. Poi premi \"Conferma la squadra\"."
       ]
     },
     {

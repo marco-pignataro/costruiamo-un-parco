@@ -29,6 +29,12 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
+Seconda prova (18/11), commit: COMMIT_PROVA.
+
+- [x] Le modali nel mobile riportano troppo spesso lo scroll in alto, è fastidioso.
+- [x] Ora che c'è la timeline del tempo, i tasti "Chiudi weekend/chiudi e vai al weekend" e "Taglia il nastro", e la percentuale di progetto realizzato vanno spostati nella timeline delle settimane.
+- [x] Icon tab "Inventario" nel mobile (e specchietto nel desktop, in fondo alla colonna sinistra) con il totale in cassa, i materiali in magazzino e quelli ordinati ma non ancora consegnati.
+
 Data di consegna e timeline (18/11), commit: 43c1f26.
 
 - [x] Ogni partita ha una data di consegna calcolata dal terreno e dagli arredi del progetto: determina le settimane di lavoro disponibili, sempre consultabili.

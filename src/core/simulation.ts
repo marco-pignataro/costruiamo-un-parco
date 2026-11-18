@@ -20,6 +20,8 @@ import { deadlineWeeks, rapidityPoints } from './deadline';
 import type { ActiveTask, AppearanceDef, Archetype, CandidateDef, ElementDef, FinalScore, HazardDef, GameState, Order, Placement, PlanTask, PoiDef, PraticaDef, Quality, SideQuestDef, SideQuestResult, SiteDef, SurveyPoiState, PraticaState, TaskDef, TilePos, TutorialDef, TutorialStepDef, Volunteer, CityDef } from './types';
 
 const EPS = 1e-6;
+/** Archetipo del presidente: uno solo, sempre in squadra. */
+const PRESIDENT = 'presidente';
 
 export interface Preview extends Partial<DurationResult> {
   errors: string[];
@@ -101,15 +103,33 @@ export class Simulation {
     this.state.pv = site.pv;
   }
 
+  /**
+   * Conferma il terreno e apre la Fase 2 con il presidente già in squadra:
+   * c'è sempre e non si congeda. I suoi PV si spendono qui.
+   */
   confirmSite(): void {
     if (this.state.stage !== 'terreno') throw new Error('Il terreno è già scelto');
     this.state.stage = 'squadra';
+    const m = this.presidentCandidate;
+    if (!this.state.volunteers.some((v) => v.id === m.id)) this.recruit(m.id);
   }
 
   // ---------- Fase 2: squadra con i PV ----------
 
   get candidates(): CandidateDef[] {
     return this.content.candidates;
+  }
+
+  /** L'unico candidato presidente: entra in squadra da solo e non si congeda. */
+  get presidentCandidate(): CandidateDef {
+    const m = this.content.candidates.find((x) => x.archetypeId === PRESIDENT);
+    if (!m) throw new Error('Manca il candidato presidente');
+    return m;
+  }
+
+  /** Il presidente non lascia la squadra. */
+  canDismiss(volunteerId: string): boolean {
+    return this.state.stage === 'squadra' && this.state.volunteers.some((v) => v.id === volunteerId && v.archetypeId !== PRESIDENT);
   }
 
   archetype(id: string): Archetype {
@@ -171,6 +191,7 @@ export class Simulation {
     if (this.state.stage !== 'squadra') throw new Error('La squadra si compone in Fase 2');
     const i = this.state.volunteers.findIndex((v) => v.id === volunteerId);
     if (i < 0) throw new Error(`Non è in squadra: ${volunteerId}`);
+    if (this.state.volunteers[i].archetypeId === PRESIDENT) throw new Error('Il presidente resta in squadra');
     this.state.pv += this.archetype(this.state.volunteers[i].archetypeId).pvCost;
     this.state.volunteers.splice(i, 1);
   }
@@ -724,7 +745,7 @@ export class Simulation {
 
   /** Errori ammessi nel mini-puzzle: il presidente nella delegazione ne aggiunge uno. */
   sideQuestAllowedErrors(praticaId: string, volunteerIds: string[]): number {
-    const president = volunteerIds.some((id) => this.volunteer(id).archetypeId === 'presidente');
+    const president = volunteerIds.some((id) => this.volunteer(id).archetypeId === PRESIDENT);
     return this.sideQuest(praticaId).allowedErrors + (president ? 1 : 0);
   }
 

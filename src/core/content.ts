@@ -108,6 +108,7 @@ export function validateContent(c: Content): string[] {
     if (!has(c.appearance.hair, m.hair)) errors.push(`${m.id}: colore dei capelli sconosciuto ${m.hair}`);
     if (!Number.isInteger(m.age) || m.age < 16 || m.age > 99) errors.push(`${m.id}: età non valida`);
   }
+  if (c.candidates.filter((m) => m.archetypeId === 'presidente').length !== 1) errors.push('Serve esattamente un candidato presidente: entra in squadra da solo');
   if (new Set(c.candidates.map((m) => m.id)).size !== c.candidates.length) errors.push('Candidati con lo stesso id');
   if (c.sites.length === 0) errors.push('Nessun terreno');
   if (errors.length === 0) {

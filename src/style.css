@@ -18,7 +18,7 @@
 body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); }
 
 /* La scena occupa tutto lo schermo; la HUD le sta sopra, sui bordi. */
-#game { position: fixed; inset: 0; }
+#game { position: fixed; inset: 0; touch-action: none; } /* le dita zoomano la mappa, non la pagina */
 #game canvas { image-rendering: pixelated; display: block; }
 
 #hud {
@@ -27,7 +27,7 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
   display: grid;
   grid-template-columns: auto 1fr auto;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  grid-template-areas: "top top top" "left . right" "bottom bottom bottom";
+  grid-template-areas: "top top top" "left center right" "bottom bottom bottom";
   gap: var(--edge);
   padding: var(--edge);
   pointer-events: none; /* in mezzo si clicca la mappa */
@@ -74,16 +74,60 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 .day { display: flex; flex-direction: column; gap: 6px; }
 .running .active { gap: 6px; }
 
-/* In basso: menu a sinistra, zoom a destra. Su mobile diventa la barra delle schede. */
-#hud-bottom { justify-content: space-between; }
-.tabbar { display: flex; pointer-events: none; }
-.tab-btn { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
-.tab-btn.side { display: none; }
-.tab-btn.on { color: var(--accent); }
-.zoom { margin-left: auto; font-weight: 600; }
-.zoom .short { display: none; }
-.menu-sheet { position: fixed; left: var(--edge); bottom: 62px; width: 260px; z-index: 8; }
+/* In alto a destra il menu, su tutti gli schermi. */
+.top-menu { flex: none; margin-left: auto; display: flex; pointer-events: none; }
+.menu-btn { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; border: none; }
+.menu-btn.on { color: var(--accent); }
+.menu-sheet { position: fixed; right: var(--edge); top: 56px; width: 260px; z-index: 12; }
 .menu-items { display: grid; gap: 6px; }
+/* La barra delle schede c'è solo su mobile. */
+.tabbar { display: none; }
+.tab-btn { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.tab-btn.on { color: var(--accent); }
+
+/*
+ * In basso la barra della squadra: a sinistra il riquadro grande con il
+ * volontario scelto, accanto un riquadro per ognuno. Su desktop i riquadri
+ * in più vanno in una fila sopra (wrap-reverse).
+ */
+#hud-bottom { align-items: flex-end; }
+.crew-bar { display: flex; align-items: flex-end; gap: var(--edge); min-width: 0; flex: 1 1 auto; pointer-events: none; }
+.photo { display: grid; place-items: end center; background: linear-gradient(#b8e0f2, #b8e0f2 62%, #5a9e3a 62%); border-radius: 6px; overflow: hidden; }
+.photo img { display: block; image-rendering: pixelated; }
+.crew-focus { flex: none; width: 250px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: stretch; cursor: pointer; padding: 8px; }
+.crew-focus .photo { width: 84px; padding: 6px 7px 0; }
+.crew-focus .photo img { width: 70px; }
+.crew-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 2px; }
+.crew-info strong { font-size: 16px; }
+.crew-info .role { color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.crew-info .doing { color: var(--ink); }
+.crew-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap-reverse; gap: 6px; min-width: 0; flex: 1 1 auto; pointer-events: none; }
+.crew-card { position: relative; flex: none; width: 76px; display: grid; justify-items: center; gap: 1px; padding: 5px 4px 6px; cursor: pointer; text-align: center; }
+.crew-card .photo { width: 100%; padding-top: 4px; }
+.crew-card .photo img { width: 40px; }
+.crew-card strong { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crew-card small { font-size: 10px; line-height: 1.15; }
+.crew-card:hover { outline: 2px solid var(--line); }
+.crew-card.on { outline: 2px solid var(--accent); }
+.crew-dot { position: absolute; top: 8px; left: 8px; width: 8px; height: 8px; border-radius: 50%; background: #e6a817; box-shadow: 0 0 0 2px white; }
+.crew-x { position: absolute; top: 2px; right: 2px; padding: 0 5px; font-size: 11px; line-height: 18px; border-radius: 50%; }
+
+/* Fase 2: chi può unirsi, in una finestra al centro della HUD. */
+#hud-center { grid-area: center; justify-content: center; align-items: center; min-width: 0; }
+.recruit { width: min(940px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+.recruit-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex: none; }
+.recruit-head h2 { margin-bottom: 4px; }
+.recruit .pv { display: grid; text-align: right; white-space: nowrap; font-size: 12px; color: var(--muted); margin: 0; }
+.recruit .pv strong { font-size: 20px; color: var(--ink); }
+.cand-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px !important; padding: 2px; scrollbar-width: thin; }
+.cand-card { display: flex; flex-direction: column; gap: 2px; padding: 8px; background: white; border: 1px solid var(--line); border-radius: 8px; }
+.cand-card .photo { height: 96px; margin-bottom: 4px; }
+.cand-card .photo img { width: 50px; }
+.cand-card .role { color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.cand-card small { font-size: 12px; }
+.cand-card button { margin-top: auto; }
+.cand-card.off .photo { filter: grayscale(0.6); opacity: 0.7; }
+.recruit-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex: none; border-top: 1px solid var(--line); padding-top: 10px; }
 
 .tab { padding: 6px 10px; font-weight: 600; cursor: pointer; border: none; text-align: left; }
 .tab.hide { align-self: flex-end; padding: 2px 10px; font-weight: normal; }
@@ -157,8 +201,6 @@ img.face { width: 20px; height: 28px; image-rendering: pixelated; display: block
 .stars { color: #c0392b; letter-spacing: 1px; }
 .factors { gap: 2px !important; font-size: 12px; }
 .factors li { display: flex; justify-content: space-between; gap: 8px; }
-.cands li.cand { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
-.cands li.cand { padding: 2px 4px; }
 
 /* scheda del volontario: sprite grande a sinistra, dati a destra */
 .sheet.profile { width: min(600px, 100%); grid-template-columns: minmax(150px, 1fr) 1.4fr; gap: 18px; align-items: start; }
@@ -199,14 +241,15 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
 }
 
 /*
- * Telefono (stessa soglia di MOBILE in hud.ts): in alto il titolo e lo zoom,
+ * Telefono (stessa soglia di MOBILE in hud.ts): in alto il titolo,
  * in basso la barra delle schede (menu e le due colonne); ogni colonna e il
  * menu si aprono a tutto schermo salendo dal basso.
  */
 @keyframes slide-up { from { transform: translateY(100%); } to { transform: none; } }
 @media (max-width: 700px) {
-  #hud { grid-template-columns: 1fr; grid-template-areas: "top" "." "bottom"; padding-bottom: var(--tabbar); }
-  #hud-top .brand { flex: 1 1 auto; margin-right: 52px; }
+  #hud { grid-template-columns: 1fr; grid-template-areas: "top" "center" "bottom"; }
+  #hud[data-tabs="1"] { padding-bottom: calc(var(--tabbar) + var(--edge)); }
+  #hud-top .brand { flex: 1 1 auto; }
   #hud-left, #hud-right { display: none; }
   #hud[data-sheet="left"] #hud-left, #hud[data-sheet="right"] #hud-right {
     display: flex; position: fixed; inset: 0 0 var(--tabbar) 0; width: auto; max-width: none; z-index: 8;
@@ -216,17 +259,32 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
   .sheet-head { display: flex; justify-content: space-between; align-items: center; flex: none; }
   .sheet-head button { padding: 4px 10px; }
   .tab { display: none; }
+  #hud[data-tabs="1"] .tabbar { display: grid; }
   .tabbar {
     position: fixed; left: 0; right: 0; bottom: 0; height: var(--tabbar); z-index: 9; pointer-events: auto;
-    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    grid-auto-flow: column; grid-auto-columns: 1fr;
     background: var(--panel); box-shadow: 0 -2px 10px rgb(0 0 0 / 0.25);
   }
-  .tab-btn, .tab-btn.side { display: flex; flex-direction: column; justify-content: center; gap: 2px; border: none; border-radius: 0; background: transparent; box-shadow: none; font-size: 11px; color: var(--muted); }
+  .tab-btn { display: flex; flex-direction: column; justify-content: center; gap: 2px; border: none; border-radius: 0; background: transparent; box-shadow: none; font-size: 11px; color: var(--muted); }
   .tab-btn.on { color: var(--accent); }
-  .zoom { position: fixed; top: var(--edge); right: var(--edge); width: 42px; height: 42px; padding: 0; font-size: 22px; line-height: 1; z-index: 7; }
-  .zoom .long { display: none; }
-  .zoom .short { display: inline; }
-  .menu-sheet { inset: 0 0 var(--tabbar) 0; width: auto; border-radius: 0; animation: slide-up 0.22s ease-out; display: grid; align-content: start; gap: 10px; }
+  .menu-sheet { inset: 0; width: auto; border-radius: 0; animation: slide-up 0.22s ease-out; display: grid; align-content: start; gap: 10px; }
+  .menu-btn { padding: 8px 10px; }
+  .menu-btn span { display: none; }
+  /* Barra della squadra: una sola riga che si scorre col dito. */
+  #hud-bottom { flex-wrap: nowrap; }
+  .crew-focus { width: 170px; gap: 6px; padding: 6px; }
+  .crew-focus .photo { width: 52px; padding: 4px 5px 0; }
+  .crew-focus .photo img { width: 42px; }
+  .crew-info strong { font-size: 14px; }
+  .crew-info small { font-size: 11px; }
+  .crew-list { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; pointer-events: auto; padding: 2px; }
+  .crew-card { width: 64px; }
+  .crew-card .photo img { width: 32px; }
+  .recruit { padding: 10px; }
+  .recruit-head small { display: none; }
+  .cand-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px !important; }
+  .cand-card .photo { height: 76px; }
+  .cand-card .photo img { width: 40px; }
   .menu-sheet .sheet-head { display: flex; }
   .sheet.profile { grid-template-columns: 1fr; }
   .profile .portrait img { width: 100px; }
@@ -295,6 +353,20 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
 .half.now { background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.45; } }
 .tl-sheet { display: none; }
+/* In cantiere, sotto le settimane: progetto realizzato e comandi della giornata. */
+.tl-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; cursor: default; }
+.tl-progress { flex: 1 1 160px; min-width: 140px; }
+.tl-progress .bar { position: relative; overflow: visible; margin: 3px 0 0; }
+.tl-progress .bar span { border-radius: 4px; }
+.tl-progress .bar i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--warn); }
+.tl-actions button { white-space: nowrap; }
+.tl-info .tl-actions { margin-top: 10px; }
+.tl-info .tl-actions button { flex: 1 1 auto; }
+/* Inventario: in fondo a sinistra su desktop, scheda a sé su mobile. */
+.inventory .cash { display: flex; justify-content: space-between; gap: 8px; }
+.inventory h3 { margin-top: 8px; }
+.inventory ul { gap: 4px; }
+.inv-sheet { display: none; }
 
 @media (max-width: 700px) {
   .timeline { display: none; }
@@ -303,6 +375,11 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
     padding: 10px; background: var(--bg); pointer-events: auto; overflow-y: auto; animation: slide-up 0.22s ease-out;
   }
   .tl-sheet .sheet-head, .tl-sheet .tl-info { flex: none; }
+  #hud[data-sheet="inventory"] .inv-sheet {
+    display: flex; flex-direction: column; gap: 8px; position: fixed; inset: 0 0 var(--tabbar) 0; z-index: 8;
+    padding: 10px; background: var(--bg); pointer-events: auto; overflow-y: auto; animation: slide-up 0.22s ease-out;
+  }
+  .inv-sheet > * { flex: none; }
   .tl-weeks.vertical { flex-direction: column; overflow: visible; gap: 8px; }
   .tl-weeks.vertical .wk { width: auto; padding: 8px 10px; font-size: 13px; }
   .tl-weeks.vertical .wk b { font-size: 14px; }

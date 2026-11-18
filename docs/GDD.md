@@ -160,7 +160,9 @@ Il monte ore è settimanale e unico: si spende sia nella parte burocratica sia i
 
 **Contromisure:** eventi sociali (grigliata, pizzata di fine cantiere), riconoscimenti pubblici, turni di riposo, acquisto di DPI.
 
-**Prototipo.** Si recluta da un elenco di 17 candidati (`src/data/candidates.json`) spendendo i PV del terreno; ogni volontario si può anche congedare e i PV tornano indietro, finché la squadra non è confermata. Presidente e segretario/a sono unici; servono almeno 3 volontari. I PV avanzati restano per il futuro (reclutamenti in corso di partita). Energia, morale, tratti e crescita non ci sono ancora.
+**Prototipo.** Si recluta da un elenco di 16 candidati (`src/data/candidates.json`) spendendo i PV del terreno; ogni volontario si può anche congedare e i PV tornano indietro, finché la squadra non è confermata. Servono almeno 3 volontari; il segretario/a è unico.
+
+**Il presidente c'è sempre (deciso il 18/11/2026).** Tra i candidati c'è un solo presidente, che entra in squadra da solo quando si conferma il terreno (i suoi 6 PV si spendono lì) e non si può congedare. La Fase 2 si apre con la sua scheda, per sceglierne nome e aspetto; chiusa la scheda si passa a comporre la squadra. Chi può unirsi sta in una finestra al centro dello schermo, in griglia: per ognuno la "foto" e sotto nome, mansione, skill, età, ore settimanali e il pulsante Recluta con il costo in PV; in fondo alla finestra i PV rimasti, i controlli e "Conferma la squadra". Chi entra compare nella barra della squadra in basso (vedi "HUD ai bordi"). I PV avanzati restano per il futuro (reclutamenti in corso di partita). Energia, morale, tratti e crescita non ci sono ancora.
 
 **Scheda del volontario (prototipo, deciso il 13/11/2026).** Ogni candidato ha età, colore della pelle e colore dei capelli (`src/data/candidates.json`, colori in `src/data/appearance.json`: 5 pelli, 7 capelli). Un clic su un volontario nella squadra, o un secondo clic su di lui sulla mappa, apre la scheda nella modale centrale: a sinistra lo sprite grande, a destra le statistiche (età, morale, stanchezza) e le caratteristiche (nome, pelle, capelli). Nome (al massimo 16 caratteri), pelle e capelli si cambiano solo in Fase 2, finché la squadra non è confermata; dopo la scheda si legge e basta. La stanchezza per ora è la parte del monte ore settimanale già spesa; il morale compare come "non ancora in gioco" finché non arrivano le sue regole. Salvataggi v9.
 
@@ -413,15 +415,16 @@ A fine parte burocratica il gioco passa da solo al parco, con una breve transizi
 **HUD ai bordi.** Niente pannello laterale: ogni blocco ha un suo posto fisso attorno alla mappa, che resta libera al centro. Disposizione rivista dopo la prima prova (13/11/2026):
 
 - **In alto:** una sola scheda con titolo del gioco, settimana e parte della settimana e, come ultimo elemento, la barra della sessione con le ore usate (senza etichetta).
-- **A sinistra:** la squadra, con monte ore residuo e stato (libero, al lavoro, dove). In fondo alla colonna la scheda della cassa (cassa e progetto realizzato, PV in Fase 2, cassa e preventivo in progettazione) e sotto il pulsante di completamento della fase, sempre lì in ogni fase.
-- **A destra:** prima i compiti in corso con il loro timer, poi le attività da fare, poi registro delle pratiche e magazzino.
-- **In basso:** il menu della partita a sinistra (tutorial, notifiche, esporta salvataggio, nuova partita) e lo zoom a destra.
+- **A sinistra:** la squadra, con monte ore residuo e stato (libero, al lavoro, dove). In fondo alla colonna: in progettazione cassa, preventivo e conferma del progetto; nel sopralluogo "Chiudi il sopralluogo"; in cantiere l'**Inventario** (deciso il 18/11/2026): cassa, materiali in magazzino e ordini non ancora consegnati, con i materiali, il lavoro a cui servono e il weekend d'arrivo. Su telefono l'Inventario è una scheda a sé della barra in basso.
+- **A destra:** prima i compiti in corso con il loro timer, poi le attività da fare, poi il registro delle pratiche.
+- **In alto a destra:** il menu della partita (tutorial, notifiche, esporta salvataggio, nuova partita), su tutti gli schermi.
+- **In basso, la barra della squadra (deciso il 18/11/2026)** in Fase 2, nel sopralluogo e in cantiere: nell'angolo a sinistra un riquadro grande con la "foto" del volontario scelto (di base il presidente), nome, mansione e attività in corso, se c'è; accanto un riquadro piccolo per ogni volontario, con foto, nome e mansione. Un clic su un riquadro piccolo sceglie il volontario (anche sulla mappa, come cliccarlo lì), un secondo clic o un clic sul riquadro grande apre la sua scheda; scegliere un volontario sulla mappa lo porta nel riquadro grande. In Fase 2 una ✕ sul riquadro lo congeda (non per il presidente). Su desktop i riquadri che non ci stanno in larghezza formano un'altra fila sopra; su telefono restano in una riga che si scorre col dito.
 
-I pannelli di sinistra e di destra si possono richiudere per vedere più mappa; la cassa e il pulsante della fase restano visibili. Le colonne cambiano nome con la fase: Terreni; Squadra e Candidati; Squadra e Attività (sopralluogo e cantiere); Arredi e Preventivo (progettazione).
+I pannelli di sinistra e di destra si possono richiudere per vedere più mappa; la cassa e il pulsante della fase restano visibili. Le colonne cambiano nome con la fase: Terreni; Squadra e Attività (sopralluogo e cantiere); Arredi e Preventivo (progettazione). In Fase 2 non ci sono colonne: candidati al centro, squadra in basso.
 
-**Su telefono** (schermo largo al massimo 700 px) in basso c'è una barra di schede con icona ed etichetta: Menu e le due colonne con il loro nome. Ogni scheda si apre a tutto schermo salendo dal basso e si chiude con la ✕ o toccandola di nuovo. Lo zoom diventa un pulsante +/− in alto a destra.
+**Su telefono** (schermo largo al massimo 700 px) in basso c'è una barra di schede con icona ed etichetta: le due colonne con il loro nome e le settimane, sotto la barra della squadra. Ogni scheda si apre a tutto schermo salendo dal basso e si chiude con la ✕ o toccandola di nuovo. Il menu sta in alto a destra e si apre a tutto schermo.
 
-La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque risoluzione; la pixel art resta nella scena. La visuale intera si adatta allo spazio libero tra i pannelli; il tasto Z fa lo stesso del pulsante di zoom.
+La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque risoluzione; la pixel art resta nella scena. La visuale intera si adatta allo spazio libero tra i pannelli.
 
 **Prototipo del punta e clicca (parco).** Sono interagibili i lavori del piano disponibili (sulle loro tile) e, nel sopralluogo, i punti sospetti; anche quelli bloccati, che nell'etichetta dicono perché. Le loro tile hanno un'ombra leggera e un bordo in rilievo; sotto il puntatore il bordo si schiarisce. I volontari hanno un'ombra sotto i piedi e, selezionati, un anello bianco con un'etichetta (nome, ruolo, "al lavoro" se impegnati). Se più attività stanno sulla stessa tile vince la prima della lista "Da fare". Nella parte burocratica al parco non c'è niente da cliccare: pratiche, ordini e raccolta fondi si avviano dalla HUD finché non arriva la città. Le regole dei clic stanno in `src/ui/mapSelection.ts`, l'elenco delle attività e le loro tile in `src/ui/activities.ts`.
 
@@ -429,14 +432,14 @@ La HUD è HTML sovrapposto alla scena, così il testo resta nitido a qualunque r
 
 **Benvenuto e tutorial (deciso il 18/11/2026).** Una nuova partita si apre con un pannello di benvenuto: cos'è il gioco, come si gioca a fasi, che il tempo è vero e come si vince; poi chiede se si vuole il tutorial. Con il tutorial, all'inizio di ogni passaggio (terreno, squadra, sopralluogo, progettazione, giorni feriali, weekend) compare un pannello breve con cosa fare; quelli dei giorni feriali e del weekend solo nella prima settimana. Ogni pannello compare una volta, si chiude con "Ho capito" o spegnendo il tutorial. Dal Menu si accende o si spegne e si rivede il pannello della fase in corso. I testi stanno in `src/data/tutorial.json`, la scelta e i pannelli già visti nello stato della partita (`tutorial`). La finestra in primo piano mostra una cosa alla volta: resoconti in coda, benvenuto, tutorial, domande del sopralluogo. Chi aveva già una partita prima di questa versione non vede il benvenuto e gioca senza tutorial.
 
-**Timeline delle settimane (deciso il 18/11/2026).** Dalla progettazione in poi la HUD mostra le settimane di lavoro fino alla consegna, sempre consultabili. Ogni settimana ha due barre (lunga i giorni feriali, corta il weekend), passate, in corso (che pulsa) o future, e una nota: l'avanzamento a fine settimana per quelle passate, la parte in corso, i materiali in arrivo quel weekend; l'ultima è segnata in rosso come consegna. In testa: settimana N di M, settimane che restano (questa compresa) e progetto realizzato rispetto al 70%. In progettazione è "Consegna prevista" e segue il progetto disegnato.
+**Timeline delle settimane (deciso il 18/11/2026).** Dalla progettazione in poi la HUD mostra le settimane di lavoro fino alla consegna, sempre consultabili. Ogni settimana ha due barre (lunga i giorni feriali, corta il weekend), passate, in corso (che pulsa) o future, e una nota: l'avanzamento a fine settimana per quelle passate, la parte in corso, i materiali in arrivo quel weekend; l'ultima è segnata in rosso come consegna. In testa: settimana N di M e settimane che restano (questa compresa). In cantiere, sotto le settimane, la timeline ha anche i comandi della giornata (deciso il 18/11/2026): la barra del progetto realizzato con il segno del 70%, "Chiudi e vai al weekend" o "Chiudi il weekend" e "Taglia il nastro"; su telefono stanno nella scheda Settimane. In progettazione è "Consegna prevista" e segue il progetto disegnato.
 
 - **Desktop:** scheda orizzontale in alto al centro. Chiusa mostra la settimana in corso, la precedente e la successiva; un clic la apre su tutte, da scorrere in orizzontale e centrata sulla settimana in corso; un clic sull'intestazione (o Esc) la richiude.
 - **Telefono:** scheda "Settimane" nella barra in basso; si apre a tutto schermo con le settimane in verticale, centrata sulla settimana in corso e da scorrere per vederle tutte.
 
 Il modello della timeline (settimane, stati, finestra delle tre) sta in `src/ui/timeline.ts`, puro e testato.
 
-**Zoom e trascinamento. Il pulsante di zoom alterna due soli livelli: la visuale intera della scena e un ingrandimento fisso, non regolabile. Da ingranditi la mappa si sposta cliccando e trascinando, entro i bordi della scena.
+**Zoom e trascinamento.** Lo zoom è libero, senza pulsanti: su computer con la rotella del mouse, attorno al cursore; su telefono pizzicando con due dita, attorno al punto tra le dita (che intanto possono anche spostare la mappa). Va dalla visuale intera della scena (il minimo) fino a quattro volte tanto (almeno 4×). Da ingranditi la mappa si sposta cliccando e trascinando, entro i bordi della scena; un trascinamento o un pizzico non vale come clic.
 
 **Punta e clicca.** Il giocatore assegna, non pilota.
 
@@ -518,7 +521,7 @@ Decisione: gioco per browser, gratuito, sviluppato interamente con Claude in Typ
 - **Simulazione a turni:** i compiti hanno timer reali salvati come orari di inizio e fine; alla riapertura il gioco calcola cosa è finito mentre era chiuso e mette in coda i resoconti.
 - **Sistemi separati:** agenda dei compiti con dipendenze, economia, eventi, pratiche.
 - **Griglia condivisa:** la stessa mappa a tile serve per sopralluogo, progettazione e cantiere, con livelli diversi (superficie, rischi, progetto, realizzato).
-- **Due scene isometriche** (parco e città) su un motore comune: conversione griglia ↔ schermo, ordine di disegno per profondità, clic sulle tile, telecamera con zoom a due livelli.
+- **Due scene isometriche** (parco e città) su un motore comune: conversione griglia ↔ schermo, ordine di disegno per profondità, clic sulle tile, telecamera con zoom libero (rotella e due dita).
 - **Pathfinding** sulle strade della città per animare i volontari mentre il gioco è aperto; solo grafica, la simulazione non ne dipende.
 - **Salvataggi** in IndexedDB, con export del salvataggio come file. Notifiche del browser quando un compito finisce con il gioco aperto in un'altra scheda; senza un server non arrivano a browser chiuso, per questo i resoconti vanno in coda alla riapertura.
 - **Titolo del gioco** in una sola costante `GAME_TITLE` nel file di configurazione.
@@ -539,7 +542,7 @@ La priorità è arrivare presto a un MVP che contenga tutte e cinque le fasi in 
 **Dopo l'MVP: interfaccia definitiva, prima del gate 2.** Fare la prova con chi non conosce il progetto sull'interfaccia attuale vorrebbe dire provare qualcosa che sta per cambiare, quindi prima si fa:
 
 1. motore isometrico comune alle due scene;
-2. HUD ai bordi, zoom a due livelli e trascinamento;
+2. HUD ai bordi, zoom e trascinamento;
 3. punta e clicca al parco;
 4. scena della città con edifici, pathfinding e cambio di scena automatico;
 5. prova di gioco del gate 2 e bilanciamento.
@@ -558,7 +561,7 @@ Fuori dall'MVP restano il mini-dungeon, la modalità manutenzione e l'arte defin
 | Enti | Solo di fantasia |
 | Distribuzione | Gratuita, con donazione volontaria |
 | Visuale | Isometrica (tile 32×16); scena del parco nel weekend e nelle fasi preparatorie, scena della città nella parte burocratica, senza possibilità di passare dall'una all'altra |
-| Interfaccia | HUD ai bordi dello schermo, niente pannello laterale; zoom a due livelli (intero o ingrandimento fisso) e trascinamento; punta e clicca con modale centrale dell'attività |
+| Interfaccia | HUD ai bordi dello schermo, niente pannello laterale; zoom libero (rotella, due dita) dalla visuale intera e trascinamento; punta e clicca con modale centrale dell'attività |
 | Raccolte fondi | Solo online, nella parte burocratica; contano comunicatore, presidente e segretario/a |
 | Grafica e pixel art | Realizzata da Claude: Aseprite compilato gratis + server MCP; sprite in codice per il prototipo |
 | Side-quest e mini-dungeon | Side-quest come mini-puzzle; mini-dungeon come mini-platform negli uffici |
