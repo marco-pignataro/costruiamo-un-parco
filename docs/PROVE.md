@@ -29,6 +29,12 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
+Progettazione e sopralluogo (18/11), commit: COMMIT.
+
+- [x] In fase sopralluogo il tasto "Chiudi il sopralluogo" è ancora nell tab "Squadra". Non ha senso, va dentro Attività.
+- [x] In fase di progettazione, metti una barra scorrevole di card come quelle dei volontari, ma in queste mettici gli arredi, solo con nome e prezzo, e gli altri dettagli si vedono in modale cliccando sulla card selezionata.
+- [x] Sempre in fase progettazione, lo specchietto contenente cassa e preventivo e quello contenente il tasto "conferma progetto" mettili in tab Preventivo, non Arredi.
+
 Terza prova, griglia dei candidati (18/11), commit: 96fbd50.
 
 - [x] In fase di selezione volontari la griglia cambia in continuazione man mano che li seleziono. Non va bene, deve avere numero di colonne fisso. E nel mobile massimo due colonne se no esce fuori dallo schermo e diventa inutilizzabile.

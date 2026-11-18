@@ -111,6 +111,10 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 .crew-card:hover { outline: 2px solid var(--line); }
 .crew-card.on { outline: 2px solid var(--accent); }
 .crew-dot { position: absolute; top: 8px; left: 8px; width: 8px; height: 8px; border-radius: 50%; background: #e6a817; box-shadow: 0 0 0 2px white; }
+/* In progettazione la stessa barra porta gli arredi: solo nome e prezzo. */
+.item-card { width: 104px; min-height: 58px; align-content: center; padding: 6px; }
+.item-card strong { white-space: normal; line-height: 1.15; }
+.item-card small { font-size: 12px; font-weight: 600; color: var(--ink); }
 .crew-x { position: absolute; top: 2px; right: 2px; padding: 0 5px; font-size: 11px; line-height: 18px; border-radius: 50%; }
 
 /* Fase 2: chi può unirsi, in una finestra al centro della HUD. */
@@ -190,10 +194,6 @@ img.face { width: 20px; height: 28px; image-rendering: pixelated; display: block
 .facts dd { margin: 0; }
 .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-.tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.tool { display: grid; gap: 2px; text-align: left; padding: 6px 8px; }
-.tool small { font-size: 11px; }
-.tool.on { outline: 2px solid var(--accent); background: white; }
 .hint { background: #fff6d8; border-radius: 6px; padding: 6px 8px; font-size: 13px; margin-bottom: 8px !important; }
 
 .site { display: grid; gap: 4px; }
@@ -283,6 +283,7 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
   .crew-focus { display: none; }
   .crew-list { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; pointer-events: auto; padding: 2px; }
   .crew-card { width: 64px; }
+  .item-card { width: 112px; }
   .crew-card.on { outline: 3px solid var(--accent); }
   .crew-card .photo img { width: 32px; }
   .recruit { padding: 10px; }

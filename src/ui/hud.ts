@@ -57,6 +57,10 @@ interface Parts {
   left?: string;
   leftFoot?: string;
   right?: string;
+  /** In fondo alla colonna destra, sempre visibile (comandi della fase). */
+  rightFoot?: string;
+  /** In basso, al posto della barra della squadra (in progettazione la barra degli arredi). */
+  bottom?: string;
   /** Finestra al centro dello schermo, dentro la HUD (in Fase 2 i candidati). */
   center?: string;
   /** Inventario (cassa, magazzino, ordini in arrivo): in fondo a sinistra su desktop, scheda a sé su mobile. */
@@ -71,7 +75,7 @@ const COLUMN_NAMES: Record<Stage, Partial<Record<Side, string>>> = {
   terreno: { right: 'Terreni' },
   squadra: {},
   sopralluogo: { left: 'Squadra', right: 'Attività' },
-  progettazione: { left: 'Arredi', right: 'Preventivo' },
+  progettazione: { right: 'Preventivo' },
   cantiere: { left: 'Squadra', right: 'Attività' },
   inaugurato: {},
   fallito: {},
@@ -110,6 +114,8 @@ export class Hud {
   private puzzle: Puzzle | null = null;
   private collapsed: Record<Side, boolean> = { left: false, right: false };
   private lastInsets = '';
+  /** In progettazione: scheda dell'arredo aperta nella modale centrale. */
+  private itemInfo: string | null = null;
   /** Scheda del volontario aperta nella modale centrale. */
   private profile: string | null = null;
   private menuOpen = false;
@@ -179,6 +185,7 @@ export class Hud {
       if (e.key === 'Escape') {
         if (this.open) this.closeActivity();
         else if (this.profile) this.profile = null;
+        else if (this.itemInfo) this.itemInfo = null;
         else if (this.editor.moving !== null) this.editor.moving = null;
         else if (this.menuOpen) this.menuOpen = false;
         else if (this.sheet) this.sheet = null;
@@ -234,7 +241,10 @@ export class Hud {
     if (this.open && !activityAvailable(sim, this.open)) this.closeActivity();
 
     if (this.profile && !sim.state.volunteers.some((v) => v.id === this.profile)) this.profile = null;
-    if (stage !== 'progettazione') this.editor.moving = null;
+    if (stage !== 'progettazione') {
+      this.editor.moving = null;
+      this.itemInfo = null;
+    }
     // A ogni nuova fase, e tra giorni feriali e weekend, non resta aperta nessuna scheda.
     const phaseKey = `${stage}:${sim.state.phase}`;
     if (phaseKey !== this.lastPhase) {
@@ -260,7 +270,7 @@ export class Hud {
     for (const side of ['left', 'right'] as Side[]) {
       const body = parts[side] ?? '';
       // Su desktop l'inventario sta in fondo alla colonna sinistra; su mobile ha la sua scheda.
-      const footHtml = side === 'left' ? (parts.leftFoot ?? '') + (!mobile && parts.inventory ? parts.inventory : '') : '';
+      const footHtml = side === 'left' ? (parts.leftFoot ?? '') + (!mobile && parts.inventory ? parts.inventory : '') : (parts.rightFoot ?? '');
       const foot = footHtml ? `<div class="col-foot">${footHtml}</div>` : '';
       if (!body && !foot) {
         if (this.sheet === side) this.sheet = null;
@@ -285,7 +295,7 @@ export class Hud {
       inventory && this.sheet === 'inventory'
         ? `<section class="inv-sheet"><div class="sheet-head card"><strong>Inventario</strong><button data-sheet="inventory" title="Chiudi">✕</button></div>${inventory}</section>`
         : '';
-    html.bottom = this.crewBar() + (tabs ? this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline, !!inventory, this.tabInfo(stage, timeline)) : '') + invSheet;
+    html.bottom = (parts.bottom ?? this.crewBar()) + (tabs ? this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline, !!inventory, this.tabInfo(stage, timeline)) : '') + invSheet;
     const root = this.regions.top.parentElement!;
     root.dataset.sheet = mobile && this.sheet ? this.sheet : '';
     root.dataset.tabs = tabs ? '1' : '';
@@ -304,6 +314,7 @@ export class Hud {
     else if (this.puzzle && stage === 'cantiere') this.showDialog(this.puzzleCard(), 'puzzle');
     else if (this.open) this.showDialog(this.activityCard(), 'activity');
     else if (this.profile) this.showDialog(this.profileCard(this.sim.volunteer(this.profile)), 'profile');
+    else if (this.itemInfo) this.showDialog(this.itemCard(this.itemInfo), 'item');
     else this.showDialog('', '');
     this.renderModal();
     this.measure();
@@ -370,7 +381,6 @@ export class Hud {
     if (timeline) info.timeline = `${Math.round(timeline.progress * 100)}%`;
     if (stage === 'terreno') info.right = `${sim.sites.length} terreni`;
     else if (stage === 'progettazione') {
-      info.left = `${s.grid.placements.length} posati`;
       info.right = `${sim.designSummary().costEur} €`;
     } else if (stage === 'sopralluogo' || stage === 'cantiere') {
       info.left = `${s.pv} PV`;
@@ -579,8 +589,8 @@ export class Hud {
       <small>${formatHours(used)} su ${limit} h${s.active.length ? '' : ' · ferma: nessun compito in corso'}</small>`;
     const top = this.brand(`${surveying ? `Fase 3 · ${esc(sim.siteName)}` : `Settimana ${s.week}`} · ${phaseName}`, session);
 
-    // A sinistra: la squadra, con ore e cosa sta facendo; in fondo, nel sopralluogo, la chiusura della giornata
-    // (in cantiere i comandi della giornata stanno nella timeline e in fondo c'è l'inventario).
+    // A sinistra: la squadra, con ore e cosa sta facendo; in cantiere in fondo c'è l'inventario.
+    // La chiusura del sopralluogo sta in fondo alle attività (in cantiere i comandi della giornata sono nella timeline).
     const doing = new Map<string, string>();
     for (const a of s.active) for (const id of a.volunteerIds) doing.set(id, this.activeName(a));
     const vols = s.volunteers
@@ -593,7 +603,7 @@ export class Hud {
       })
       .join('');
     const left = `<section class="card"><h2>Squadra</h2><ul class="vols">${vols}</ul></section>`;
-    const leftFoot = surveying
+    const rightFoot = surveying
       ? `<section class="card day"><button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I punti non analizzati restano un mistero">Chiudi il sopralluogo</button></section>`
       : '';
 
@@ -665,7 +675,7 @@ export class Hud {
         </section>`;
     }
 
-    return { top, left, leftFoot, right: running + todo + registers, inventory };
+    return { top, left, rightFoot, right: running + todo + registers, inventory };
   }
 
   private inaugurateButton(): string {
@@ -822,6 +832,28 @@ export class Hud {
       </div>`;
   }
 
+  /** Scheda dell'arredo scelto: cosa costa, quanto lavoro e cosa serve per costruirlo. */
+  private itemCard(id: string): string {
+    const sim = this.sim;
+    const e = sim.elementDef(id);
+    const rows: [string, string][] = [
+      ['Ingombro', `${e.w}×${e.h} tile`],
+      ['Materiali', `${e.materials.map((m) => `${m.qty} × ${sim.materialName(m.id).toLowerCase()}`).join(', ') || '—'} (${sim.orderCost(e.materials)} €)`],
+      ['Lavoro', `${e.hours} h complessive${e.groupable ? ' per tile, i tratti vicini fanno un solo lavoro' : ''}`],
+      ['Skill utile', e.skill ?? '—'],
+      ['Volontari', `fino a ${e.maxVolunteers}`],
+      ['Pratiche', e.pratiche.map((p) => sim.praticaDef(p).name).join(', ') || '—'],
+      ['Gradimento', `${e.appeal} punti il primo, le copie valgono via via meno`],
+    ];
+    if (e.adjacentTo) rows.push(['Va accanto a', sim.elementDef(e.adjacentTo).name.toLowerCase()]);
+    return `<div class="card sheet" role="dialog" aria-modal="true" aria-label="${esc(e.name)}">
+        <small class="kind">Arredo del parco</small>
+        <h2>${esc(e.name)}</h2>
+        <dl class="facts">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+        <div class="buttons"><button data-act="item-drop">Smetti di posarlo</button><button data-act="item-close" class="confirm">Posa sul terreno</button></div>
+      </div>`;
+  }
+
   private closeActivity() {
     this.open = null;
     this.team.clear();
@@ -967,13 +999,12 @@ export class Hud {
     const sim = this.sim;
     const s = sim.state;
     const sum = sim.designSummary();
-    const tools = [
-      ...sim.catalog.map((e) => {
-        const skill = e.skill ? ` · ${e.skill}` : '';
-        return `<button class="tool ${this.editor.tool === e.id ? 'on' : ''}" data-tool="${e.id}">
-          <strong>${esc(e.name)}</strong><small>${e.w}×${e.h} · ${sim.orderCost(e.materials)} € · ${e.hours} h${esc(skill)}</small></button>`;
-      }),
-      `<button class="tool ${this.editor.tool === ERASER ? 'on' : ''}" data-tool="${ERASER}"><strong>Gomma</strong><small>toglie un elemento (anche tasto destro)</small></button>`,
+    // In basso la barra degli arredi: nome e prezzo; i dettagli nella scheda (secondo clic).
+    const card = (id: string, name: string, sub: string, title: string) =>
+      `<li class="card crew-card item-card ${this.editor.tool === id ? 'on' : ''}" data-tool="${id}" title="${esc(title)}"><strong>${esc(name)}</strong><small>${esc(sub)}</small></li>`;
+    const items = [
+      ...sim.catalog.map((e) => card(e.id, e.name, `${sim.orderCost(e.materials)} €`, this.editor.tool === e.id ? 'Apri la scheda' : 'Scegli e clicca sul terreno')),
+      card(ERASER, 'Gomma', 'toglie un arredo', this.editor.tool === ERASER ? 'Smetti di cancellare' : 'Clicca un arredo per toglierlo (anche tasto destro)'),
     ].join('');
     const materials = sum.materials.map((m) => `${m.qty} × ${esc(sim.materialName(m.id).toLowerCase())}`).join(', ') || '—';
     const pratiche = sum.pratiche.map((id) => esc(sim.praticaDef(id).name)).join(', ') || '—';
@@ -985,13 +1016,18 @@ export class Hud {
         ? `<ul class="errors">${sum.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`
         : '<p><small>Nessun problema: il progetto si può confermare.</small></p>') + shortfall;
     const moving = this.editor.moving !== null ? s.grid.placements.find((p) => p.uid === this.editor.moving) : undefined;
+    const chosen = this.editor.tool && this.editor.tool !== ERASER ? sim.elementDef(this.editor.tool).name : null;
     const hint = moving
       ? `<p class="hint">Stai spostando: <strong>${esc(sim.elementDef(moving.elementId).name)}</strong>. Clicca dove posarlo; tasto destro o Esc per annullare.</p>`
-      : '<p><small>Senza strumento scelto, clicca un arredo già posato per spostarlo.</small></p>';
+      : chosen
+        ? `<small>Posi: <strong>${esc(chosen)}</strong>. Clicca sul terreno; un altro clic sulla sua scheda in basso per i dettagli.</small>`
+        : this.editor.tool === ERASER
+          ? '<small>Gomma: clicca un arredo per toglierlo.</small>'
+          : '<small>Scegli un arredo in basso e clicca sul terreno per posarlo; senza arredo scelto, clicca uno già posato per spostarlo.</small>';
     return {
-      top: this.brand(`Progettazione del parco · ${esc(sim.siteName)}`, '<small>Scegli un arredo e clicca sul terreno per posarlo. Ogni arredo diventa un lavoro del cantiere.</small>'),
-      left: `<section class="card"><h2>Arredi</h2>${hint}<div class="tools-grid">${tools}</div></section>`,
-      leftFoot: `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Preventivo <strong>${sum.costEur} €</strong></p></section>
+      top: this.brand(`Progettazione del parco · ${esc(sim.siteName)}`, hint),
+      bottom: `<div class="crew-bar item-bar"><ul class="crew-list">${items}</ul></div>`,
+      rightFoot: `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Preventivo <strong>${sum.costEur} €</strong></p></section>
         <section class="card day"><button data-act="confirm" class="confirm" ${sum.problems.length ? 'disabled' : ''}>Conferma il progetto e apri il cantiere</button></section>`,
       right: `<section class="card"><h2>Preventivo</h2>
           <p>Materiali: <strong>${sum.costEur} €</strong> · Lavoro: <strong>${sum.hours} h</strong> complessive, preparazione del terreno compresa</p>
@@ -1142,9 +1178,10 @@ export class Hud {
   private onClick(e: Event) {
     const target = e.target as HTMLElement;
     // Clic sullo sfondo della modale: si chiude come con Annulla.
-    if (target === this.dialog && (this.dialog.dataset.kind === 'activity' || this.dialog.dataset.kind === 'profile')) {
+    if (target === this.dialog && ['activity', 'profile', 'item'].includes(this.dialog.dataset.kind ?? '')) {
       this.closeActivity();
       this.profile = null;
+      this.itemInfo = null;
       this.render();
       return;
     }
@@ -1230,10 +1267,13 @@ export class Hud {
       this.render();
       return;
     }
-    const toolBtn = target.closest<HTMLButtonElement>('button[data-tool]');
-    if (toolBtn) {
-      const t = toolBtn.dataset.tool!;
-      this.editor.tool = this.editor.tool === t ? null : t;
+    // Barra degli arredi: un clic sceglie l'arredo da posare, un secondo clic apre la sua scheda (la gomma si toglie).
+    const item = target.closest<HTMLElement>('[data-tool]');
+    if (item) {
+      const t = item.dataset.tool!;
+      if (this.editor.tool !== t) this.editor.tool = t;
+      else if (t === ERASER) this.editor.tool = null;
+      else this.itemInfo = t;
       this.editor.moving = null;
       this.render();
       return;
@@ -1284,6 +1324,13 @@ export class Hud {
           this.sheet = null;
           this.render();
           return;
+        case 'item-close':
+          this.itemInfo = null;
+          break;
+        case 'item-drop':
+          this.itemInfo = null;
+          this.editor.tool = null;
+          break;
         case 'profile-close':
           this.profile = null;
           this.render();
