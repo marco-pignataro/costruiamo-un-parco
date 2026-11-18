@@ -120,8 +120,9 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 .recruit-head h2 { margin-bottom: 4px; }
 .recruit .pv { display: grid; text-align: right; white-space: nowrap; font-size: 12px; color: var(--muted); margin: 0; }
 .recruit .pv strong { font-size: 20px; color: var(--ink); }
-.cand-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px !important; padding: 2px; scrollbar-width: thin; }
-.cand-card { display: flex; flex-direction: column; gap: 2px; padding: 8px; background: white; border: 1px solid var(--line); border-radius: 8px; }
+/* Colonne fisse: la griglia non si ridispone mentre si recluta (5 su desktop, 4 su schermi stretti, 2 su telefono). */
+.cand-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; grid-template-columns: repeat(5, minmax(0, 1fr)); align-content: start; gap: 10px !important; padding: 2px; scrollbar-width: thin; scrollbar-gutter: stable; }
+.cand-card { min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 2px; padding: 8px; background: white; border: 1px solid var(--line); border-radius: 8px; }
 .cand-card .photo { height: 96px; margin-bottom: 4px; }
 .cand-card .photo img { width: 50px; }
 .cand-card .role { color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
@@ -241,6 +242,7 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
   :root { --side: 220px; --edge: 6px; }
   #hud { font-size: 13px; }
   #hud-top .brand > small { display: none; }
+  .cand-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /*
@@ -285,7 +287,7 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
   .crew-card .photo img { width: 32px; }
   .recruit { padding: 10px; }
   .recruit-head small { display: none; }
-  .cand-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px !important; }
+  .cand-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px !important; }
   .cand-card .photo { height: 76px; }
   .cand-card .photo img { width: 40px; }
   .menu-sheet .sheet-head { display: flex; }

@@ -29,6 +29,10 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
+Terza prova, griglia dei candidati (18/11), commit: COMMIT.
+
+- [x] In fase di selezione volontari la griglia cambia in continuazione man mano che li seleziono. Non va bene, deve avere numero di colonne fisso. E nel mobile massimo due colonne se no esce fuori dallo schermo e diventa inutilizzabile.
+
 Terza prova (18/11), commit: 1a7f3cd.
 
 - [x] nel mobile la riga con le card dei volontari non scorre, e l'HUD superiore esce dallo schermo, o forse l'HUD in generale, non so, verifica tu.
