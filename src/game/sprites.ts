@@ -2,6 +2,7 @@ import type * as Phaser from 'phaser';
 import type { Simulation } from '../core/simulation';
 import type { Volunteer } from '../core/types';
 import { ISO } from './iso';
+import { ART, CHARACTER, characterColors, characterRows, type CharacterLook } from './character';
 
 /**
  * Pixel art generata in codice: ogni sprite è una griglia di caratteri,
@@ -9,9 +10,6 @@ import { ISO } from './iso';
  * Serve per il prototipo; personaggi e animazioni definitive arriveranno da Aseprite.
  */
 export const PALETTE: Record<string, string> = {
-  h: '#3b2a1e', // capelli
-  s: '#e8b48a', // pelle
-  p: '#3d4a6b', // pantaloni
   b: '#2a2a2a', // scarpe
   w: '#f4f1e8', // bianco carta
   l: '#8b5a2b', // legno
@@ -26,114 +24,56 @@ export const PALETTE: Record<string, string> = {
   k: '#3b8f4a', // cestino della differenziata
 };
 
-/** Colori delle magliette per archetipo. */
-export const SHIRTS: Record<string, string> = {
-  presidente: '#c0392b',
-  segretario: '#8e44ad',
-  falegname: '#d35400',
-  giardiniere: '#27ae60',
-  comunicatore: '#2980b9',
-  base: '#2e9e5b',
-  studente: '#16a085',
-  fabbro: '#7f8c8d',
-  elettricista: '#f1c40f',
-  geometra: '#e67e22',
-  carte: '#34495e',
-  coordinatore: '#e84393',
-};
-
-/**
- * Volontario visto davanti e di schiena. c = maglietta, u = stampa bianca della
- * maglietta di gruppo (logo sul petto, lato cuore; scritta sulla schiena):
- * senza divisa diventa del colore della maglietta.
- */
-const VOLUNTEER = [
-  '...hhhh...',
-  '..hhhhhh..',
-  '..hssssh..',
-  '..ssssss..',
-  '...ssss...',
-  '..cccccc..',
-  '.cccccuuc.',
-  '.scccccus.',
-  '.sccccccs.',
-  '..cccccc..',
-  '..pppppp..',
-  '..pp..pp..',
-  '..pp..pp..',
-  '..bb..bb..',
-];
-
-const VOLUNTEER_BACK = [
-  '...hhhh...',
-  '..hhhhhh..',
-  '..hhhhhh..',
-  '..hhhhhh..',
-  '...ssss...',
-  '..cccccc..',
-  '.ccuuuucc.',
-  '.sccccccs.',
-  '.scuucucs.',
-  '..cccccc..',
-  '..pppppp..',
-  '..pp..pp..',
-  '..pp..pp..',
-  '..bb..bb..',
-];
-
 /** Maglietta di gruppo di Puli-AMO: blu, con logo e scritta bianchi. La indossano tutti sul campo. */
-export const UNIFORM_SHIRT = '#2a5fa8';
-const UNIFORM_PRINT = '#f4f1e8';
+export const UNIFORM_SHIRT = ART.uniform.c;
 
-/** Sul campo (sopralluogo e weekend) tutti indossano la maglietta di gruppo; in città quella dell'archetipo. */
+/** Sul campo (sopralluogo e weekend) tutti indossano la maglietta di gruppo; in città l'abito scelto. */
 export function inUniform(sim: Simulation): boolean {
   const s = sim.state;
   return s.stage === 'sopralluogo' || (s.stage === 'cantiere' && s.phase === 'operativa');
 }
 
-/** Aspetto di un volontario per lo sprite: colori di pelle, capelli e maglietta. */
-export interface VolunteerLook {
-  skin: string;
-  hair: string;
-  shirt: string;
-  /** Maglietta di gruppo: blu con logo e scritta bianchi. */
-  uniform: boolean;
+/** Aspetto di un volontario per lo sprite: colori, acconciatura e abito. */
+export type VolunteerLook = CharacterLook;
+
+type LookSource = Pick<Volunteer, 'skin' | 'hair' | 'eyes' | 'hairstyle' | 'outfit'>;
+
+/** Aspetto scelto in Fase 2, con la maglietta di gruppo sul campo. */
+export function volunteerLook(sim: Simulation, v: LookSource, uniform: boolean): VolunteerLook {
+  const ap = sim.appearance;
+  const color = (list: { id: string; color: string }[], id: string) => (list.find((c) => c.id === id) ?? list[0]).color;
+  return { skin: color(ap.skin, v.skin), hair: color(ap.hair, v.hair), eyes: color(ap.eyes, v.eyes), hairstyle: v.hairstyle, outfit: v.outfit, uniform };
 }
 
-/** Colori del volontario: pelle e capelli scelti in Fase 2, maglietta dell'archetipo o di gruppo. */
-export function volunteerLook(sim: Simulation, v: Volunteer, uniform: boolean): VolunteerLook {
-  const skin = sim.appearance.skin.find((c) => c.id === v.skin)?.color ?? PALETTE.s;
-  const hair = sim.appearance.hair.find((c) => c.id === v.hair)?.color ?? PALETTE.h;
-  return { skin, hair, shirt: uniform ? UNIFORM_SHIRT : (SHIRTS[v.archetypeId] ?? SHIRTS.base), uniform };
-}
+const lookKey = (l: VolunteerLook) => `${l.skin}-${l.hair}-${l.eyes}-${l.hairstyle}-${l.outfit}-${l.uniform ? 'u' : 'n'}`;
 
-function lookColors(look: VolunteerLook): Record<string, string> {
-  return { s: look.skin, h: look.hair, c: look.shirt, u: look.uniform ? UNIFORM_PRINT : look.shirt };
-}
-
-/** Texture del volontario con quei colori, davanti o di schiena; si crea la prima volta che serve. */
+/** Texture del volontario con quell'aspetto, davanti o di schiena; si crea la prima volta che serve. */
 export function volunteerTexture(scene: Phaser.Scene, look: VolunteerLook, back = false): string {
-  const key = `vol-${look.skin}-${look.hair}-${look.shirt}-${look.uniform ? 'u' : 'n'}-${back ? 'b' : 'f'}`;
-  paint(scene, key, back ? VOLUNTEER_BACK : VOLUNTEER, lookColors(look));
+  const key = `vol-${lookKey(look)}-${back ? 'b' : 'f'}`;
+  paint(scene, key, characterRows(look, back), characterColors(look));
   return key;
 }
 
 const portraits = new Map<string, string>();
 
-/** Lo stesso sprite come immagine per la HUD (data URL), ingrandito senza sfumature. */
-export function volunteerPortrait(look: VolunteerLook, scale = 12): string {
-  const key = `${look.skin}-${look.hair}-${look.shirt}-${look.uniform}-${scale}`;
+/**
+ * Lo stesso sprite come immagine per la HUD (data URL), ingrandito senza
+ * sfumature. Con `head` solo la testa, per le scelte dell'acconciatura.
+ */
+export function volunteerPortrait(look: VolunteerLook, scale = 12, head = false): string {
+  const key = `${lookKey(look)}-${scale}-${head}`;
   const cached = portraits.get(key);
   if (cached) return cached;
-  const rows = VOLUNTEER;
+  let rows = characterRows(look);
+  if (head) rows = rows.slice(0, 19);
   const canvas = document.createElement('canvas');
-  canvas.width = rows[0].length * scale;
+  canvas.width = CHARACTER.w * scale;
   canvas.height = rows.length * scale;
   const ctx = canvas.getContext('2d')!;
-  const extra = lookColors(look);
+  const colors = characterColors(look);
   rows.forEach((row, y) =>
     [...row].forEach((ch, x) => {
-      const color = extra[ch] ?? PALETTE[ch];
+      const color = colors[ch];
       if (!color) return;
       ctx.fillStyle = color;
       ctx.fillRect(x * scale, y * scale, scale, scale);

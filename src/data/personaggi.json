@@ -1,0 +1,523 @@
+{
+ "_": "Personaggi 16x28 (stile Accogliente). Righe: testa 0-15, busto 16-21, gambe 22-27. Caratteri: k contorno, s/S pelle, Z riflesso, z/d iride, m guance, t bocca, h/H/f capelli, c/C stoffa, w dettaglio, u stampa della divisa, p/P parte di sotto, b scarpe, x calzini. Le acconciature sono sovrapposizioni riga per riga (il punto lascia sotto).",
+ "size": [
+  16,
+  28
+ ],
+ "rows": {
+  "head": 0,
+  "torso": 16,
+  "legs": 22
+ },
+ "face": {
+  "front": [
+   "................",
+   "................",
+   "................",
+   "..kkkkkkkkkkkk..",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kskkksssskkksk.",
+   ".kssZzsssszZssk.",
+   ".ksszzsssszzssk.",
+   ".ksszdssssdzssk.",
+   ".ksmmssssssmmsk.",
+   ".ksssssttsssssk.",
+   "..kssssssssssk..",
+   "...kkkSssSkkk..."
+  ],
+  "back": [
+   "................",
+   "................",
+   "................",
+   "..kkkkkkkkkkkk..",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   ".kssssssssssssk.",
+   "....ksssssSk....",
+   ".....kSssSk....."
+  ]
+ },
+ "hairstyles": {
+  "corti": {
+   "front": {
+    "1": "....kkkkkkkk....",
+    "2": "...khhffhhhhk...",
+    "3": "..khhfffhhhhHk..",
+    "4": ".khhhhhhhhhhhHk.",
+    "5": ".khhhhhhhhhhhHk.",
+    "6": ".khhhhhhhhhhhHk.",
+    "7": ".kHhshhhhhhshHk.",
+    "8": "..H..........H..",
+    "9": "..H..........H.."
+   },
+   "back": {
+    "1": "....kkkkkkkk....",
+    "2": "...khhffhhhhk...",
+    "3": "..khhfffhhhhHk..",
+    "4": ".khhhhhhhhhhhHk.",
+    "5": ".khhhhhhhhhhhHk.",
+    "6": ".khhhhhhhhhhhHk.",
+    "7": ".khhhhhhhhhhhHk.",
+    "8": ".khhhhhhhhhhhHk.",
+    "9": ".khhhhhhhhhhHHk.",
+    "10": ".kHhhhhhhhhHHHk.",
+    "11": ".kHHhhhhhhHHHHk.",
+    "12": ".kHHHHHHHHHHHHk.",
+    "13": "..kHHHHHHHHHHk.."
+   }
+  },
+  "spettinati": {
+   "front": {
+    "0": "...kk..kk..kk...",
+    "1": "..khhkkhfkkhhk..",
+    "2": ".khhhhhffhhhhHk.",
+    "3": "khhfhhhhhhhhhHHk",
+    "4": "khhhhhhhhhhhhhHk",
+    "5": "khHhhhhhhhhhHhHk",
+    "6": "kHhhHhhhhHhhhHHk",
+    "7": "kHHshHhshhHshHHk",
+    "8": "kH............Hk",
+    "9": "kH............Hk",
+    "10": ".k............k."
+   },
+   "back": {
+    "0": "...kk..kk..kk...",
+    "1": "..khhkkhfkkhhk..",
+    "2": ".khhhhhffhhhhHk.",
+    "3": "khhfhhhhhhhhhHHk",
+    "4": "khhhhhhhhhhhhhHk",
+    "5": "khHhhhhhhhhhHhHk",
+    "6": "kHhhHhhhhHhhhHHk",
+    "7": "khhhhhhhhhhhhHHk",
+    "8": "kHhhhhhhhhhhhHHk",
+    "9": "kHhhhhhhhhhhHHHk",
+    "10": "kHHhhhhhhhhHHHHk",
+    "11": "kHHHhhhhhhHHHHHk",
+    "12": "kHHHHHHHHHHHHHHk",
+    "13": ".kHHHkHHHkHHHHk."
+   }
+  },
+  "caschetto": {
+   "front": {
+    "0": "....kkkkkkkk....",
+    "1": "..kkhhhffhhhkk..",
+    "2": ".khhhhfffhhhhHk.",
+    "3": "khhhfhhhhhhhhhHk",
+    "4": "khhhhhhhhhhhhhHk",
+    "5": "khhhhhhhhhhhhHHk",
+    "6": "khhHhhhHHhhhHhHk",
+    "7": "khHsshHssHhsshHk",
+    "8": "khH..........HHk",
+    "9": "khH..........HHk",
+    "10": "khH..........HHk",
+    "11": "kHH..........HHk",
+    "12": "kHH..........HHk",
+    "13": ".kHk........kHk."
+   },
+   "back": {
+    "0": "....kkkkkkkk....",
+    "1": "..kkhhhffhhhkk..",
+    "2": ".khhhhfffhhhhHk.",
+    "3": "khhhfhhhhhhhhhHk",
+    "4": "khhhhhhhhhhhhhHk",
+    "5": "khhhhhhhhhhhhHHk",
+    "6": "khhHhhhHHhhhHhHk",
+    "7": "khhhhhhhhhhhhHHk",
+    "8": "kHhhhhhhhhhhhHHk",
+    "9": "kHhhhhhhhhhhHHHk",
+    "10": "kHHhhhhhhhhHHHHk",
+    "11": "kHHHhhhhhhHHHHHk",
+    "12": "kHHHHHHHHHHHHHHk",
+    "13": ".kHHHHHHHHHHHHk.",
+    "14": "..kkkkkkkkkkkk.."
+   }
+  },
+  "lunghi": {
+   "front": {
+    "0": "....kkkkkkkk....",
+    "1": "..kkhhhffhhhkk..",
+    "2": ".khhhhfffhhhhHk.",
+    "3": "khhhfhhhhhhhhhHk",
+    "4": "khhhhhhhhhhhhhHk",
+    "5": "khhhhhhhhhhhhHHk",
+    "6": "khhhhhhhhhhhhHHk",
+    "7": "khhhhhhhhssshHHk",
+    "8": "khh..........HHk",
+    "9": "khh..........HHk",
+    "10": "khh..........HHk",
+    "11": "khh..........HHk",
+    "12": "khh..........HHk",
+    "13": "khh..........HHk",
+    "14": "khh..........HHk",
+    "15": "khhk........kHHk",
+    "16": "khhk........kHHk",
+    "17": "kkkk........kkkk"
+   },
+   "back": {
+    "0": "....kkkkkkkk....",
+    "1": "..kkhhhffhhhkk..",
+    "2": ".khhhhfffhhhhHk.",
+    "3": "khhhfhhhhhhhhhHk",
+    "4": "khhhhhhhhhhhhhHk",
+    "5": "khhhhhhhhhhhhHHk",
+    "6": "khhhhhhhhhhhhHHk",
+    "7": "khhhhhhhhhhhhHHk",
+    "8": "kHhhhhhhhhhhhHHk",
+    "9": "kHhhhhhhhhhhHHHk",
+    "10": "kHHhhhhhhhhHHHHk",
+    "11": "kHHHhhhhhhHHHHHk",
+    "12": "kHHHHHHHHHHHHHHk",
+    "13": "kHHHHHHHHHHHHHHk",
+    "14": "kHHHHHHHHHHHHHHk",
+    "15": "kHHHHHHHHHHHHHHk",
+    "16": "kHHHHHHHHHHHHHHk",
+    "17": "kHHHHHHHHHHHHHHk",
+    "18": ".kkkkkkkkkkkkkk."
+   }
+  },
+  "coda": {
+   "front": {
+    "1": "....kkkkkkkk....",
+    "2": "...khhffhhhhk...",
+    "3": "..khhfffhhhhHk..",
+    "4": ".khhhhhhhhhhhHk.",
+    "5": ".khhhhhhhhhhhHk.",
+    "6": ".khssssssssshHk.",
+    "7": "..H..........H.."
+   },
+   "back": {
+    "1": "....kkkkkkkk....",
+    "2": "...khhffhhhhk...",
+    "3": "..khhfffhhhhHk..",
+    "4": ".khhhhhhhhhhhHk.",
+    "5": ".khhhhhhhhhhhHk.",
+    "6": ".khhhhhhhhhhhHk.",
+    "7": ".khhhhhhhhhhhHk.",
+    "8": ".khhhhhhhhhhHHk.",
+    "9": ".kHhhhhhhhhHHHk.",
+    "10": ".kHHhhhhhhHHHHk.",
+    "11": ".kHHHHHHHHHHHHk.",
+    "12": "..kHHHkffkHHHk..",
+    "13": "......khHk......",
+    "14": "......khHk......",
+    "15": "......khHk......",
+    "16": "......kHHk......",
+    "17": ".......kk......."
+   }
+  },
+  "chignon": {
+   "front": {
+    "0": "......kkkk......",
+    "1": ".....khffhk.....",
+    "2": "....kkhhhhkk....",
+    "3": "..kkhhffhhhhkk..",
+    "4": ".khhfhhhhhhhhHk.",
+    "5": ".khhhhhhhhhhhHk.",
+    "6": ".khhhhhhhhhhhHk.",
+    "7": ".kHhsssssssshHk.",
+    "8": "..H..........H.."
+   },
+   "back": {
+    "0": "......kkkk......",
+    "1": ".....khffhk.....",
+    "2": "....kkhhhhkk....",
+    "3": "..kkhhffhhhhkk..",
+    "4": ".khhfhhhhhhhhHk.",
+    "5": ".khhhhhhhhhhhHk.",
+    "6": ".khhhhhhhhhhhHk.",
+    "7": ".khhhhhhhhhhhHk.",
+    "8": ".khhhhhhhhhhhHk.",
+    "9": ".khhhhhhhhhhHHk.",
+    "10": ".kHhhhhhhhhHHHk.",
+    "11": ".kHHhhhhhhHHHHk.",
+    "12": ".kHHHHHHHHHHHHk.",
+    "13": "..kHHHHHHHHHHk.."
+   }
+  },
+  "rasati": {
+   "front": {
+    "2": "...kkkkkkkkkk...",
+    "3": "..khhfhhhhhhHk..",
+    "4": ".khhhhhhhHhhhHk.",
+    "5": ".khHhhhhhhhhHHk."
+   },
+   "back": {
+    "2": "...kkkkkkkkkk...",
+    "3": "..khhfhhhhhhHk..",
+    "4": ".khhhhhhhHhhhHk.",
+    "5": ".khHhhhhhhhhHHk.",
+    "6": ".khhHhhhhhHhhHk.",
+    "7": ".khhhhHhhhhhHHk.",
+    "8": ".khhHhhhhhHhhHk.",
+    "9": ".khhhhHhhhhhHHk.",
+    "10": ".khhHhhhhhHhhHk.",
+    "11": ".khhhhHhhhhhHHk.",
+    "12": ".khhHhhhhhHhhHk.",
+    "13": "..kHHHHHHHHHHk.."
+   }
+  }
+ },
+ "torsos": {
+  "maglietta": {
+   "front": [
+    "..kkcccwwccckk..",
+    ".kcccccccccccCk.",
+    ".kcCcccccccuCCk.",
+    ".kssCccccccCssk.",
+    ".kssCccccccCSsk.",
+    ".kSskppppppkSSk."
+   ],
+   "back": [
+    "..kkcccccccckk..",
+    ".kcccccccccccCk.",
+    ".kcCuuuuuuuuCCk.",
+    ".kssCuucuucCssk.",
+    ".kssCccccccCSsk.",
+    ".kSskppppppkSSk."
+   ]
+  },
+  "camicia": {
+   "front": [
+    "..kkcwwsswwckk..",
+    ".kcccccwccccCCk.",
+    ".kcCccccwccccCk.",
+    ".kcCccccwcccCCk.",
+    ".kcCccccwcccCCk.",
+    ".kssppppppppSsk."
+   ],
+   "back": [
+    "..kkcwwccwwckk..",
+    ".kcccccccccccCk.",
+    ".kcCcccccccccCk.",
+    ".kcCcccccccccCk.",
+    ".kcCccccccccCCk.",
+    ".kssppppppppSsk."
+   ]
+  },
+  "felpa": {
+   "front": [
+    ".kkcccwsswccckk.",
+    ".kcccccwwccccCk.",
+    ".kcCcccccccccCk.",
+    ".kcCckkkkkkcCCk.",
+    ".kcCckcccckcCCk.",
+    ".kssCcccccccSsk."
+   ],
+   "back": [
+    ".kkcccccccccckk.",
+    ".kcckCCCCCCkcCk.",
+    ".kcCckCCCCkcCCk.",
+    ".kcCcckkkkccCCk.",
+    ".kcCccccccccCCk.",
+    ".kssCcccccccSsk."
+   ]
+  },
+  "giacca": {
+   "front": [
+    "..kkcCCsSCCckk..",
+    ".kwccccCCccccwk.",
+    ".kcCcccwCcccCCk.",
+    ".kcCccccCcccCCk.",
+    ".kcCcccwCcccCCk.",
+    ".kssCcccCcccSsk."
+   ],
+   "back": [
+    "..kkcccccccckk..",
+    ".kwcccccccccCwk.",
+    ".kcCcccccccccCk.",
+    ".kcCccccccccCCk.",
+    ".kcCccccccccCCk.",
+    ".kssCcccccccSsk."
+   ]
+  },
+  "vestito": {
+   "front": [
+    "..kkccsssscckk..",
+    ".kcccccccccccCk.",
+    ".kcCcccccccccCk.",
+    ".kssCwwwwwwCssk.",
+    ".kssppppppppSsk.",
+    ".kSkppppppppkSk."
+   ],
+   "back": [
+    "..kkcccccccckk..",
+    ".kcccccccccccCk.",
+    ".kcCcccccccccCk.",
+    ".kssCwwwwwwCssk.",
+    ".kssppppppppSsk.",
+    ".kSkppppppppkSk."
+   ]
+  },
+  "salopette": {
+   "front": [
+    "..kkcccwwccckk..",
+    ".kccpcccccpccCk.",
+    ".kcCpppppppppCk.",
+    ".kssppwwwwppSsk.",
+    ".kssppppppppSsk.",
+    ".kSskppppppkSSk."
+   ],
+   "back": [
+    "..kkcccccccckk..",
+    ".kccpcccccpccCk.",
+    ".kcCcpcccpcccCk.",
+    ".kssppppppppSsk.",
+    ".kssppppppppSsk.",
+    ".kSskppppppkSSk."
+   ]
+  }
+ },
+ "legs": {
+  "pantaloni": {
+   "stand": [
+    "..kkppppppPPkk..",
+    "...kpppkkpPPk...",
+    "...kpppkkpPPk...",
+    "...kpppkkpPPk...",
+    "..kbbbbkkbbbbk..",
+    "..kkkkk..kkkkk.."
+   ],
+   "a": [
+    "..kkppppppPPkk..",
+    "...kpppkkpPPk...",
+    "...kpppkkpPPk...",
+    "..kbbbbkkpPPk...",
+    "..kkkkk.kbbbbk..",
+    "........kkkkkk.."
+   ],
+   "b": [
+    "..kkppppppPPkk..",
+    "...kpppkkpPPk...",
+    "...kpppkkpPPk...",
+    "...kpppkkbbbbk..",
+    "..kbbbbk.kkkkk..",
+    "..kkkkkk........"
+   ]
+  },
+  "gonna": {
+   "stand": [
+    "..kppppppppPPk..",
+    "..kkkkkkkkkkkk..",
+    "....ksk..kSk....",
+    "....kxk..kxk....",
+    "...kbbk..kbbk...",
+    "...kkkk..kkkk..."
+   ],
+   "a": [
+    "..kppppppppPPk..",
+    "..kkkkkkkkkkkk..",
+    "....ksk..kSk....",
+    "...kbbk..kxk....",
+    "...kkkk.kbbk....",
+    "........kkkk...."
+   ],
+   "b": [
+    "..kppppppppPPk..",
+    "..kkkkkkkkkkkk..",
+    "....ksk..kSk....",
+    "....kxk..kbbk...",
+    "....kbbk.kkkk...",
+    "....kkkk........"
+   ]
+  },
+  "pantaloncini": {
+   "stand": [
+    "..kkppppppPPkk..",
+    "...kpppkkpPPk...",
+    "...kkkkkkkkkk...",
+    "....ksk..kSk....",
+    "...kbbbk.kbbbk..",
+    "...kkkkk.kkkkk.."
+   ],
+   "a": [
+    "..kkppppppPPkk..",
+    "...kpppkkpPPk...",
+    "...kkkkkkkkkk...",
+    "...kbbbk.kSk....",
+    "...kkkkkkbbbk...",
+    "........kkkkk..."
+   ],
+   "b": [
+    "..kkppppppPPkk..",
+    "...kpppkkpPPk...",
+    "...kkkkkkkkkk...",
+    "....ksk.kbbbk...",
+    "...kbbbk.kkkkk..",
+    "...kkkkk........"
+   ]
+  }
+ },
+ "outfits": {
+  "casual": {
+   "torso": "maglietta",
+   "legs": "pantaloni",
+   "c": "#e0b030",
+   "w": "#e0b030",
+   "p": "#3e55a8",
+   "b": "#e8e2d4"
+  },
+  "camicia": {
+   "torso": "camicia",
+   "legs": "pantaloni",
+   "c": "#dfe6ee",
+   "w": "#ffffff",
+   "p": "#4a4e5e",
+   "b": "#5a3a26"
+  },
+  "felpa": {
+   "torso": "felpa",
+   "legs": "pantaloni",
+   "c": "#c0392b",
+   "w": "#f4f1e8",
+   "p": "#3e55a8",
+   "b": "#2b2d38"
+  },
+  "giacca": {
+   "torso": "giacca",
+   "legs": "pantaloni",
+   "c": "#3f7a35",
+   "w": "#e0b030",
+   "p": "#3e55a8",
+   "b": "#c9c3b3"
+  },
+  "vestito": {
+   "torso": "vestito",
+   "legs": "gonna",
+   "c": "#f2c94c",
+   "w": "#a0521f",
+   "p": "#a0521f",
+   "b": "#8c4a9a",
+   "x": "#c9c3c8"
+  },
+  "sportivo": {
+   "torso": "maglietta",
+   "legs": "pantaloncini",
+   "c": "#16a085",
+   "w": "#16a085",
+   "p": "#2b2d38",
+   "b": "#f4f1e8"
+  },
+  "salopette": {
+   "torso": "salopette",
+   "legs": "pantaloni",
+   "c": "#e84393",
+   "w": "#e0b030",
+   "p": "#5a7ab8",
+   "b": "#6e4630"
+  }
+ },
+ "uniform": {
+  "c": "#2a5fa8",
+  "u": "#f4f1e8"
+ }
+}

@@ -106,6 +106,9 @@ export function validateContent(c: Content): string[] {
   for (const m of c.candidates) {
     if (!has(c.appearance.skin, m.skin)) errors.push(`${m.id}: colore della pelle sconosciuto ${m.skin}`);
     if (!has(c.appearance.hair, m.hair)) errors.push(`${m.id}: colore dei capelli sconosciuto ${m.hair}`);
+    if (!has(c.appearance.eyes, m.eyes)) errors.push(`${m.id}: colore degli occhi sconosciuto ${m.eyes}`);
+    if (!has(c.appearance.hairstyles, m.hairstyle)) errors.push(`${m.id}: acconciatura sconosciuta ${m.hairstyle}`);
+    if (!has(c.appearance.outfits, m.outfit)) errors.push(`${m.id}: abito sconosciuto ${m.outfit}`);
     if (!Number.isInteger(m.age) || m.age < 16 || m.age > 99) errors.push(`${m.id}: età non valida`);
   }
   if (c.candidates.filter((m) => m.archetypeId === 'presidente').length !== 1) errors.push('Serve esattamente un candidato presidente: entra in squadra da solo');

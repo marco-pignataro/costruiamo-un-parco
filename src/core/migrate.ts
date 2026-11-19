@@ -15,8 +15,8 @@ type AnyState = Record<string, unknown> & { version?: number };
 export function migrate(raw: unknown, c: Content): GameState {
   let s = raw as AnyState;
   const start = s.version;
-  if (start === 11) return s as unknown as GameState;
-  if (typeof start !== 'number' || start < 1 || start > 10) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
+  if (start === 12) return s as unknown as GameState;
+  if (typeof start !== 'number' || start < 1 || start > 11) throw new Error(`Salvataggio non riconosciuto (versione ${String(start)})`);
   if (s.version === 1) s = v1to2(s, c);
   if (s.version === 2) s = v2to3(s, c);
   if (s.version === 3) s = { ...s, version: 4, stage: 'cantiere' }; // v3 → v4: le partite esistenti sono già in cantiere
@@ -27,6 +27,7 @@ export function migrate(raw: unknown, c: Content): GameState {
   if (s.version === 8) s = v8to9(s, c);
   if (s.version === 9) s = v9to10(s);
   if (s.version === 10) s = v10to11(s);
+  if (s.version === 11) s = v11to12(s, c);
   return dropUnknownActive(s as unknown as GameState, c);
 }
 
@@ -132,6 +133,19 @@ function v10to11(s: AnyState): AnyState {
     ]);
   }
   return out;
+}
+
+/**
+ * v11 → v12: acconciatura, colore degli occhi e abito. Si prendono dal
+ * candidato con lo stesso id; chi non c'è più nei contenuti riceve le prime scelte.
+ */
+function v11to12(s: AnyState, c: Content): AnyState {
+  const ap = c.appearance;
+  const volunteers = (s.volunteers as Volunteer[]).map((v) => {
+    const m = c.candidates.find((x) => x.id === v.id);
+    return { ...v, hairstyle: m?.hairstyle ?? ap.hairstyles[0].id, eyes: m?.eyes ?? ap.eyes[0].id, outfit: m?.outfit ?? ap.outfits[0].id };
+  });
+  return { ...s, version: 12, volunteers };
 }
 
 function dropUnknownActive(s: GameState, c: Content): GameState {

@@ -119,8 +119,12 @@ ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72
       <div class="grid small" id="anims"></div>
     </div>
     <div class="sheet">
-      <p><strong>Varietà con lo scambio di palette.</strong> Stesso sprite, pelle e capelli diversi presi da <code>appearance.json</code>.</p>
+      <p><strong>Varietà.</strong> Stesso corpo, pelle e capelli diversi presi da <code>appearance.json</code>; nello stile Accogliente anche acconciatura e colore degli occhi.</p>
       <div class="grid small" id="swaps"></div>
+    </div>
+    <div class="sheet" id="outfitsSheet" hidden>
+      <p><strong>Abiti completi.</strong> In Fase 2 si sceglie lo stile intero, non i singoli capi. In città si vede l'abito; sul campo la parte di sopra diventa la maglietta di Puli-AMO.</p>
+      <div class="grid" id="outfits"></div>
     </div>
   </section>
 
@@ -229,8 +233,8 @@ const DRAWS = {
     body: 'compatto', scale: 1, flat: true, outline: '#241a26',
   },
   accogliente: {
-    name: 'Accogliente 16×24',
-    desc: 'Dai riferimenti di Marco: volontari in stile chibi con testa grande, occhi colorati e guance rosate, contorno vinaccia invece del nero; oggetti con contorno colorato e un filo di luce in cima; scena all’ora dorata con ombre viola, luci calde e lampioni accesi. Il più caldo e caratteristico, ma ogni volto va curato a mano.',
+    name: 'Accogliente 16×28',
+    desc: 'Dai riferimenti di Marco: volontari chibi 16×28 come quelli del gioco, testa larga e squadrata, occhi grandi con riflesso, guance rosate, capelli voluminosi e contorno vinaccia invece del nero; oggetti con contorno colorato e un filo di luce in cima; scena all’ora dorata con ombre viola, luci calde e lampioni accesi. Il più caldo e caratteristico, ma ogni volto va curato a mano.',
     body: 'chibi', scale: 1, grade: true, selOutline: true, glow: true,
     // Colori dello sfondo ritoccati per il tramonto (prima della correzione).
     swap: {
@@ -531,38 +535,34 @@ const M_ACC = {
   sacco: { front: { 4: '...kk...', 5: '.k2222k.', 6: 's222322s', 7: '.k2222k.' }, back: { 6: 'c......C' } },
 };
 
-// Chibi 16×24 (stile Accogliente): testa con capelli voluminosi e occhi grandi (0-12), busto (13-18), gambe (19-23).
-// z iride, Z riflesso, m guance, t bocca, f riflesso dei capelli.
-const CH_HEAD_F = [
-  '.....kkkkkk.....', '...kkhhffhhkk...', '..khhfffhhhhHk..', '.khhfhhhhhhhhHk.', '.khhhhhhhhhhhHk.', 'khhhHhhhhhhHhhHk',
-  'khHsssHhhHssssHk', 'kHsssssssssssSHk', 'kHssZzssssZzsSHk', 'kHsszzsssszzsSHk', 'kHsmssstssssmSHk', '.kHsssssssssSHk.',
-  '....kksssSkk....',
-];
-const CH_HEAD_B = [
-  '.....kkkkkk.....', '...kkhhffhhkk...', '..khhfffhhhhHk..', '.khhfhhhhhhhhHk.', '.khhhhhhhhhhhHk.', 'khhhhhhhhhhhhHHk',
-  'khhhhhhhhhhhhHHk', 'kHhhhhhhhhhhhHHk', 'kHhhhhhhhhhhHHHk', 'kHHhhhhhhhhhHHHk', 'kHHhhhhhhhhHHHHk', '.kHHHhhhhhHHHHk.',
-  '....kksssSkk....',
-];
-const CH_TORSO_F = ['...kcccwwccCCk..', '..kccccccccCCCk.', '..kscccccccCCsk.', '..kscccccccCCSk.', '..kspppppppPPSk.', '...kpppppppPPk..'];
-const CH_TORSO_B = ['...kccccccccCk..', '..kcwwwwwwwwCCk.', '..kscccccccCCsk.', '..kscwcwwcwCCSk.', '..kspppppppPPSk.', '...kpppppppPPk..'];
-const CH_LEGS = {
-  stand: ['...kpppkkpPPk...', '...kppk..kPPk...', '...kppk..kPPk...', '..kbbbk..kbbbk..', '..kkkkk..kkkkk..'],
-  a: ['...kpppkkpPPk...', '...kppk..kPPk...', '..kbbbk..kPPk...', '..kkkkk.kbbbk...', '........kkkkk...'],
-  b: ['...kpppkkpPPk...', '...kppk..kPPk...', '...kppk..kbbbk..', '..kbbbk..kkkkk..', '..kkkkk.........'],
-};
-// Accessori del corpo compatto spostati di una riga (in su quelli sulla testa); occhiali più grandi attorno agli occhi.
+// Chibi 16×28 (stile Accogliente): lo stesso disegno del gioco, da assets/personaggi.json.
+// Testa 0-15 con acconciatura sovrapposta, busto 16-21, gambe 22-27.
+let PERS = null;
+// Accessori del corpo compatto spostati: in su di una riga quelli sulla testa, in giù di quattro quelli sul busto.
 const CH_ACC = Object.fromEntries(Object.entries(C_ACC).map(([name, def]) => {
-  const off = name === 'cappello' || name === 'berretto' ? -1 : 1;
+  const off = name === 'cappello' || name === 'berretto' ? -1 : 4;
   const sh = o => o && Object.fromEntries(Object.entries(o).map(([r, row]) => [+r + off, row]));
   return [name, { front: sh(def.front), back: sh(def.back) }];
 }));
-CH_ACC.occhiali = { front: { 7: '...kkkk..kkkk...', 8: '...k..kkkk..k...', 9: '...k..k..k..k...', 10: '...kkkk..kkkk...' }, back: {} };
-const EYES = ['#2e8f8a', '#3f8a3a', '#6b4423', '#2a5fa8', '#4a7a9a'];
+CH_ACC.occhiali = { front: { 8: '...kkkk..kkkk...', 9: '...k..kkkk..k...', 10: '...k..k..k..k...', 11: '...kkkk..kkkk...' }, back: {} };
+const EYES = ['#6b4423', '#3f8a3a', '#3a8fc8', '#2e9a96', '#a0672a'];
+/** Righe del volontario chibi: volto, busto (divisa o abito), gambe dell'abito, acconciatura sopra. */
+function chibiRows(look, back, legs) {
+  const side = back ? 'back' : 'front';
+  const o = PERS.outfits[look.outfit] ?? PERS.outfits.casual;
+  const rows = [...PERS.face[side], ...PERS.torsos[look.uniform ? 'maglietta' : o.torso][side], ...PERS.legs[o.legs][legs]];
+  for (const [r, str] of Object.entries((PERS.hairstyles[look.hairstyle] ?? PERS.hairstyles.corti)[side])) {
+    const row = [...rows[r]];
+    [...str].forEach((ch, i) => { if (ch !== '.') row[i] = ch; });
+    rows[r] = row.join('');
+  }
+  return rows;
+}
 
 const BODIES = {
   compatto: { w: 16, h: 24, bobRow: 18, headF: C_HEAD_F, headB: C_HEAD_B, torsoF: C_TORSO_F, torsoB: C_TORSO_B, legs: C_LEGS, acc: C_ACC, tool: { top: 7, blade: 17, hands: [12, 15], len: 3, drop: 3 } },
   slanciato: { w: 16, h: 32, bobRow: 20, headF: T_HEAD_F, headB: T_HEAD_B, torsoF: T_TORSO_F, torsoB: T_TORSO_B, legs: T_LEGS, acc: T_ACC, tool: { top: 8, blade: 24, hands: [13, 17], len: 4, drop: 3 } },
-  chibi: { w: 16, h: 24, bobRow: 19, headF: CH_HEAD_F, headB: CH_HEAD_B, torsoF: CH_TORSO_F, torsoB: CH_TORSO_B, legs: CH_LEGS, acc: CH_ACC, tool: { top: 8, blade: 18, hands: [15, 17], len: 3, drop: 2 }, chibi: true },
+  chibi: { w: 16, h: 28, bobRow: 22, acc: CH_ACC, tool: { top: 10, blade: 21, hands: [19, 21], len: 3, drop: 2 }, chibi: true },
   micro: { w: 8, h: 12, bobRow: 9, headF: M_HEAD_F, headB: M_HEAD_B, torsoF: M_TORSO_F, torsoB: M_TORSO_B, legs: M_LEGS, acc: M_ACC, tool: { top: 2, blade: 8, hands: [5], len: 2, drop: 1 } },
 };
 let BODY = BODIES.compatto;
@@ -600,18 +600,20 @@ function lookColors(look) {
     p: '#34405e', P: '#262f47', b: '#2a2224',
   };
   if (!BODY.chibi) return base;
-  // Chibi: contorno vinaccia, ombre calde, occhi colorati, guance rosate, jeans e scarpe come nei riferimenti.
-  const eye = EYES[(SKINS.indexOf(look.skin) + HAIRS.indexOf(look.hair) + 5) % EYES.length];
+  // Chibi: come characterColors nel gioco (src/game/character.ts).
+  const o = PERS.outfits[look.outfit] ?? PERS.outfits.casual;
+  const top = look.uniform ? PERS.uniform.c : o.c, eye = look.eyes ?? EYES[0];
   return {
-    ...base,
-    k: '#4a1c30', S: mix(look.skin, '#b0505a', 0.3), H: mix(look.hair, '#3a1530', 0.4), f: mix(look.hair, '#ffe0b0', 0.35),
-    C: mix(shirt, '#2a1040', 0.35), z: eye, Z: '#f6f2ea', m: mix(look.skin, '#ef6a6a', 0.45), t: mix(look.skin, '#9a2f3a', 0.5),
-    p: '#3e55a8', P: '#2c3878', b: '#5a3a36',
+    k: '#4a1c30', s: look.skin, S: mix(look.skin, '#b0505a', 0.3), m: mix(look.skin, '#ef6a6a', 0.45), t: mix(look.skin, '#9a2f3a', 0.5),
+    Z: '#f6f2ea', z: eye, d: mix(eye, '#1a1020', 0.45),
+    h: look.hair, H: mix(look.hair, '#3a1530', 0.4), f: mix(look.hair, '#ffe0b0', 0.35),
+    c: top, C: mix(top, '#2a1040', 0.35), w: look.uniform ? PERS.uniform.u : o.w, u: look.uniform ? PERS.uniform.u : top,
+    p: o.p, P: mix(o.p, '#1a1030', 0.3), b: o.b, x: o.x ?? '#d8d4c8',
   };
 }
 function charFrame(look, { back = false, legs = 'stand', bob = 0, carry = null, tool = 0 }) {
   const B = BODY;
-  let rows = [...(back ? B.headB : B.headF), ...(back ? B.torsoB : B.torsoF), ...B.legs[legs]];
+  let rows = B.chibi ? chibiRows(look, back, legs) : [...(back ? B.headB : B.headF), ...(back ? B.torsoB : B.torsoF), ...B.legs[legs]];
   if (rows.length !== B.h) errors.push(`corpo: ${rows.length} righe invece di ${B.h}`);
   for (const a of [...(look.acc || []), ...(carry ? [carry] : [])]) {
     const def = B.acc[a];
@@ -1032,10 +1034,10 @@ function buildObjects() {
 
 /* ---------- Volontari in scena ---------- */
 const CREW = [
-  { skin: SKINS[1], hair: HAIRS[1], shirt: '#27ae60', uniform: true, acc: ['cappello'] },
-  { skin: SKINS[3], hair: HAIRS[0], shirt: '#2e9e5b', uniform: true, acc: [] },
-  { skin: SKINS[0], hair: HAIRS[3], shirt: '#e84393', uniform: true, acc: ['gilet'] },
-  { skin: SKINS[2], hair: HAIRS[4], shirt: '#16a085', uniform: true, acc: ['berretto'] },
+  { skin: SKINS[1], hair: HAIRS[1], shirt: '#27ae60', uniform: true, acc: ['cappello'], hairstyle: 'corti', eyes: EYES[0], outfit: 'casual' },
+  { skin: SKINS[3], hair: HAIRS[0], shirt: '#2e9e5b', uniform: true, acc: [], hairstyle: 'spettinati', eyes: EYES[0], outfit: 'casual' },
+  { skin: SKINS[0], hair: HAIRS[3], shirt: '#e84393', uniform: true, acc: ['gilet'], hairstyle: 'caschetto', eyes: EYES[3], outfit: 'vestito' },
+  { skin: SKINS[2], hair: HAIRS[4], shirt: '#16a085', uniform: true, acc: ['berretto'], hairstyle: 'coda', eyes: EYES[2], outfit: 'sportivo' },
 ];
 function crewPlacement(p, time) {
   const out = [];
@@ -1128,14 +1130,14 @@ new ResizeObserver(fitStage).observe(document.getElementById('stageWrap'));
 
 /* ---------- Schede: volontari ---------- */
 const ARCH = [
-  { name: 'Presidente', note: 'tesserino e occhiali', shirt: '#c0392b', skin: SKINS[1], hair: HAIRS[5], acc: ['occhiali', 'tesserino'] },
-  { name: 'Segretaria', note: 'cartellina', shirt: '#8e44ad', skin: SKINS[0], hair: HAIRS[2], acc: ['cartellina'] },
-  { name: 'Giardiniere', note: 'cappello di paglia', shirt: '#27ae60', skin: SKINS[2], hair: HAIRS[1], acc: ['cappello'] },
-  { name: 'Falegname', note: 'cassetta degli attrezzi', shirt: '#d35400', skin: SKINS[3], hair: HAIRS[0], acc: ['cassetta'] },
-  { name: 'Comunicatrice', note: 'berretto e telefono', shirt: '#2980b9', skin: SKINS[4], hair: HAIRS[0], acc: ['berretto', 'telefono'] },
-  { name: 'Coordinatore', note: 'gilet ad alta visibilità', shirt: '#e84393', skin: SKINS[1], hair: HAIRS[3], acc: ['gilet'] },
+  { name: 'Presidente', note: 'tesserino e occhiali', shirt: '#c0392b', skin: SKINS[1], hair: HAIRS[5], acc: ['occhiali', 'tesserino'], hairstyle: 'chignon', eyes: EYES[0], outfit: 'camicia' },
+  { name: 'Segretaria', note: 'cartellina', shirt: '#8e44ad', skin: SKINS[0], hair: HAIRS[2], acc: ['cartellina'], hairstyle: 'caschetto', eyes: EYES[1], outfit: 'vestito' },
+  { name: 'Giardiniere', note: 'cappello di paglia', shirt: '#27ae60', skin: SKINS[2], hair: HAIRS[1], acc: ['cappello'], hairstyle: 'corti', eyes: EYES[4], outfit: 'salopette' },
+  { name: 'Falegname', note: 'cassetta degli attrezzi', shirt: '#d35400', skin: SKINS[3], hair: HAIRS[0], acc: ['cassetta'], hairstyle: 'rasati', eyes: EYES[0], outfit: 'giacca' },
+  { name: 'Comunicatrice', note: 'berretto e telefono', shirt: '#2980b9', skin: SKINS[4], hair: HAIRS[0], acc: ['berretto', 'telefono'], hairstyle: 'lunghi', eyes: EYES[0], outfit: 'felpa' },
+  { name: 'Coordinatore', note: 'gilet ad alta visibilità', shirt: '#e84393', skin: SKINS[1], hair: HAIRS[3], acc: ['gilet'], hairstyle: 'spettinati', eyes: EYES[1], outfit: 'casual' },
 ];
-const BASE_LOOK = { skin: SKINS[1], hair: HAIRS[2], shirt: '#2e9e5b', uniform: true, acc: [] };
+const BASE_LOOK = { skin: SKINS[1], hair: HAIRS[2], shirt: '#2e9e5b', uniform: true, acc: [], hairstyle: 'spettinati', eyes: EYES[1], outfit: 'casual' };
 const ANIM_CARDS = [
   ['attesa', 'Attesa', '', 1], ['camminaF', 'Camminata', 'verso chi guarda', 2], ['camminaB', 'Camminata', 'di schiena', 2],
   ['scavare', 'Scavare', 'vangatura, bonifica', 1], ['portaF', 'Trasportare', 'sacchi dei rifiuti', 2], ['scatolaF', 'Trasportare', 'materiali', 2],
@@ -1167,14 +1169,27 @@ function renderCards() {
   living = [];
   for (const el of [archEl, animEl, swapEl]) el.textContent = '';
   for (const a of ARCH) {
-    const city = { skin: a.skin, hair: a.hair, shirt: a.shirt, uniform: false, acc: a.acc };
+    const city = { skin: a.skin, hair: a.hair, shirt: a.shirt, uniform: false, acc: a.acc, hairstyle: a.hairstyle, eyes: a.eyes, outfit: a.outfit };
     const field = { ...city, uniform: true };
     fig(archEl, [spriteCanvas(city, 'attesa', 3), spriteCanvas(field, 'camminaB', 3, 2)], a.name, `${a.note}<br>in città · sul campo`);
   }
   for (const [anim, name, note, every] of ANIM_CARDS) fig(animEl, [spriteCanvas(BASE_LOOK, anim, 4, every)], name, note);
-  [[0, 4], [1, 1], [2, 3], [3, 0], [4, 6], [1, 5]].forEach(([s, h]) => {
-    fig(swapEl, [spriteCanvas({ skin: SKINS[s], hair: HAIRS[h], shirt: UNIFORM, uniform: true, acc: [] }, 'attesa', 4)], appearanceNames[s], `capelli ${hairNames[h]}`);
+  const STYLES = [['caschetto', 'caschetto'], ['spettinati', 'spettinati'], ['lunghi', 'lunghi'], ['coda', 'coda'], ['chignon', 'chignon'], ['corti', 'corti'], ['rasati', 'rasati']];
+  [[0, 4], [1, 1], [2, 3], [3, 0], [4, 6], [1, 5], [3, 2]].forEach(([s, h], n) => {
+    const [style, styleName] = STYLES[n];
+    const look = { skin: SKINS[s], hair: HAIRS[h], shirt: UNIFORM, uniform: true, acc: [], hairstyle: style, eyes: EYES[n % EYES.length] };
+    if (!BODY.chibi && n === 6) return;
+    fig(swapEl, [spriteCanvas(look, 'attesa', 4)], appearanceNames[s], BODY.chibi ? `capelli ${hairNames[h]}, ${styleName}` : `capelli ${hairNames[h]}`);
   });
+  const outfitsEl = document.getElementById('outfits');
+  outfitsEl.textContent = '';
+  document.getElementById('outfitsSheet').hidden = !BODY.chibi;
+  if (BODY.chibi) {
+    [['casual', 'Maglietta e jeans'], ['camicia', 'Camicia'], ['felpa', 'Felpa'], ['giacca', 'Giacca'], ['vestito', 'Vestito'], ['sportivo', 'Sportivo'], ['salopette', 'Salopette']].forEach(([id, name], n) => {
+      const look = { ...BASE_LOOK, outfit: id, uniform: false, hairstyle: STYLES[n][0], hair: HAIRS[[2, 0, 3, 1, 4, 2, 0][n]], skin: SKINS[[1, 2, 0, 3, 1, 4, 2][n]] };
+      fig(outfitsEl, [spriteCanvas(look, 'attesa', 4), spriteCanvas({ ...look, uniform: true }, 'camminaF', 4, 2)], name, 'in città · sul campo');
+    });
+  }
 }
 
 /* ---------- Schede: superfici ---------- */
@@ -1233,8 +1248,19 @@ function applyStyle(id, fromClick = false) {
   for (const b of styleButtons.children) b.setAttribute('aria-pressed', String(b.dataset.style === id));
   if (fromClick) { try { history.replaceState(null, '', '#' + id); } catch (e) { location.hash = id; } }
 }
-applyStyle(location.hash.slice(1));
-window.addEventListener('hashchange', () => applyStyle(location.hash.slice(1)));
+// I volontari chibi sono quelli del gioco: arrivano da assets/personaggi.json.
+fetch('assets/personaggi.json')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(j => { PERS = j; })
+  .catch(() => { errors.push('Non trovo assets/personaggi.json: lo stile Accogliente si vede solo dal sito o con npm run dev.'); })
+  .finally(() => {
+    if (!PERS) delete DRAWS.accogliente;
+    for (const b of [...styleButtons.children]) if (!DRAWS[b.dataset.style]) b.remove();
+    applyStyle(location.hash.slice(1));
+    window.addEventListener('hashchange', () => applyStyle(location.hash.slice(1)));
+    requestAnimationFrame(loop);
+    if (errors.length) document.getElementById('err').textContent = [...new Set(errors)].join('\n');
+  });
 
 /* ---------- Ciclo ---------- */
 const t0 = performance.now();
@@ -1250,8 +1276,6 @@ function loop(now) {
   }
   if (!reduce) requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
-if (errors.length) document.getElementById('err').textContent = [...new Set(errors)].join('\n');
 </script>
 </body>
 </html>

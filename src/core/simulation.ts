@@ -41,7 +41,7 @@ export class Simulation {
   static newGame(content: Content, now: number, timeScale = 1): Simulation {
     const site = content.sites[0];
     const state: GameState = {
-      version: 11,
+      version: 12,
       stage: 'terreno',
       siteId: site.id,
       pv: site.pv,
@@ -166,8 +166,8 @@ export class Simulation {
     return this.content.appearance;
   }
 
-  /** Cambia nome, pelle o capelli di un volontario: solo mentre si compone la squadra. */
-  customizeVolunteer(id: string, patch: { name?: string; skin?: string; hair?: string }): void {
+  /** Cambia nome o aspetto di un volontario: solo mentre si compone la squadra. */
+  customizeVolunteer(id: string, patch: LookPatch): void {
     if (this.state.stage !== 'squadra') throw new Error("L'aspetto si sceglie in Fase 2, mentre si compone la squadra");
     const v = this.volunteer(id);
     if (patch.name !== undefined) {
@@ -176,14 +176,20 @@ export class Simulation {
       if (name.length > VOLUNTEER_NAME_MAX) throw new Error(`Il nome può avere al massimo ${VOLUNTEER_NAME_MAX} caratteri`);
       v.name = name;
     }
-    if (patch.skin !== undefined) {
-      if (!this.content.appearance.skin.some((c) => c.id === patch.skin)) throw new Error(`Colore della pelle sconosciuto: ${patch.skin}`);
-      v.skin = patch.skin;
+    const ap = this.content.appearance;
+    const options: [LookKey, { id: string }[], string][] = [
+      ['skin', ap.skin, 'Colore della pelle'],
+      ['hair', ap.hair, 'Colore dei capelli'],
+      ['eyes', ap.eyes, 'Colore degli occhi'],
+      ['hairstyle', ap.hairstyles, 'Acconciatura'],
+      ['outfit', ap.outfits, 'Abito'],
+    ];
+    for (const [key, list, label] of options) {
+      const value = patch[key];
+      if (value === undefined) continue;
+      if (!list.some((o) => o.id === value)) throw new Error(`${label} sconosciuto: ${value}`);
     }
-    if (patch.hair !== undefined) {
-      if (!this.content.appearance.hair.some((c) => c.id === patch.hair)) throw new Error(`Colore dei capelli sconosciuto: ${patch.hair}`);
-      v.hair = patch.hair;
-    }
+    for (const [key] of options) if (patch[key] !== undefined) v[key] = patch[key]!;
   }
 
   /** Toglie un volontario dalla squadra e restituisce i suoi PV (solo in Fase 2). */
@@ -1253,7 +1259,11 @@ export class Simulation {
   }
 }
 
+/** Le parti dell'aspetto che si scelgono in Fase 2. */
+export type LookKey = 'skin' | 'hair' | 'eyes' | 'hairstyle' | 'outfit';
+export type LookPatch = { name?: string } & Partial<Record<LookKey, string>>;
+
 /** Un volontario appena reclutato: dati dell'archetipo e aspetto del candidato. */
 export function volunteerFrom(m: CandidateDef, a: Archetype): Volunteer {
-  return { id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false, age: m.age, skin: m.skin, hair: m.hair };
+  return { id: m.id, name: m.name, archetypeId: a.id, skills: [...a.skills], weeklyHours: a.weeklyHours, hoursUsed: 0, busy: false, age: m.age, skin: m.skin, hair: m.hair, hairstyle: m.hairstyle, eyes: m.eyes, outfit: m.outfit };
 }

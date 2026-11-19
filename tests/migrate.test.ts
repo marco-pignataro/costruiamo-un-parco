@@ -35,7 +35,7 @@ const confirmed = () => startedGame();
 describe('migrazione dei salvataggi', () => {
   it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano (salvo quelle tolte)', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(11);
+    expect(s.version).toBe(12);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.budget).toBe(firstSite.budget);
@@ -74,7 +74,7 @@ describe('migrazione dei salvataggi', () => {
     v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
     (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
     const s = migrate(v2, defaultContent);
-    expect(s.version).toBe(11);
+    expect(s.version).toBe(12);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.active).toEqual([]);
@@ -89,7 +89,7 @@ describe('migrazione dei salvataggi', () => {
     delete v3.survey;
     delete v3.hiddenHazards;
     delete v3.rng;
-    expect(migrate(v3, defaultContent)).toMatchObject({ version: 11, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
+    expect(migrate(v3, defaultContent)).toMatchObject({ version: 12, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
   });
 
   it("v7 → v8: sparisce la pratica di occupazione del suolo e l'evento in piazza in corso si interrompe", () => {
@@ -102,7 +102,7 @@ describe('migrazione dei salvataggi', () => {
     v.busy = true;
     v.hoursUsed = 3;
     const s = migrate(v7, defaultContent);
-    expect(s.version).toBe(11);
+    expect(s.version).toBe(12);
     expect(s.pratiche.map((p) => p.id)).not.toContain('occupazione-suolo');
     expect(s.active).toEqual([]);
     expect(s.volunteers.find((x) => x.id === 'v7')).toMatchObject({ busy: false, hoursUsed: 0 });
@@ -120,7 +120,7 @@ describe('migrazione dei salvataggi', () => {
     }
     vols.push({ ...vols[0], id: 'sparito' });
     const s = migrate(v8, defaultContent);
-    expect(s.version).toBe(11);
+    expect(s.version).toBe(12);
     expect(s.volunteers.find((v) => v.id === 'v1')).toMatchObject({ age: 58, skin: 'olivastra', hair: 'grigio' });
     expect(s.volunteers.find((v) => v.id === 'sparito')).toMatchObject({ age: 40, skin: 'chiara', hair: 'nero' });
   });
@@ -131,13 +131,29 @@ describe('migrazione dei salvataggi', () => {
     delete v9.tutorial;
     delete v9.surveyPos;
     const s = migrate(v9, defaultContent);
-    expect(s.version).toBe(11);
+    expect(s.version).toBe(12);
     expect(s.tutorial).toEqual({ on: false, seen: [] });
     expect(s.surveyPos).toEqual({});
     expect(s.survey).toEqual(confirmed().state.survey);
   });
 
-  it('un salvataggio v11 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it('v11 → v12: acconciatura, occhi e abito arrivano dal candidato, chi non esiste più ha le prime scelte', () => {
+    const v11 = structuredClone(confirmed().state) as unknown as Record<string, unknown>;
+    v11.version = 11;
+    const vols = v11.volunteers as Record<string, unknown>[];
+    for (const v of vols) {
+      delete v.hairstyle;
+      delete v.eyes;
+      delete v.outfit;
+    }
+    vols.push({ ...vols[0], id: 'sparito' });
+    const s = migrate(v11, defaultContent);
+    expect(s.version).toBe(12);
+    expect(s.volunteers.find((v) => v.id === 'v1')).toMatchObject({ hairstyle: 'chignon', eyes: 'castani', outfit: 'camicia' });
+    expect(s.volunteers.find((v) => v.id === 'sparito')).toMatchObject({ hairstyle: 'corti', eyes: 'castani', outfit: 'casual' });
+  });
+
+  it('un salvataggio v12 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

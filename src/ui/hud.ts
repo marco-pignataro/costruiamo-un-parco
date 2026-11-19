@@ -1,6 +1,6 @@
 import { ASSOCIATION, GAME_TITLE, HOURS_PER_WORKING_DAY, INAUGURATION, ORDERS, SIDE_QUEST, SURVEY, VOLUNTEER_NAME_MAX } from '../config';
 import { formatHours } from '../core/duration';
-import type { Simulation } from '../core/simulation';
+import type { LookKey, LookPatch, Simulation } from '../core/simulation';
 import type { ActiveTask, PraticaStatus, Stage, Volunteer } from '../core/types';
 import type { Insets } from '../game/camera';
 import { ERASER, type EditorTool } from '../game/ParkScene';
@@ -793,7 +793,7 @@ export class Hud {
 
   /**
    * Scheda del volontario: a sinistra lo sprite grande, a destra statistiche e
-   * caratteristiche. Nome, pelle e capelli si cambiano solo in Fase 2.
+   * caratteristiche. Nome e aspetto si cambiano solo in Fase 2.
    */
   private profileCard(v: Volunteer): string {
     const sim = this.sim;
@@ -801,17 +801,30 @@ export class Hud {
     const editable = sim.state.stage === 'squadra';
     const look = volunteerLook(sim, v, inUniform(sim));
     const fatigue = sim.fatigue(v);
-    const skin = sim.appearance.skin.find((c) => c.id === v.skin);
-    const hair = sim.appearance.hair.find((c) => c.id === v.hair);
-    const swatches = (kind: 'skin' | 'hair', chosen: string) =>
-      `<div class="swatches">${sim.appearance[kind]
-        .map((c) => `<button class="swatch ${c.id === chosen ? 'on' : ''}" data-${kind}="${c.id}" title="${esc(c.name)}" aria-label="${esc(c.name)}" style="background:${c.color}"></button>`)
+    const ap = sim.appearance;
+    const nameOf = (list: { id: string; name: string }[], id: string) => list.find((c) => c.id === id)?.name ?? id;
+    const swatches = (kind: 'skin' | 'hair' | 'eyes', chosen: string) =>
+      `<div class="swatches">${ap[kind]
+        .map((c) => `<button class="swatch ${c.id === chosen ? 'on' : ''}" data-look="${kind}" data-value="${c.id}" title="${esc(c.name)}" aria-label="${esc(c.name)}" aria-pressed="${c.id === chosen}" style="background:${c.color}"></button>`)
+        .join('')}</div>`;
+    // Acconciature e abiti si scelgono guardandoli sul volontario stesso.
+    const looks = (kind: 'hairstyle' | 'outfit', chosen: string) =>
+      `<div class="looks ${kind}">${(kind === 'hairstyle' ? ap.hairstyles : ap.outfits)
+        .map((o) => {
+          const img = volunteerPortrait(volunteerLook(sim, { ...v, [kind]: o.id }, false), kind === 'hairstyle' ? 3 : 2, kind === 'hairstyle');
+          return `<button class="look ${o.id === chosen ? 'on' : ''}" data-look="${kind}" data-value="${o.id}" aria-pressed="${o.id === chosen}"><img alt="" src="${img}"><small>${esc(o.name)}</small></button>`;
+        })
         .join('')}</div>`;
     const traits = editable
       ? `<label class="field"><span>Nome</span><input type="text" data-name="${v.id}" value="${esc(v.name)}" maxlength="${VOLUNTEER_NAME_MAX}" autocomplete="off"></label>
         <div class="field"><span>Colore della pelle</span>${swatches('skin', v.skin)}</div>
-        <div class="field"><span>Colore dei capelli</span>${swatches('hair', v.hair)}</div>`
-      : `<dl class="facts"><dt>Nome</dt><dd>${esc(v.name)}</dd><dt>Pelle</dt><dd>${esc(skin?.name ?? v.skin)}</dd><dt>Capelli</dt><dd>${esc(hair?.name ?? v.hair)}</dd></dl>
+        <div class="field"><span>Acconciatura</span>${looks('hairstyle', v.hairstyle)}</div>
+        <div class="field"><span>Colore dei capelli</span>${swatches('hair', v.hair)}</div>
+        <div class="field"><span>Colore degli occhi</span>${swatches('eyes', v.eyes)}</div>
+        <div class="field"><span>Abito</span>${looks('outfit', v.outfit)}</div>`
+      : `<dl class="facts"><dt>Nome</dt><dd>${esc(v.name)}</dd><dt>Pelle</dt><dd>${esc(nameOf(ap.skin, v.skin))}</dd>
+          <dt>Capelli</dt><dd>${esc(nameOf(ap.hairstyles, v.hairstyle))}, ${esc(nameOf(ap.hair, v.hair).toLowerCase())}</dd>
+          <dt>Occhi</dt><dd>${esc(nameOf(ap.eyes, v.eyes))}</dd><dt>Abito</dt><dd>${esc(nameOf(ap.outfits, v.outfit))}</dd></dl>
         <p><small>Nome e aspetto si scelgono mentre si compone la squadra.</small></p>`;
     return `<div class="card sheet profile" role="dialog" aria-modal="true" aria-label="${esc(v.name)}">
         <div class="portrait"><img alt="${esc(v.name)}" src="${volunteerPortrait(look, 14)}"></div>
@@ -966,7 +979,7 @@ export class Hud {
         const a = sim.archetype(m.archetypeId);
         const errors = sim.recruitErrors(m.id);
         const skills = a.skills.length ? a.skills.join(', ') : 'braccia';
-        const look = volunteerLook(sim, { ...m, skills: [], weeklyHours: 0, hoursUsed: 0, busy: false }, false);
+        const look = volunteerLook(sim, m, false);
         return `<li class="cand-card ${errors.length ? 'off' : ''}">
             <span class="photo"><img alt="" src="${volunteerPortrait(look, 5)}"></span>
             <strong>${esc(m.name)}</strong>
@@ -1163,8 +1176,8 @@ export class Hud {
     this.render();
   }
 
-  /** Nome, pelle o capelli dalla scheda del volontario (Fase 2). */
-  private customize(id: string, patch: { name?: string; skin?: string; hair?: string }) {
+  /** Nome o aspetto dalla scheda del volontario (Fase 2). */
+  private customize(id: string, patch: LookPatch) {
     try {
       this.sim.customizeVolunteer(id, patch);
       this.message = '';
@@ -1201,9 +1214,9 @@ export class Hud {
       this.render();
       return;
     }
-    const swatch = target.closest<HTMLButtonElement>('button[data-skin], button[data-hair]');
-    if (swatch && this.profile) {
-      this.customize(this.profile, swatch.dataset.skin ? { skin: swatch.dataset.skin } : { hair: swatch.dataset.hair });
+    const choice = target.closest<HTMLButtonElement>('button[data-look]');
+    if (choice && this.profile) {
+      this.customize(this.profile, { [choice.dataset.look as LookKey]: choice.dataset.value });
       return;
     }
     // Barra della squadra: un clic seleziona (anche sulla mappa), un secondo clic apre la scheda.

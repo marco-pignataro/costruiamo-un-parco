@@ -14,5 +14,31 @@
     {"id": "biondo", "name": "Biondi", "color": "#d9b25c"},
     {"id": "grigio", "name": "Grigi", "color": "#9a9a96"},
     {"id": "bianco", "name": "Bianchi", "color": "#e6e3dc"}
+  ],
+  "eyes": [
+    {"id": "castani", "name": "Castani", "color": "#6b4423"},
+    {"id": "nocciola", "name": "Nocciola", "color": "#a0672a"},
+    {"id": "verdi", "name": "Verdi", "color": "#3f8a3a"},
+    {"id": "azzurri", "name": "Azzurri", "color": "#3a8fc8"},
+    {"id": "turchesi", "name": "Turchesi", "color": "#2e9a96"},
+    {"id": "grigi", "name": "Grigi", "color": "#7d8a94"}
+  ],
+  "hairstyles": [
+    {"id": "corti", "name": "Corti"},
+    {"id": "spettinati", "name": "Spettinati"},
+    {"id": "caschetto", "name": "Caschetto"},
+    {"id": "lunghi", "name": "Lunghi"},
+    {"id": "coda", "name": "Coda"},
+    {"id": "chignon", "name": "Chignon"},
+    {"id": "rasati", "name": "Rasati"}
+  ],
+  "outfits": [
+    {"id": "casual", "name": "Maglietta e jeans"},
+    {"id": "camicia", "name": "Camicia"},
+    {"id": "felpa", "name": "Felpa"},
+    {"id": "giacca", "name": "Giacca"},
+    {"id": "vestito", "name": "Vestito"},
+    {"id": "sportivo", "name": "Sportivo"},
+    {"id": "salopette", "name": "Salopette"}
   ]
 }
