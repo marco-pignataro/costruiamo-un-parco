@@ -41,8 +41,8 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
   display: grid;
   /* minmax(0, …): la colonna centrale non si allarga quanto la fila dei volontari (su telefono usciva dallo schermo). */
   grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: minmax(0, 1fr) auto;
-  grid-template-areas: "top center right" "bottom bottom right";
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "top logo right" "top center right" "bottom bottom right";
   gap: var(--edge);
   padding: var(--edge);
   pointer-events: none; /* in mezzo si clicca la mappa */
@@ -81,6 +81,10 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 .card h1 { font-size: 17px; margin: 0; font-weight: 700; }
 img.logo { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
 .brand h1 { line-height: 0; }
+/* Logo in alto al centro, in una riga sua: le finestre centrali partono sotto (2× su schermi larghi, 1× altrove). */
+#hud-logo { grid-area: logo; justify-self: center; margin: 0; line-height: 0; pointer-events: none; }
+#hud-logo img.logo { width: 260px; filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.35)); }
+@media (max-width: 1100px) { #hud-logo img.logo { width: 130px; } }
 img.logo.big { margin: 0 auto 4px; }
 .card h2 { font-size: 12px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .card h3 { font-size: 13px; margin: 6px 0 4px; }
@@ -283,7 +287,8 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
  */
 @keyframes slide-up { from { transform: translateY(100%); } to { transform: none; } }
 @media (max-width: 700px) {
-  #hud { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "top" "center" "bottom"; }
+  /* Telefono: logo piccolo in cima, centrato, poi la riga con intestazione e menu. */
+  #hud { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "logo" "top" "center" "bottom"; }
   #hud-top { flex-direction: row; flex-wrap: nowrap; align-items: flex-start; width: auto; max-width: none; }
   #hud-right { width: auto; max-width: none; }
   .panel-tabs { display: none; }

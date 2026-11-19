@@ -168,12 +168,17 @@ export class Hud {
       center: make('section', 'hud-center'),
       bottom: make('footer', 'hud-bottom'),
     };
+    // Logo in alto al centro, fisso per tutta la partita (su telefono piccolo, sopra l'intestazione).
+    const logoEl = document.createElement('h1');
+    logoEl.id = 'hud-logo';
+    logoEl.innerHTML = logo(GAME_SUBTITLE, 2, 'logo');
     this.brandEl = document.createElement('div');
     this.brandEl.className = 'top-brand';
     this.timelineEl = document.createElement('div');
     this.timelineEl.className = 'top-timeline';
     this.menuEl = document.createElement('div');
     this.menuEl.className = 'top-menu';
+    root.append(logoEl);
     this.regions.top.append(this.brandEl, this.timelineEl, this.menuEl);
     this.toast = document.createElement('div');
     this.toast.id = 'hud-toast';
@@ -385,7 +390,7 @@ export class Hud {
   }
 
   private brand(subtitle: string, extra = ''): string {
-    return `<section class="card brand"><h1>${logo(null, 1, 'logo')}</h1><p>${subtitle}</p>${extra}</section>`;
+    return `<section class="card brand"><p>${subtitle}</p>${extra}</section>`;
   }
 
   /** Linguette delle schede, ognuna con la sua icona e il suo dato in breve (in basso su telefono, in cima al pannello su desktop). */
