@@ -130,6 +130,78 @@ export function movePlacement(g: ParkGrid, c: Content, uid: number, x: number, y
   p.y = y;
 }
 
+/** Superfici dove un albero tutelato non si può trapiantare. */
+const NO_TREE_SURFACES: SurfaceId[] = ['albero-tutelato', 'cemento'];
+
+/**
+ * Si può trapiantare l'albero tutelato di (fx, fy) in (tx, ty)? Gli alberi non
+ * si tolgono, ma in progettazione si possono spostare su una tile libera.
+ */
+export function canMoveTree(g: ParkGrid, c: Content, fx: number, fy: number, tx: number, ty: number): PlaceCheck {
+  if (!inBounds(g, fx, fy) || g.surface[tileIndex(g, fx, fy)] !== 'albero-tutelato') {
+    return { ok: false, errors: ['Qui non c\'è un albero'], risks: [] };
+  }
+  if (!inBounds(g, tx, ty)) return { ok: false, errors: ['Fuori dal terreno'], risks: [] };
+  const errors: string[] = [];
+  const s = g.surface[tileIndex(g, tx, ty)];
+  if (s === 'albero-tutelato') errors.push('C\'è già un albero');
+  else if (NO_TREE_SURFACES.includes(s)) errors.push('Sul cemento un albero non attecchisce');
+  if (placementAt(g, c, tx, ty)) errors.push('Spazio già occupato');
+  return { ok: errors.length === 0, errors, risks: [] };
+}
+
+/** Trapianta l'albero: dove stava resta terra smossa. */
+export function moveTree(g: ParkGrid, c: Content, fx: number, fy: number, tx: number, ty: number): void {
+  const check = canMoveTree(g, c, fx, fy, tx, ty);
+  if (!check.ok) throw new Error(check.errors.join('; '));
+  setSurface(g, fx, fy, 'terra');
+  setSurface(g, tx, ty, 'albero-tutelato');
+}
+
+/**
+ * Tile attraversate andando da (x0, y0) a (x1, y1), estremi compresi, ognuna
+ * accanto alla precedente per un lato: serve alla posa a trascinamento, così
+ * un tratto disegnato in fretta resta continuo.
+ */
+export function tileLine(x0: number, y0: number, x1: number, y1: number): [number, number][] {
+  const out: [number, number][] = [[x0, y0]];
+  const nx = Math.abs(x1 - x0);
+  const ny = Math.abs(y1 - y0);
+  const sx = Math.sign(x1 - x0);
+  const sy = Math.sign(y1 - y0);
+  let x = x0;
+  let y = y0;
+  // Un passo alla volta lungo un solo asse, quello più indietro rispetto alla retta.
+  for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
+    if (iy >= ny || (ix < nx && (0.5 + ix) / nx < (0.5 + iy) / ny)) {
+      x += sx;
+      ix++;
+    } else {
+      y += sy;
+      iy++;
+    }
+    out.push([x, y]);
+  }
+  return out;
+}
+
+/** Lati della tile verso le vicine: N = y-1, E = x+1, S = y+1, O = x-1 (in coordinate di griglia). */
+export interface Links {
+  n: boolean;
+  e: boolean;
+  s: boolean;
+  o: boolean;
+}
+
+/**
+ * Con quali tile vicine si collega un elemento `elementId` in (x, y): quelle con
+ * lo stesso elemento. Serve a disegnare la staccionata contigua (dritta, angoli, incroci).
+ */
+export function linksAt(g: ParkGrid, c: Content, elementId: string, x: number, y: number): Links {
+  const same = (nx: number, ny: number) => inBounds(g, nx, ny) && placementAt(g, c, nx, ny)?.elementId === elementId;
+  return { n: same(x, y - 1), e: same(x + 1, y), s: same(x, y + 1), o: same(x - 1, y) };
+}
+
 /**
  * Regole sul progetto intero, da controllare alla conferma: per ora gli
  * elementi che devono stare accanto a un altro (panchina accanto al sentiero).

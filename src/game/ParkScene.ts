@@ -6,7 +6,8 @@ import { MapLabel, drawPeopleShadows, selectionLabel } from './mapUi';
 import type { PlanTask, SurfaceId } from '../core/types';
 import { IsoCamera, type View } from './camera';
 import { LAYER, type Point, type Rect, areaBounds, depthOf, footprintCenter, footprintCorners, gridToWorld, tileCenter, worldToTile } from './iso';
-import { backdrop, createTextures, inUniform, volunteerLook, volunteerTexture } from './sprites';
+import { FENCE_TEX, backdrop, createTextures, fenceKey, inUniform, volunteerLook, volunteerTexture } from './sprites';
+import { tileLine } from '../core/grid';
 
 /** Tile di contorno attorno al terreno (marciapiede e bordo del parco). */
 const MARGIN = 2;
@@ -27,12 +28,16 @@ const SURFACE_TEXTURE: Record<SurfaceId, string> = {
   'albero-tutelato': 'erba',
 };
 
-/** Come si disegna ogni elemento: una tile piatta ripetuta sull'ingombro o uno sprite in piedi al centro. */
-const ELEMENT_LOOK: Record<string, { tile?: string; sprite?: string }> = {
+/**
+ * Come si disegna ogni elemento: una tile piatta ripetuta sull'ingombro, uno
+ * sprite in piedi al centro o, con `links`, uno sprite che si unisce alle tile
+ * vicine con lo stesso elemento (la staccionata contigua).
+ */
+const ELEMENT_LOOK: Record<string, { tile?: string; sprite?: string; links?: boolean }> = {
   sentiero: { tile: 'ghiaia' },
   aiuola: { tile: 'aiuola' },
   panchina: { sprite: 'panchina' },
-  staccionata: { sprite: 'staccionata' },
+  staccionata: { links: true },
   cestino: { sprite: 'cestino' },
 };
 
@@ -42,11 +47,13 @@ const GHOST_ALPHA = 0.35;
 /**
  * Strumento scelto nell'editor: un elemento del catalogo, la gomma o niente.
  * `moving`: elemento già posato che si sta spostando (preso con un clic senza strumento).
+ * `tree`: tile dell'albero tutelato che si sta trapiantando, allo stesso modo.
  * Condiviso con l'HUD.
  */
 export interface EditorTool {
   tool: string | null;
   moving: number | null;
+  tree: number | null;
 }
 
 export const ERASER = 'gomma';
@@ -80,6 +87,9 @@ export class ParkScene extends Phaser.Scene {
   private sim!: () => Simulation;
   private ground: Phaser.GameObjects.Image[] = [];
   private trash: Phaser.GameObjects.Image[] = [];
+  private trees: Phaser.GameObjects.Image[] = [];
+  /** Posa a trascinamento in corso: ultima tile toccata e se si cancella. */
+  private painting: { last: Point; erase: boolean } | null = null;
   private risk: Phaser.GameObjects.Image[] = [];
   private poiMarks = new Map<string, Phaser.GameObjects.Image>();
   private elements = new Map<number, Phaser.GameObjects.Image[]>();
@@ -125,6 +135,8 @@ export class ParkScene extends Phaser.Scene {
     // Anche dopo un restart: si riparte da zero.
     this.ground = [];
     this.trash = [];
+    this.trees = [];
+    this.painting = null;
     this.risk = [];
     this.poiMarks.clear();
     this.elements.clear();
@@ -169,7 +181,7 @@ export class ParkScene extends Phaser.Scene {
       this.ground.push(this.add.image(c.x, c.y, 'terra').setDepth(LAYER.ground));
       this.trash.push(this.add.image(c.x, c.y + FOOT, 'rifiuto').setOrigin(0.5, 1).setDepth(depthOf(c.y + FOOT)).setVisible(false));
       this.risk.push(this.add.image(c.x, c.y, 'rombo').setTint(0xe04a3a).setAlpha(0.35).setDepth(LAYER.overlay).setVisible(false));
-      if (g.surface[i] === 'albero-tutelato') this.add.image(c.x, c.y + FOOT, 'albero').setOrigin(0.5, 1).setDepth(depthOf(c.y + FOOT));
+      this.trees.push(this.add.image(c.x, c.y + FOOT, 'albero').setOrigin(0.5, 1).setDepth(depthOf(c.y + FOOT)).setVisible(false));
     }
 
     for (const p of this.sim().pois) {
@@ -190,12 +202,22 @@ export class ParkScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       if (this.initData.view.camera === this.camera) this.initData.view.camera = null;
     });
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (this.sim().state.stage === 'progettazione') this.startPainting(p);
+    });
     this.input.on('pointermove', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       const stage = this.sim().state.stage;
-      if (stage === 'progettazione') this.showHover(p);
+      if (stage === 'progettazione') {
+        this.paintTo(p);
+        this.showHover(p);
+      }
       else if (stage === 'cantiere' || stage === 'sopralluogo' || stage === 'squadra') this.pointAt(p, over);
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      if (this.painting) {
+        this.painting = null;
+        return;
+      }
       if (this.camera.wasDrag()) return;
       const stage = this.sim().state.stage;
       if (stage === 'progettazione') this.edit(p);
@@ -241,7 +263,11 @@ export class ParkScene extends Phaser.Scene {
     const def = this.sim().elementDef(elementId);
     const look = ELEMENT_LOOK[elementId] ?? { sprite: 'rifiuto' };
     const imgs: Phaser.GameObjects.Image[] = [];
-    if (look.tile) {
+    if (look.links) {
+      const c = tileCenter(x, y);
+      const key = fenceKey(this.sim().linksAt(elementId, x, y));
+      imgs.push(this.add.image(c.x, c.y, key).setOrigin(0.5, FENCE_TEX.ground / FENCE_TEX.h).setDepth(depthOf(c.y + FOOT) + (preview ? 0.5 : 0.1)));
+    } else if (look.tile) {
       for (let dy = 0; dy < def.h; dy++) {
         for (let dx = 0; dx < def.w; dx++) {
           const c = tileCenter(x + dx, y + dy);
@@ -293,6 +319,15 @@ export class ParkScene extends Phaser.Scene {
     const t = this.tileAt(p);
     const tool = this.editor.tool;
     const moving = this.movingPlacement();
+    const tree = this.movingTree();
+    if (t && tree && sim.state.stage === 'progettazione') {
+      const ok = sim.canMoveTree(tree.x, tree.y, t.x, t.y).ok;
+      const c = tileCenter(t.x, t.y);
+      this.hover = [this.add.image(c.x, c.y + FOOT, 'albero').setOrigin(0.5, 1).setDepth(depthOf(c.y + FOOT) + 0.5).setAlpha(0.8).setTint(ok ? 0xb8f5b0 : 0xff8a80)];
+      this.frame(t.x, t.y, 1, 1, ok ? 0xffffff : 0xe04a3a);
+      this.input.setDefaultCursor('grabbing');
+      return;
+    }
     if (t && moving && sim.state.stage === 'progettazione') {
       const def = sim.elementDef(moving.elementId);
       const ok = sim.canMoveElement(moving.uid, t.x, t.y).ok;
@@ -305,9 +340,11 @@ export class ParkScene extends Phaser.Scene {
       // Senza strumento: un elemento sotto il puntatore si può prendere e spostare.
       const target = sim.elementAt(t.x, t.y);
       const def = target ? sim.elementDef(target.elementId) : null;
+      const tree = sim.treeAt(t.x, t.y);
       if (target && def) this.frame(target.x, target.y, def.w, def.h, 0xfff6d8);
+      else if (tree) this.frame(t.x, t.y, 1, 1, 0xfff6d8);
       else this.hoverFrame.clear();
-      this.input.setDefaultCursor(target ? 'grab' : 'default');
+      this.input.setDefaultCursor(target || tree ? 'grab' : 'default');
       return;
     }
     this.input.setDefaultCursor('default');
@@ -325,6 +362,80 @@ export class ParkScene extends Phaser.Scene {
     const ok = sim.canPlace(tool, t.x, t.y).ok;
     this.hover = this.drawElement(tool, t.x, t.y, true).map((i) => i.setAlpha(0.7).setTint(ok ? 0xb8f5b0 : 0xff8a80));
     this.frame(t.x, t.y, def.w, def.h, ok ? 0xffffff : 0xe04a3a);
+  }
+
+  /** L'albero che si sta trapiantando, se c'è ancora. */
+  private movingTree(): Point | null {
+    const i = this.editor.tree;
+    if (i === null) return null;
+    const g = this.sim().state.grid;
+    const t = { x: i % g.width, y: Math.floor(i / g.width) };
+    if (!this.sim().treeAt(t.x, t.y)) {
+      this.editor.tree = null;
+      return null;
+    }
+    return t;
+  }
+
+  /** Strumento che si posa a trascinamento (sentieri, aiuole, staccionata) o gomma. */
+  private paints(erase: boolean): boolean {
+    const tool = this.editor.tool;
+    if (erase) return true;
+    return tool !== null && tool !== ERASER && this.sim().elementDef(tool).groupable;
+  }
+
+  /**
+   * Inizio di una posa a trascinamento: con un elemento modulare (o la gomma,
+   * o il tasto destro) si posa sulla prima tile e il trascinamento non sposta
+   * la mappa ma continua a posare. Con due dita si torna allo zoom.
+   */
+  private startPainting(p: Phaser.Input.Pointer) {
+    if (this.painting && this.input.manager.pointers.filter((q) => q.isDown).length > 1) {
+      this.painting = null;
+      return;
+    }
+    const t = this.tileAt(p);
+    if (!t || this.movingPlacement() || this.movingTree()) return;
+    const erase = p.rightButtonDown() || this.editor.tool === ERASER;
+    if (!this.editor.tool && !erase) return;
+    if (!this.paints(erase)) return;
+    this.camera.cancelDrag();
+    this.painting = { last: t, erase };
+    this.paintTiles([[t.x, t.y]]);
+  }
+
+  private paintTo(p: Phaser.Input.Pointer) {
+    if (!this.painting) return;
+    if (!p.isDown) {
+      this.painting = null;
+      return;
+    }
+    const t = this.tileAt(p);
+    const last = this.painting.last;
+    if (!t || (t.x === last.x && t.y === last.y)) return;
+    this.painting.last = t;
+    this.paintTiles(tileLine(last.x, last.y, t.x, t.y).slice(1));
+  }
+
+  /** Posa (o cancella) su ogni tile dove si può; le altre si saltano. */
+  private paintTiles(tiles: [number, number][]) {
+    const sim = this.sim();
+    let changed = false;
+    for (const [x, y] of tiles) {
+      if (this.painting?.erase) {
+        const target = sim.elementAt(x, y);
+        if (target && !sim.state.grid.built.includes(target.uid)) {
+          sim.removeElement(target.uid);
+          changed = true;
+        }
+      } else if (this.editor.tool && sim.canPlace(this.editor.tool, x, y).ok) {
+        sim.placeElement(this.editor.tool, x, y);
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    this.syncPlacements();
+    this.onEdit();
   }
 
   /** L'elemento che si sta spostando, se esiste ancora. */
@@ -345,6 +456,18 @@ export class ParkScene extends Phaser.Scene {
     const sim = this.sim();
     const t = this.tileAt(p);
     if (sim.state.stage !== 'progettazione') return;
+    const tree = this.movingTree();
+    if (tree) {
+      if (p.rightButtonReleased()) this.editor.tree = null;
+      else if (t && sim.canMoveTree(tree.x, tree.y, t.x, t.y).ok) {
+        sim.moveTree(tree.x, tree.y, t.x, t.y);
+        this.editor.tree = null;
+      } else return;
+      this.syncTrees();
+      this.showHover(p);
+      this.onEdit();
+      return;
+    }
     const moving = this.movingPlacement();
     if (moving) {
       if (p.rightButtonReleased()) this.editor.moving = null;
@@ -362,7 +485,15 @@ export class ParkScene extends Phaser.Scene {
     const erase = p.rightButtonReleased() || this.editor.tool === ERASER;
     if (!erase && !this.editor.tool) {
       const target = sim.elementAt(t.x, t.y);
-      if (!target) return;
+      if (!target) {
+        // Un albero tutelato non si toglie, ma si può trapiantare.
+        if (!sim.treeAt(t.x, t.y)) return;
+        this.editor.tree = t.y * sim.state.grid.width + t.x;
+        this.syncTrees();
+        this.showHover(p);
+        this.onEdit();
+        return;
+      }
       this.editor.moving = target.uid;
       this.refreshElementAlpha();
       this.showHover(p);
@@ -550,6 +681,7 @@ export class ParkScene extends Phaser.Scene {
       this.trash[i].setVisible(s === 'rifiuti');
       this.risk[i].setVisible(g.risk[i] !== null);
     });
+    this.syncTrees();
     const surveying = sim.state.stage === 'sopralluogo';
     for (const [id, mark] of this.poiMarks) {
       const st = sim.state.survey.find((x) => x.id === id);
@@ -566,7 +698,11 @@ export class ParkScene extends Phaser.Scene {
       this.hover = [];
       this.hoverFrame.clear();
     }
-    if (!designing) this.editor.moving = null;
+    if (!designing) {
+      this.editor.moving = null;
+      this.editor.tree = null;
+      this.painting = null;
+    }
     this.refreshElementAlpha(built);
 
     // Aspetto dei volontari: pelle e capelli scelti in Fase 2, divisa sul campo, davanti o di schiena.
@@ -639,6 +775,16 @@ export class ParkScene extends Phaser.Scene {
         },
       });
     }
+  }
+
+  /** Alberi tutelati dove sono ora; quello che si sta trapiantando, chiaro nel posto vecchio. */
+  private syncTrees() {
+    const g = this.sim().state.grid;
+    g.surface.forEach((s, i) => {
+      const tree = s === 'albero-tutelato';
+      this.ground[i].setTexture(SURFACE_TEXTURE[s]);
+      this.trees[i].setVisible(tree).setAlpha(tree && i === this.editor.tree ? MOVING_ALPHA : 1);
+    });
   }
 
   /** Volontario davanti o di schiena. */

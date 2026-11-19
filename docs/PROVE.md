@@ -29,6 +29,12 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
+Editor del parco (19/11), commit: COMMIT.
+
+- [x] Le aiuole devono essere da una sola tile.
+- [x] Gli alberi del parco si devono poter spostare (ma non rimuovere)
+- [x] Vialetti, aiuole e staccionata devono essere modulari: ovvero si devono poter posizionare più tiles in una volta cliccando sulla prima e trascinando il mouse cliccato su altre caselle. Per quanto riguarda la staccionata, inoltre, quando ci sono tiles di staccionata vicine, la staccionata dev'essere contigua, serve quindi fare le sprite della staccionata nelle direzioni N-S e E-O e i vari tipi di incroci e angoli.
+
 Progettazione e sopralluogo (18/11), commit: c938533.
 
 - [x] In fase sopralluogo il tasto "Chiudi il sopralluogo" è ancora nell tab "Squadra". Non ha senso, va dentro Attività.

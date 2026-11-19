@@ -248,7 +248,7 @@ export interface WeekLog {
 }
 
 export interface GameState {
-  version: 12;
+  version: 13;
   /**
    * terreno: scelta del terreno (Fase 1); squadra: reclutamento con i PV (Fase 2);
    * sopralluogo: analisi dei punti sospetti (Fase 3); progettazione: si disegna

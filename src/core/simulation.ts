@@ -2,16 +2,20 @@ import { FUNDRAISING, HOURS_PER_WORKING_DAY, INAUGURATION, MIN_TEAM, VOLUNTEER_N
 import type { Content } from './content';
 import { computeDuration, formatHours, type DurationResult } from './duration';
 import {
+  canMoveTree,
   canPlace,
+  linksAt,
   estimate,
   expectedAppeal,
   gridFromSite,
   movePlacement,
+  moveTree,
   place,
   placementAt,
   removePlacement,
   validateProject,
   type Estimate,
+  type Links,
   type PlaceCheck,
 } from './grid';
 import { emergencyTasks, gamePratiche, generatePlan } from './plan';
@@ -41,7 +45,7 @@ export class Simulation {
   static newGame(content: Content, now: number, timeScale = 1): Simulation {
     const site = content.sites[0];
     const state: GameState = {
-      version: 12,
+      version: 13,
       stage: 'terreno',
       siteId: site.id,
       pv: site.pv,
@@ -582,6 +586,29 @@ export class Simulation {
   moveElement(uid: number, x: number, y: number): void {
     this.requireDesign();
     movePlacement(this.state.grid, this.content, uid, x, y);
+  }
+
+  /** Si può trapiantare l'albero tutelato di (fx, fy) in (tx, ty)? Solo in progettazione. */
+  canMoveTree(fx: number, fy: number, tx: number, ty: number): PlaceCheck {
+    const e = this.designError();
+    if (e) return { ok: false, errors: [e], risks: [] };
+    return canMoveTree(this.state.grid, this.content, fx, fy, tx, ty);
+  }
+
+  moveTree(fx: number, fy: number, tx: number, ty: number): void {
+    this.requireDesign();
+    moveTree(this.state.grid, this.content, fx, fy, tx, ty);
+  }
+
+  /** Verso quali tile vicine si unisce un elemento in (x, y): le staccionate contigue. */
+  linksAt(elementId: string, x: number, y: number): Links {
+    return linksAt(this.state.grid, this.content, elementId, x, y);
+  }
+
+  /** C'è un albero tutelato sulla tile? */
+  treeAt(x: number, y: number): boolean {
+    const g = this.state.grid;
+    return x >= 0 && y >= 0 && x < g.width && y < g.height && g.surface[y * g.width + x] === 'albero-tutelato';
   }
 
   elementAt(x: number, y: number): Placement | undefined {

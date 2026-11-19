@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultContent } from '../src/core/content';
 import { migrate } from '../src/core/migrate';
+import type { GameState, PlanTask } from '../src/core/types';
 import { Simulation } from '../src/core/simulation';
 import { firstSite, startedGame } from './helpers';
 
@@ -35,7 +36,7 @@ const confirmed = () => startedGame();
 describe('migrazione dei salvataggi', () => {
   it('v1 → v3: arrivano griglia, piano, cassa e magazzino; le pratiche restano come erano (salvo quelle tolte)', () => {
     const s = migrate(saveV1(), defaultContent);
-    expect(s.version).toBe(12);
+    expect(s.version).toBe(13);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.budget).toBe(firstSite.budget);
@@ -74,7 +75,7 @@ describe('migrazione dei salvataggi', () => {
     v2.active = [{ uid: 99, kind: 'lavoro', refId: 'ordine-materiali', volunteerIds: ['v2'], startedAt: T0, endsAt: T0 + 3_600_000, hours: 2.7, quality: 'alta' }];
     (v2.volunteers as { id: string; busy: boolean; hoursUsed: number }[]).find((v) => v.id === 'v2')!.busy = true;
     const s = migrate(v2, defaultContent);
-    expect(s.version).toBe(12);
+    expect(s.version).toBe(13);
     expect(s.stage).toBe('cantiere');
     expect(s.siteId).toBe('demo-torrente');
     expect(s.active).toEqual([]);
@@ -89,7 +90,7 @@ describe('migrazione dei salvataggi', () => {
     delete v3.survey;
     delete v3.hiddenHazards;
     delete v3.rng;
-    expect(migrate(v3, defaultContent)).toMatchObject({ version: 12, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
+    expect(migrate(v3, defaultContent)).toMatchObject({ version: 13, stage: 'cantiere', siteId: 'demo-torrente', pv: 0, hiddenHazards: [] });
   });
 
   it("v7 → v8: sparisce la pratica di occupazione del suolo e l'evento in piazza in corso si interrompe", () => {
@@ -102,7 +103,7 @@ describe('migrazione dei salvataggi', () => {
     v.busy = true;
     v.hoursUsed = 3;
     const s = migrate(v7, defaultContent);
-    expect(s.version).toBe(12);
+    expect(s.version).toBe(13);
     expect(s.pratiche.map((p) => p.id)).not.toContain('occupazione-suolo');
     expect(s.active).toEqual([]);
     expect(s.volunteers.find((x) => x.id === 'v7')).toMatchObject({ busy: false, hoursUsed: 0 });
@@ -120,7 +121,7 @@ describe('migrazione dei salvataggi', () => {
     }
     vols.push({ ...vols[0], id: 'sparito' });
     const s = migrate(v8, defaultContent);
-    expect(s.version).toBe(12);
+    expect(s.version).toBe(13);
     expect(s.volunteers.find((v) => v.id === 'v1')).toMatchObject({ age: 58, skin: 'olivastra', hair: 'grigio' });
     expect(s.volunteers.find((v) => v.id === 'sparito')).toMatchObject({ age: 40, skin: 'chiara', hair: 'nero' });
   });
@@ -131,7 +132,7 @@ describe('migrazione dei salvataggi', () => {
     delete v9.tutorial;
     delete v9.surveyPos;
     const s = migrate(v9, defaultContent);
-    expect(s.version).toBe(12);
+    expect(s.version).toBe(13);
     expect(s.tutorial).toEqual({ on: false, seen: [] });
     expect(s.surveyPos).toEqual({});
     expect(s.survey).toEqual(confirmed().state.survey);
@@ -148,12 +149,31 @@ describe('migrazione dei salvataggi', () => {
     }
     vols.push({ ...vols[0], id: 'sparito' });
     const s = migrate(v11, defaultContent);
-    expect(s.version).toBe(12);
+    expect(s.version).toBe(13);
     expect(s.volunteers.find((v) => v.id === 'v1')).toMatchObject({ hairstyle: 'chignon', eyes: 'castani', outfit: 'camicia' });
     expect(s.volunteers.find((v) => v.id === 'sparito')).toMatchObject({ hairstyle: 'corti', eyes: 'castani', outfit: 'casual' });
   });
 
-  it('un salvataggio v12 passa invariato, uno sconosciuto viene rifiutato', () => {
+  it("v12 → v13: un'aiuola 2×2 diventa quattro aiuole da una tile, costruite e nei compiti come lei", () => {
+    const v12 = structuredClone(confirmed().state) as unknown as Record<string, unknown>;
+    v12.version = 12;
+    const grid = v12.grid as GameState['grid'];
+    // com'era prima: una sola aiuola 2×2 dove ora il terreno ne posa quattro
+    const [first, ...rest] = grid.placements.filter((p) => p.elementId === 'aiuola');
+    grid.placements = grid.placements.filter((p) => !rest.includes(p));
+    grid.built.push(first.uid);
+    const plan = v12.plan as PlanTask[];
+    const task = plan.find((t) => t.placements.includes(first.uid))!;
+    task.placements = [first.uid];
+    const s = migrate(v12, defaultContent);
+    const aiuole = s.grid.placements.filter((p) => p.elementId === 'aiuola');
+    expect(aiuole.map((p) => [p.x - first.x, p.y - first.y]).sort()).toEqual([[0, 0], [0, 1], [1, 0], [1, 1]]);
+    expect(aiuole.every((p) => s.grid.built.includes(p.uid))).toBe(true);
+    expect(s.plan.find((t) => t.id === task.id)!.placements).toHaveLength(4);
+    expect(new Set(s.grid.placements.map((p) => p.uid)).size).toBe(s.grid.placements.length);
+  });
+
+  it('un salvataggio v13 passa invariato, uno sconosciuto viene rifiutato', () => {
     const s = Simulation.newGame(defaultContent, T0).state;
     expect(migrate(s, defaultContent)).toBe(s);
     expect(() => migrate({ version: 99 }, defaultContent)).toThrow('non riconosciuto');

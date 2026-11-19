@@ -121,6 +121,12 @@ export class IsoCamera {
     return this.factor > 1.001;
   }
 
+  /** Il puntatore appena premuto non sposta la mappa (la scena lo usa per posare a trascinamento). */
+  cancelDrag(): void {
+    this.down = null;
+    this.dragged = false;
+  }
+
   /** L'ultimo rilascio del puntatore chiudeva un trascinamento o un pizzico, non un clic. */
   wasDrag(): boolean {
     return this.dragged;

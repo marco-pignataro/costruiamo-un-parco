@@ -112,17 +112,6 @@ const BENCH = [
   '.L............L.',
 ];
 
-const FENCE = [
-  '.LL.....LL.....L',
-  '.ll.....ll.....l',
-  'llllllllllllllll',
-  '.ll.....ll.....l',
-  '.ll.....ll.....l',
-  'llllllllllllllll',
-  '.ll.....ll.....l',
-  '.LL.....LL.....L',
-];
-
 const TREE = [
   '....vvvvvv......',
   '..vvVvvvvvvv....',
@@ -172,6 +161,65 @@ function paint(scene: Phaser.Scene, key: string, rows: string[], extra: Record<s
       ctx.fillRect(x, y, 1, 1);
     }),
   );
+  tex.refresh();
+}
+
+/** Altezza delle texture della staccionata e riga del terreno al centro della tile. */
+export const FENCE_TEX = { h: 21, ground: 16 } as const;
+
+/** Chiave della texture della staccionata collegata verso N, E, S, O (coordinate di griglia). */
+export function fenceKey(l: { n: boolean; e: boolean; s: boolean; o: boolean }): string {
+  return `staccionata-${+l.n}${+l.e}${+l.s}${+l.o}`;
+}
+
+/**
+ * Staccionata contigua: un palo al centro della tile e due traverse verso ogni
+ * lato collegato, fino a metà del lato del rombo, dove riprende la tile vicina.
+ * Così tratti dritti (N-S, E-O), angoli, incroci a T e a croce si uniscono
+ * da soli. Isolata, è un pezzo E-O con un palo a ogni capo.
+ */
+function fence(scene: Phaser.Scene, l: { n: boolean; e: boolean; s: boolean; o: boolean }): void {
+  const key = fenceKey(l);
+  if (scene.textures.exists(key)) return;
+  const tex = scene.textures.createCanvas(key, ISO.w, FENCE_TEX.h);
+  if (!tex) return;
+  const ctx = tex.getContext();
+  const px = (x: number, y: number, c: string) => {
+    ctx.fillStyle = PALETTE[c];
+    ctx.fillRect(x, y, 1, 1);
+  };
+  const cx = ISO.w / 2;
+  const gy = FENCE_TEX.ground;
+  const alone = !l.n && !l.e && !l.s && !l.o;
+  // Verso di ogni lato sullo schermo: N in alto a destra, E in basso a destra, S in basso a sinistra, O in alto a sinistra.
+  const dirs = { n: [1, -1], e: [1, 1], s: [-1, 1], o: [-1, -1] } as const;
+  const rails = (d: keyof typeof dirs, from: number) => {
+    const [sx, sy] = dirs[d];
+    for (let i = from; i <= 8; i++) {
+      const x = cx + (sx > 0 ? i : -i - 1);
+      const y = gy + Math.round((sy * i) / 2);
+      for (const h of [3, 7]) {
+        px(x, y - h, 'l');
+        px(x, y - h + 1, 'L');
+      }
+    }
+  };
+  const post = (x: number, y: number, tall: number) => {
+    for (let k = 1; k < tall; k++) {
+      px(x, y - k, 'L');
+      px(x + 1, y - k, 'l');
+    }
+    px(x, y - tall, 'L');
+    px(x + 1, y - tall, 'L');
+  };
+  // Prima i lati dietro (N, O), poi il palo, poi i lati davanti (E, S) che non coprono il palo.
+  if (l.n) rails('n', 1);
+  if (l.o || alone) rails('o', 1);
+  if (alone) post(cx - 9, gy - 4, 9);
+  post(cx - 1, gy, 11);
+  if (l.e || alone) rails('e', 2);
+  if (l.s) rails('s', 2);
+  if (alone) post(cx + 7, gy + 4, 9);
   tex.refresh();
 }
 
@@ -283,6 +331,6 @@ export function createTextures(scene: Phaser.Scene): void {
   paint(scene, 'rifiuto', TRASH);
   paint(scene, 'panchina-rotta', BENCH_BROKEN);
   paint(scene, 'panchina', BENCH);
-  paint(scene, 'staccionata', FENCE);
+  for (let m = 0; m < 16; m++) fence(scene, { n: (m & 8) > 0, e: (m & 4) > 0, s: (m & 2) > 0, o: (m & 1) > 0 });
   paint(scene, 'scrivania', DESK);
 }

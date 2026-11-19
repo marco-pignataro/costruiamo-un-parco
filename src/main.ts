@@ -19,7 +19,7 @@ async function boot() {
 
   const save = () => void browserStore.save(sim.state);
   let notified = sim.state.reports.length;
-  const editor: EditorTool = { tool: null, moving: null };
+  const editor: EditorTool = { tool: null, moving: null, tree: null };
   const view: View = { camera: null, insets: NO_INSETS };
   // Solo in sviluppo: le prove automatiche nel browser leggono la telecamera da qui.
   if (import.meta.env.DEV) Object.assign(window, { __view: view });

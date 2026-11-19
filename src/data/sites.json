@@ -44,6 +44,9 @@
       {"elementId": "panchina", "x": 4, "y": 4},
       {"elementId": "panchina", "x": 9, "y": 4},
       {"elementId": "aiuola", "x": 3, "y": 1},
+      {"elementId": "aiuola", "x": 4, "y": 1},
+      {"elementId": "aiuola", "x": 3, "y": 2},
+      {"elementId": "aiuola", "x": 4, "y": 2},
       {"elementId": "cestino", "x": 6, "y": 6}
     ],
     "pois": [
@@ -94,6 +97,9 @@
       {"elementId": "sentiero", "x": 9, "y": 4},
       {"elementId": "panchina", "x": 4, "y": 3},
       {"elementId": "aiuola", "x": 6, "y": 1},
+      {"elementId": "aiuola", "x": 7, "y": 1},
+      {"elementId": "aiuola", "x": 6, "y": 2},
+      {"elementId": "aiuola", "x": 7, "y": 2},
       {"elementId": "cestino", "x": 8, "y": 5}
     ],
     "pois": [
@@ -147,6 +153,9 @@
       {"elementId": "panchina", "x": 5, "y": 5},
       {"elementId": "panchina", "x": 9, "y": 7},
       {"elementId": "aiuola", "x": 5, "y": 2},
+      {"elementId": "aiuola", "x": 6, "y": 2},
+      {"elementId": "aiuola", "x": 5, "y": 3},
+      {"elementId": "aiuola", "x": 6, "y": 3},
       {"elementId": "cestino", "x": 11, "y": 5},
       {"elementId": "staccionata", "x": 0, "y": 10},
       {"elementId": "staccionata", "x": 1, "y": 10},

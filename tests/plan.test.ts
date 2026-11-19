@@ -24,7 +24,7 @@ const byId = (plan: ReturnType<typeof generatePlan>, id: string) => {
 
 describe('piano di cantiere generato dal progetto', () => {
   it('nascono i compiti degli elementi e delle lavorazioni del terreno', () => {
-    const { g, panchina, aiuola } = demo();
+    const { g, panchina } = demo();
     const plan = generatePlan(g, c);
     expect(plan.tasks.map((t) => t.id).sort()).toEqual(
       [
@@ -34,7 +34,7 @@ describe('piano di cantiere generato dal progetto', () => {
         'prep:vangatura:1',
         'el:sentiero:1',
         `el:panchina:${panchina}`,
-        `el:aiuola:${aiuola}`,
+        'el:aiuola:1',
       ].sort(),
     );
     expect(checkPlan(plan)).toEqual([]);
@@ -47,7 +47,7 @@ describe('piano di cantiere generato dal progetto', () => {
   });
 
   it('le dipendenze seguono le tile: bonifica → livellamento → sentiero → panchina', () => {
-    const { g, panchina, aiuola } = demo();
+    const { g, panchina } = demo();
     const plan = generatePlan(g, c);
     expect(byId(plan, 'prep:livellamento:1').after).toEqual(['prep:bonifica:1']);
     expect(byId(plan, 'prep:vangatura:1').after).toEqual(['prep:sfalcio:1']);
@@ -55,7 +55,7 @@ describe('piano di cantiere generato dal progetto', () => {
     expect(byId(plan, `el:panchina:${panchina}`).after.sort()).toEqual(
       ['el:sentiero:1', 'prep:bonifica:1', 'prep:livellamento:1'].sort(),
     );
-    expect(byId(plan, `el:aiuola:${aiuola}`).after.sort()).toEqual(['prep:sfalcio:1', 'prep:vangatura:1']);
+    expect(byId(plan, 'el:aiuola:1').after.sort()).toEqual(['prep:sfalcio:1', 'prep:vangatura:1']);
   });
 
   it('i sentieri si raggruppano in un compito con i materiali sommati', () => {
@@ -70,7 +70,7 @@ describe('piano di cantiere generato dal progetto', () => {
     const plan = generatePlan(demo().g, c);
     expect(plan.pratiche).toEqual(['assicurazione', 'smaltimento']);
     expect(plan.materials).toContainEqual({ id: 'ghiaia', qty: 12 });
-    expect(plan.materials).toContainEqual({ id: 'piantine', qty: 12 });
+    expect(plan.materials).toContainEqual({ id: 'piantine', qty: 3 });
   });
 
   it('i lavori lunghi si dividono in lotti che stanno in un weekend', () => {

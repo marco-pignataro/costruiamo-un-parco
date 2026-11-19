@@ -186,7 +186,10 @@ export class Hud {
         if (this.open) this.closeActivity();
         else if (this.profile) this.profile = null;
         else if (this.itemInfo) this.itemInfo = null;
-        else if (this.editor.moving !== null) this.editor.moving = null;
+        else if (this.editor.moving !== null || this.editor.tree !== null) {
+          this.editor.moving = null;
+          this.editor.tree = null;
+        }
         else if (this.menuOpen) this.menuOpen = false;
         else if (this.sheet) this.sheet = null;
         else if (this.timelineOpen) this.timelineOpen = false;
@@ -243,6 +246,7 @@ export class Hud {
     if (this.profile && !sim.state.volunteers.some((v) => v.id === this.profile)) this.profile = null;
     if (stage !== 'progettazione') {
       this.editor.moving = null;
+      this.editor.tree = null;
       this.itemInfo = null;
     }
     // A ogni nuova fase, e tra giorni feriali e weekend, non resta aperta nessuna scheda.
@@ -852,7 +856,7 @@ export class Hud {
     const rows: [string, string][] = [
       ['Ingombro', `${e.w}×${e.h} tile`],
       ['Materiali', `${e.materials.map((m) => `${m.qty} × ${sim.materialName(m.id).toLowerCase()}`).join(', ') || '—'} (${sim.orderCost(e.materials)} €)`],
-      ['Lavoro', `${e.hours} h complessive${e.groupable ? ' per tile, i tratti vicini fanno un solo lavoro' : ''}`],
+      ['Lavoro', `${e.hours} h complessive${e.groupable ? ' per tile; si posa anche trascinando e i tratti vicini fanno un solo lavoro' : ''}`],
       ['Skill utile', e.skill ?? '—'],
       ['Volontari', `fino a ${e.maxVolunteers}`],
       ['Pratiche', e.pratiche.map((p) => sim.praticaDef(p).name).join(', ') || '—'],
@@ -1030,13 +1034,16 @@ export class Hud {
         : '<p><small>Nessun problema: il progetto si può confermare.</small></p>') + shortfall;
     const moving = this.editor.moving !== null ? s.grid.placements.find((p) => p.uid === this.editor.moving) : undefined;
     const chosen = this.editor.tool && this.editor.tool !== ERASER ? sim.elementDef(this.editor.tool).name : null;
-    const hint = moving
-      ? `<p class="hint">Stai spostando: <strong>${esc(sim.elementDef(moving.elementId).name)}</strong>. Clicca dove posarlo; tasto destro o Esc per annullare.</p>`
-      : chosen
-        ? `<small>Posi: <strong>${esc(chosen)}</strong>. Clicca sul terreno; un altro clic sulla sua scheda in basso per i dettagli.</small>`
-        : this.editor.tool === ERASER
-          ? '<small>Gomma: clicca un arredo per toglierlo.</small>'
-          : '<small>Scegli un arredo in basso e clicca sul terreno per posarlo; senza arredo scelto, clicca uno già posato per spostarlo.</small>';
+    const modular = this.editor.tool && this.editor.tool !== ERASER && sim.elementDef(this.editor.tool).groupable;
+    const hint = this.editor.tree !== null
+      ? '<p class="hint">Stai trapiantando un <strong>albero tutelato</strong>: non si può togliere, ma si può spostare. Clicca dove posarlo (non sul cemento); tasto destro o Esc per annullare.</p>'
+      : moving
+        ? `<p class="hint">Stai spostando: <strong>${esc(sim.elementDef(moving.elementId).name)}</strong>. Clicca dove posarlo; tasto destro o Esc per annullare.</p>`
+        : chosen
+          ? `<small>Posi: <strong>${esc(chosen)}</strong>. ${modular ? 'Clicca sul terreno, o tieni premuto e trascina per posarne un tratto' : 'Clicca sul terreno'}; un altro clic sulla sua scheda in basso per i dettagli.</small>`
+          : this.editor.tool === ERASER
+            ? '<small>Gomma: clicca un arredo per toglierlo, o trascina per toglierne un tratto.</small>'
+            : '<small>Scegli un arredo in basso e clicca sul terreno per posarlo; senza arredo scelto, clicca uno già posato o un albero per spostarlo.</small>';
     return {
       top: this.brand(`Progettazione del parco · ${esc(sim.siteName)}`, hint),
       bottom: `<div class="crew-bar item-bar"><ul class="crew-list">${items}</ul></div>`,
@@ -1288,6 +1295,7 @@ export class Hud {
       else if (t === ERASER) this.editor.tool = null;
       else this.itemInfo = t;
       this.editor.moving = null;
+      this.editor.tree = null;
       this.render();
       return;
     }
@@ -1386,6 +1394,7 @@ export class Hud {
           this.sim.confirmProject(now);
           this.editor.tool = null;
           this.editor.moving = null;
+          this.editor.tree = null;
           break;
         }
         case 'tutorial-toggle':
