@@ -38,8 +38,8 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 #game canvas { image-rendering: pixelated; display: block; }
 
 /*
- * Desktop: a sinistra il titolo e sotto il progresso, a destra il pannello
- * delle schede alto quanto lo schermo, in basso a sinistra la barra della squadra.
+ * Desktop: a sinistra il pannello delle schede alto quanto lo schermo, a
+ * destra il progresso, in basso la barra della squadra.
  */
 #hud {
   position: fixed;
@@ -48,7 +48,7 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
   /* minmax(0, …): la colonna centrale non si allarga quanto la fila dei volontari (su telefono usciva dallo schermo). */
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  grid-template-areas: "top logo right" "top center right" "bottom bottom right";
+  grid-template-areas: "right logo top" "right center top" "right bottom bottom";
   gap: var(--edge);
   padding: var(--edge);
   pointer-events: none; /* in mezzo si clicca la mappa */
@@ -56,7 +56,7 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
   z-index: 6; /* sopra l'etichetta della mappa */
 }
 .region { display: flex; gap: var(--edge); min-height: 0; min-width: 0; pointer-events: none; }
-.region:empty { display: none; }
+.region:empty, .region.void { display: none; }
 #hud-top { grid-area: top; flex-direction: column; align-items: stretch; width: var(--side); max-width: 36vw; }
 #hud-bottom { grid-area: bottom; align-items: flex-end; flex-wrap: wrap; }
 #hud-left { display: none; }
@@ -108,10 +108,10 @@ img.logo.big { margin: 0 auto 4px; }
 .card small { color: var(--muted); }
 .region > .card { flex: none; }
 
-#hud-top .brand { flex: none; min-width: 0; }
-#hud-top .brand p { margin: 2px 0 0; }
-#hud-top .brand > p:first-child { margin: 0; font-family: var(--display); font-size: 19px; line-height: 1.15; color: var(--accent-dark); }
-#hud-top .brand .bar { margin-top: 8px; }
+.session small strong { font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--accent-dark); }
+.session .bar { margin: 3px 0 2px; }
+.tl-actions .session { flex: 1 1 100%; }
+.hint-card p, .hint-card small { margin: 0; }
 .money p { margin: 0; white-space: nowrap; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .money strong, .inventory .cash strong { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--accent-dark); }
 .day { display: flex; flex-direction: column; gap: 6px; }
@@ -314,24 +314,22 @@ button.ribbon { background: linear-gradient(#ec7462, var(--warn) 55%, var(--warn
 @media (max-width: 860px) {
   :root { --side: 220px; --panel-w: 260px; --edge: 6px; }
   #hud { font-size: 13px; }
-  #hud-top .brand > small { display: none; }
   .cand-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /*
- * Telefono (stessa soglia di MOBILE in hud.ts): in alto il titolo,
- * in basso la barra delle schede (menu e le due colonne); ogni colonna e il
- * menu si aprono a tutto schermo salendo dal basso.
+ * Telefono (stessa soglia di MOBILE in hud.ts): in alto il logo e nell'angolo
+ * il menu, in basso la barra delle schede; ogni scheda e il menu si aprono a
+ * tutto schermo salendo dal basso.
  */
 @keyframes slide-up { from { transform: translateY(100%); } to { transform: none; } }
 @media (max-width: 700px) {
-  /* Telefono: logo piccolo in cima, centrato, poi la riga con intestazione e menu. */
-  #hud { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "logo" "top" "center" "bottom"; }
-  #hud-top { flex-direction: row; flex-wrap: nowrap; align-items: flex-start; width: auto; max-width: none; }
+  /* Telefono: logo piccolo in cima, centrato; il menu sta nell'angolo in alto a destra. */
+  #hud { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "logo" "center" "bottom"; }
+  #hud-top { position: fixed; top: var(--edge); right: var(--edge); width: auto; max-width: none; z-index: 7; }
   #hud-right { width: auto; max-width: none; }
   .panel-tabs { display: none; }
   #hud[data-tabs="1"] { padding-bottom: calc(var(--tabbar) + var(--edge)); }
-  #hud-top .brand { flex: 1 1 0; min-width: 0; }
   #hud-left, #hud-right { display: none; grid-area: auto; }
   #hud[data-sheet="left"] #hud-left, #hud[data-sheet="right"] #hud-right {
     display: flex; position: fixed; inset: 0 0 var(--tabbar) 0; width: auto; max-width: none; z-index: 8;
@@ -414,7 +412,6 @@ button.ribbon { background: linear-gradient(#ec7462, var(--warn) 55%, var(--warn
  * il titolo, le settimane scorrono dentro la scheda. Telefono: scheda
  * "Progresso" a tutto schermo.
  */
-.top-brand { display: contents; }
 .top-timeline { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; pointer-events: none; }
 .top-timeline:empty { display: none; }
 .tl-panel { display: flex; flex-direction: column; gap: 4px; min-height: 0; }

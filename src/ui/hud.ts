@@ -56,14 +56,13 @@ type Region = 'top' | 'left' | 'right' | 'bottom' | 'center';
 type Side = 'left' | 'right';
 /**
  * Scheda aperta. Su telefono: pannello a tutto schermo dalla barra in basso
- * (la timeline è una scheda). Su desktop: scheda del pannello a destra (null =
+ * (la timeline è una scheda). Su desktop: scheda del pannello a sinistra (null =
  * pannello richiuso sulle sole linguette; il menu è una scheda).
  */
 type Sheet = Side | 'timeline' | 'inventory' | 'menu';
 
 /** Contenuto della HUD per una fase: in fondo alla colonna sinistra cassa e pulsante della fase. */
 interface Parts {
-  top?: string;
   left?: string;
   leftFoot?: string;
   right?: string;
@@ -109,11 +108,10 @@ const MOBILE = '(max-width: 700px)';
 const isMobile = () => globalThis.matchMedia?.(MOBILE).matches ?? false;
 
 /**
- * HUD attorno alla scena. Su desktop: a sinistra il titolo e sotto il
- * progresso delle settimane (in verticale, con i comandi della giornata), a
- * destra un pannello alto quanto lo schermo con le schede in alto (le colonne
- * della fase, l'inventario, il menu), in basso a sinistra la barra della
- * squadra. Su telefono le stesse schede stanno in una barra in basso e si
+ * HUD attorno alla scena. Su desktop: a destra il progresso delle settimane
+ * (in verticale, con i comandi della giornata), a sinistra un pannello alto
+ * quanto lo schermo con le schede in alto (le colonne della fase,
+ * l'inventario, il menu), in basso la barra della squadra. Su telefono le stesse schede stanno in una barra in basso e si
  * aprono a tutto schermo. Le attività si avviano da una modale al centro.
  */
 export class Hud {
@@ -137,7 +135,6 @@ export class Hud {
   /** Settimana e parte mostrate l'ultima volta dalla timeline: quando cambiano si ricentra. */
   private lastWeek = '';
   /** Il titolo e la timeline (su desktop sotto il titolo, su telefono una scheda), aggiornati a parte. */
-  private brandEl!: HTMLElement;
   private timelineEl!: HTMLElement;
   private menuEl!: HTMLElement;
   private wasMobile = isMobile();
@@ -173,14 +170,12 @@ export class Hud {
     logoEl.id = 'hud-logo';
     logoEl.innerHTML = logo(GAME_SUBTITLE, 2, 'logo');
     animateLogos();
-    this.brandEl = document.createElement('div');
-    this.brandEl.className = 'top-brand';
     this.timelineEl = document.createElement('div');
     this.timelineEl.className = 'top-timeline';
     this.menuEl = document.createElement('div');
     this.menuEl.className = 'top-menu';
     root.append(logoEl);
-    this.regions.top.append(this.brandEl, this.timelineEl, this.menuEl);
+    this.regions.top.append(this.timelineEl, this.menuEl);
     this.toast = document.createElement('div');
     this.toast.id = 'hud-toast';
     root.append(this.toast);
@@ -282,13 +277,12 @@ export class Hud {
     if (stage === 'terreno') parts = this.sitesParts();
     else if (stage === 'squadra') parts = this.teamParts();
     else if (stage === 'progettazione') parts = this.designParts();
-    else if (stage === 'inaugurato') parts = { top: this.brand('Il parco è inaugurato!') };
-    else if (stage === 'fallito') parts = { top: this.brand('Consegna mancata') };
+    else if (stage === 'inaugurato' || stage === 'fallito') parts = {};
     else parts = this.playParts();
 
     const mobile = isMobile();
     const names = COLUMN_NAMES[stage];
-    const html: Record<Region, string> = { top: parts.top ?? '', left: '', right: '', bottom: '', center: parts.center ?? '' };
+    const html: Record<Region, string> = { top: '', left: '', right: '', bottom: '', center: parts.center ?? '' };
     const timeline = buildTimeline(sim);
     // Le schede: le due colonne della fase, l'inventario e, su desktop, il menu.
     // Ognuna ha un corpo che scorre e un piede fermo in fondo (comandi della fase).
@@ -322,7 +316,7 @@ export class Hud {
       html.bottom = (parts.bottom ?? this.crewBar()) + (list.length ? `<nav class="tabbar">${this.tabButtons(list, info)}</nav>` : '') + inv;
       root.dataset.tabs = list.length ? '1' : '';
     } else {
-      // Pannello a destra: linguette in alto e la scheda scelta sotto; senza scheda resta solo la fila di linguette.
+      // Pannello a sinistra: linguette in alto e la scheda scelta sotto; senza scheda resta solo la fila di linguette.
       const list: [Sheet, string][] = [...tabs].map(([k, t]) => [k, t.label]);
       html.right = `<nav class="panel-tabs card">${this.tabButtons(list, info)}</nav>${this.sheet ? pane(this.sheet) : ''}`;
       html.bottom = parts.bottom ?? this.crewBar();
@@ -335,10 +329,11 @@ export class Hud {
       this.lastWeek = weekKey;
       this.centerTimeline = true;
     }
-    setHTML(this.brandEl, html.top);
     setHTML(this.timelineEl, timeline ? this.timelineHtml(timeline, mobile) : '');
     setHTML(this.menuEl, mobile ? this.menu() : '');
     for (const r of ['left', 'right', 'center', 'bottom'] as Region[]) setHTML(this.regions[r], html[r]);
+    // Senza progresso né menu la colonna del progresso non occupa spazio.
+    this.regions.top.classList.toggle('void', !this.timelineEl.childElementCount && !this.menuEl.childElementCount);
     if (this.centerTimeline && this.timelineEl.querySelector('.wk')) {
       this.centerTimeline = false;
       this.scrollTimelineToNow();
@@ -367,19 +362,18 @@ export class Hud {
     const W = window.innerWidth;
     const H = window.innerHeight;
     const mobile = isMobile();
-    const r = (el: HTMLElement | null) => (el?.childElementCount ? el.getBoundingClientRect() : null);
-    // Su telefono in alto c'è il titolo e i pannelli si aprono sopra la mappa senza toglierle spazio;
-    // su desktop il titolo e il progresso fanno la colonna di sinistra, il pannello delle schede quella di destra.
-    const top = mobile ? r(this.regions.top) : null;
-    const left = mobile ? null : r(this.regions.top);
-    const right = mobile || !this.sheet ? null : r(this.regions.right);
+    const r = (el: HTMLElement | null) => (el?.childElementCount && !el.classList.contains('void') ? el.getBoundingClientRect() : null);
+    // Su telefono in alto c'è solo il menu e i pannelli si aprono sopra la mappa senza toglierle spazio;
+    // su desktop il pannello delle schede fa la colonna di sinistra, il progresso quella di destra.
+    const left = mobile || !this.sheet ? null : r(this.regions.right);
+    const right = mobile ? null : r(this.regions.top);
     // In basso la barra della squadra e, su mobile, la barra delle schede: conta la più alta delle due.
     const lows = [this.regions.bottom.querySelector<HTMLElement>('.crew-bar'), mobile ? this.regions.bottom.querySelector<HTMLElement>('.tabbar') : null]
       .filter((el): el is HTMLElement => !!el)
       .map((el) => el.getBoundingClientRect().top);
     const bottom = lows.length ? { top: Math.min(...lows) } : null;
     const insets: Insets = {
-      top: top ? Math.round(top.bottom) : 0,
+      top: 0,
       left: left ? Math.round(left.right) : 0,
       right: right ? Math.round(W - right.left) : 0,
       bottom: bottom ? Math.round(H - bottom.top) : 0,
@@ -390,8 +384,14 @@ export class Hud {
     this.actions.onInsets(insets);
   }
 
-  private brand(subtitle: string, extra = ''): string {
-    return `<section class="card brand"><p>${subtitle}</p>${extra}</section>`;
+  /** Ore di sessione usate (sopralluogo: in fondo alle attività; cantiere: nel Progresso). */
+  private sessionBar(): string {
+    const s = this.sim.state;
+    const used = s.sessionUsedH;
+    const limit = this.sim.sessionLimitH;
+    const name = s.stage === 'sopralluogo' ? 'Sopralluogo' : s.phase === 'burocratica' ? 'Giorni feriali' : 'Weekend';
+    return `<div class="session"><small>${name}: <strong>${formatHours(used)}</strong> su ${limit} h${s.active.length ? '' : ' · ferma: nessun compito in corso'}</small>
+      <div class="bar"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div></div>`;
   }
 
   /** Linguette delle schede, ognuna con la sua icona e il suo dato in breve (in basso su telefono, in cima al pannello su desktop). */
@@ -494,7 +494,7 @@ export class Hud {
 
   /**
    * Timeline delle settimane di lavoro fino alla data di consegna, in
-   * verticale. Su desktop sta a sinistra sotto il titolo, sempre visibile, e
+   * verticale. Su desktop sta a destra, sempre visibile, e
    * le settimane scorrono dentro la scheda; su telefono è la scheda
    * "Progresso" della barra in basso, a tutto schermo.
    */
@@ -521,7 +521,7 @@ export class Hud {
           <ol class="tl-weeks vertical">${cells(t.weeks)}</ol>
         </section>`;
     }
-    // Desktop: a sinistra sotto il titolo, in verticale; le settimane scorrono e si parte da quella in corso.
+    // Desktop: a destra, in verticale; le settimane scorrono e si parte da quella in corso.
     return `<section class="card tl-panel">
         <h2>Progresso</h2>
         <strong>${esc(title)}</strong><small>${esc(sub)}</small>
@@ -541,6 +541,7 @@ export class Hud {
     const min = Math.round(t.minProgress * 100);
     const label = sim.state.phase === 'burocratica' ? 'Chiudi e vai al weekend' : 'Chiudi il weekend';
     return `<div class="tl-actions">
+        ${this.sessionBar()}
         <div class="tl-progress" title="Per inaugurare serve almeno il ${min}%"><small>Progetto realizzato <strong>${pct}%</strong> · serve il ${min}%</small>
           <div class="bar"><span style="width:${pct}%"></span><i style="left:${min}%"></i></div></div>
         <button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I giorni rimanenti passano comunque e le attese avanzano">${label}</button>
@@ -610,14 +611,6 @@ export class Hud {
     const s = sim.state;
     const now = Date.now();
     const surveying = s.stage === 'sopralluogo';
-    const phaseName = surveying ? 'Sopralluogo (una giornata)' : s.phase === 'burocratica' ? 'Parte burocratica (infrasettimanale)' : 'Parte operativa (weekend)';
-    const used = s.sessionUsedH;
-    const limit = sim.sessionLimitH;
-
-    // In alto: titolo, settimana e parte della settimana, poi la barra della sessione.
-    const session = `<div class="bar"><span style="width:${((used / limit) * 100).toFixed(1)}%"></span></div>
-      <small>${formatHours(used)} su ${limit} h${s.active.length ? '' : ' · ferma: nessun compito in corso'}</small>`;
-    const top = this.brand(`${surveying ? `Fase 3 · ${esc(sim.siteName)}` : `Settimana ${s.week}`} · ${phaseName}`, session);
 
     // A sinistra: la squadra, con ore e cosa sta facendo; in cantiere in fondo c'è l'inventario.
     // La chiusura del sopralluogo sta in fondo alle attività (in cantiere i comandi della giornata sono nella timeline).
@@ -634,7 +627,7 @@ export class Hud {
       .join('');
     const left = `<section class="card"><h2>Squadra</h2><ul class="vols">${vols}</ul></section>`;
     const rightFoot = surveying
-      ? `<section class="card day"><button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I punti non analizzati restano un mistero">Chiudi il sopralluogo</button></section>`
+      ? `<section class="card day">${this.sessionBar()}<button data-act="close" ${sim.canCloseSession() ? '' : 'disabled'} title="I punti non analizzati restano un mistero">Chiudi il sopralluogo</button></section>`
       : '';
 
     // A destra: prima i compiti in corso, poi cosa si può fare, poi i registri.
@@ -705,7 +698,7 @@ export class Hud {
         </section>`;
     }
 
-    return { top, left, rightFoot, right: running + todo + registers, inventory };
+    return { left, rightFoot, right: running + todo + registers, inventory };
   }
 
   private inaugurateButton(): string {
@@ -992,7 +985,6 @@ export class Hud {
       })
       .join('');
     return {
-      top: this.brand('Fase 1 · Scegli il terreno', '<small>Più un terreno è difficile, più cassa e punti volontariato dà, e più vale il punteggio finale. I "?" si scoprono con il sopralluogo.</small>'),
       right: cards + this.donate(),
     };
   }
@@ -1024,7 +1016,6 @@ export class Hud {
       .join('');
     const problems = sim.teamProblems();
     return {
-      top: this.brand(`Fase 2 · Componi la squadra · ${esc(sim.siteName)}`),
       center: `<section class="card recruit" aria-label="Chi può unirsi">
           <header class="recruit-head">
             <div><h2>Chi può unirsi</h2><small>Gli specialisti costano di più ma lavorano meglio e guidano fino a 2 volontari senza la loro skill. Segretario/a: uno solo. Clicca un volontario in basso per sceglierne nome e aspetto.</small></div>
@@ -1073,9 +1064,9 @@ export class Hud {
             ? '<small>Gomma: clicca un arredo per toglierlo, o trascina per toglierne un tratto.</small>'
             : '<small>Scegli un arredo in basso e clicca sul terreno per posarlo; senza arredo scelto, clicca uno già posato o un albero per spostarlo.</small>';
     return {
-      top: this.brand(`Progettazione del parco · ${esc(sim.siteName)}`, hint),
       bottom: `<div class="crew-bar item-bar"><ul class="crew-list">${items}</ul></div>`,
-      rightFoot: `<section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Preventivo <strong>${sum.costEur} €</strong></p></section>
+      rightFoot: `<section class="card hint-card">${hint}</section>
+        <section class="card money"><p>In cassa <strong>${s.budget} €</strong></p><p>Preventivo <strong>${sum.costEur} €</strong></p></section>
         <section class="card day"><button data-act="confirm" class="confirm" ${sum.problems.length ? 'disabled' : ''}>Conferma il progetto e apri il cantiere</button></section>`,
       right: `<section class="card"><h2>Preventivo</h2>
           <p>Materiali: <strong>${sum.costEur} €</strong> · Lavoro: <strong>${sum.hours} h</strong> complessive, preparazione del terreno compresa</p>
