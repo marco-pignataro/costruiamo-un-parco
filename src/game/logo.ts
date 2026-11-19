@@ -5,8 +5,9 @@
  *
  * Due parti indipendenti:
  * - il marchio, fisso: "gLOVEs On!" in lettere a blocchi sull'isoletta, con
- *   la fontana del logo di Puli-AMO Messina a sinistra e, a destra, un
- *   alberello, una pala piantata e un guanto da lavoro col pollice in su;
+ *   una fontana da piazza al centro, dietro la scritta, con l'acqua animata
+ *   (omaggio alla fontana di Puli-AMO Messina), un alberello a sinistra e, a
+ *   destra, una pala piantata e un guanto da lavoro col pollice in su;
  * - il sottotitolo, accessorio e intercambiabile: una targa di legno larga
  *   quanto il testo, scritto con un font pixel che copre lettere, cifre,
  *   punteggiatura e accenti italiani. Senza sottotitolo resta solo il marchio.
@@ -207,55 +208,109 @@ function island(b: Buf, cx: number, cy: number, rx: number, ry: number): void {
   }
 }
 
+/** Fotogrammi dell'animazione dell'acqua (un giro completo). */
+export const LOGO_FRAMES = 8;
+
+const FSTONE = ['#f6f1e4', '#dcd6c8', '#b9b4a8', '#8f8d88', '#6a6a70'];
+const STONE_LINE = '#34343e';
+const WATER = ['#245a9e', '#357cc4', '#5aa6e6', '#9fd6f8', '#e6f6ff'];
+
 /**
- * La fontana del logo di Puli-AMO Messina: vasca rotonda di pietra con l'acqua
- * azzurra, zampillo al centro e getti a ventaglio che si allargano verso l'alto.
- * `by` è la riga dove la vasca poggia sull'erba.
+ * Fontana da piazza al centro del logo, dietro la scritta: vasca grande col
+ * bordo di pietra (le lettere ne coprono il davanti), colonna, tazza in alto
+ * con lo zampillo, acqua che ricade dalla tazza nella vasca. `frame` fa
+ * scorrere l'acqua: gocce lungo le cascate, getto che pulsa, cerchi nella vasca.
+ * `by` è la riga del centro del bordo della vasca.
  */
-function fountain(b: Buf, cx: number, by: number): void {
-  const top = by - 10; // bocca dello zampillo
-  // getti a ventaglio, dietro alla vasca: spicchi che si allargano salendo
-  for (const deg of [-58, -35, -12, 12, 35, 58]) {
-    const a = (deg * Math.PI) / 180;
-    const len = 20 - Math.abs(deg) / 12;
-    for (let t = 2; t <= len; t += 0.25) {
-      const half = t * 0.075;
-      for (let o = -half; o <= half; o += 0.25) {
-        const x = Math.round(cx + 0.5 + Math.sin(a) * t + Math.cos(a) * o);
-        const y = Math.round(top - Math.cos(a) * t + Math.sin(a) * o);
-        const f = t / len;
-        const edge = o < -half + 0.6;
-        b.set(x, y, f > 0.82 ? '#ffffff' : f > 0.5 ? (edge ? '#7cc0ee' : '#c4e6fb') : edge ? '#2f74c4' : '#5aa6e6');
-      }
+function fountain(b: Buf, cx: number, by: number, frame: number): void {
+  const F = frame / LOGO_FRAMES;
+  const stone: Mask = new Set();
+  const put = (x: number, y: number, c: string, m: Mask | null = stone) => { b.set(x, y, c); m?.add(key(x, y)); };
+  const RX = 40, RY = 7, ground = by + 13;
+  const inE = (x: number, y: number, rx: number, ry: number, ey = by) => ((x - cx) / rx) ** 2 + ((y - ey) / ry) ** 2 <= 1;
+
+  // vasca: parete (la luce viene da sinistra) e bordo spesso
+  for (let x = cx - RX; x <= cx + RX; x++) {
+    const u = (x - cx) / RX;
+    const front = Math.round(by + RY * Math.sqrt(1 - u * u));
+    for (let y = front; y <= ground; y++) {
+      const l = -u * 1.2 + (y === front + 1 ? 0.8 : 0) - (y >= ground - 1 ? 0.8 : 0);
+      put(x, y, FSTONE[Math.max(1, Math.min(4, Math.round(2.4 - l)))]);
     }
   }
-  const basin: Mask = new Set();
-  const inE = (x: number, y: number, ex: number, ey: number, rx: number, ry: number) => ((x - ex) / rx) ** 2 + ((y - ey) / ry) ** 2 <= 1;
-  const ry0 = by - 7;
-  // parete e piede della vasca
-  for (let x = cx - 12; x <= cx + 12; x++) for (let y = ry0; y <= by; y++) {
-    const u = (x - cx) / 12;
-    if (Math.abs(u) > 1) continue;
-    const bottom = y >= by - 1;
-    if (bottom && Math.abs(x - cx) > 9) continue;
-    if (!bottom && y > ry0 + Math.round(4 * Math.sqrt(1 - u * u)) + 4) continue;
-    basin.add(key(x, y));
-    const l = -u + (bottom ? -0.6 : 0) + (hash(x, y, 30) - 0.5) * 0.3;
-    b.set(x, y, bottom ? (l > -0.2 ? '#3a3c46' : '#24252c') : l > 0.45 ? '#d8d4c8' : l > -0.2 ? '#b3b0a6' : l > -0.7 ? '#8a8b8f' : '#6d6e74');
+  for (let y = by - RY - 1; y <= by + RY + 1; y++) for (let x = cx - RX - 1; x <= cx + RX + 1; x++) {
+    if (!inE(x, y, RX, RY) || inE(x, y, RX - 4, RY - 2.2)) continue;
+    const back = y < by;
+    const lit = y < by - RY + 2 || (!back && y <= by + RY - 1 && y >= by + RY - 2);
+    put(x, y, back ? (lit ? FSTONE[2] : FSTONE[3]) : lit ? FSTONE[0] : FSTONE[1]);
   }
-  // bordo superiore e acqua
-  for (let y = ry0 - 5; y <= ry0 + 4; y++) for (let x = cx - 12; x <= cx + 12; x++) {
-    if (!inE(x, y, cx, ry0, 12, 4.5)) continue;
-    basin.add(key(x, y));
-    const water = inE(x, y, cx, ry0, 9.5, 2.8);
-    const back = y < ry0;
-    b.set(x, y, water ? (y <= ry0 - 2 ? '#2f74c4' : hash(x, y, 31) > 0.8 ? '#a8dcfa' : '#4f9ee0') : back ? '#9b988f' : x < cx ? '#ece6d6' : '#c6c1b4');
+  // acqua della vasca con cerchi che si allargano dalla colonna
+  for (let y = by - RY; y <= by + RY; y++) for (let x = cx - RX; x <= cx + RX; x++) {
+    if (!inE(x, y, RX - 4, RY - 2.2)) continue;
+    const r = Math.sqrt(((x - cx) / (RX - 4)) ** 2 + ((y - by) / (RY - 2.2)) ** 2);
+    let c = y < by - 1 ? WATER[1] : WATER[2];
+    for (const k of [0, 1 / 3, 2 / 3]) if (Math.abs(r - ((F + k) % 1)) < 0.05 && r > 0.15) c = WATER[3];
+    if (hash(x, y, frame + 40) > 0.97) c = WATER[4];
+    put(x, y, c, null);
   }
-  outline(b, basin, '#33333d');
-  // zampillo: colonnina con la bocca in cima
-  for (let y = top; y <= ry0; y++) { b.set(cx, y, y === top ? '#ffffff' : '#c9cdd2'); b.set(cx + 1, y, '#8a8f98'); }
-  b.set(cx - 1, ry0, '#33333d'); b.set(cx + 2, ry0, '#33333d');
-  b.set(cx - 1, top + 1, '#9fd2f5'); b.set(cx + 2, top + 1, '#9fd2f5');
+
+  // colonna con un anello a metà
+  const ty = by - 14;
+  for (let y = ty + 4; y <= by; y++) for (let x = cx - 2; x <= cx + 2; x++) {
+    const ring = y === by - 6 || y === by - 5;
+    if (!ring && (x === cx - 2 || x === cx + 2)) continue;
+    put(x, y, x < cx ? FSTONE[ring ? 0 : 1] : x === cx ? FSTONE[2] : FSTONE[3]);
+  }
+  // tazza: sotto a coppa, sopra il bordo con l'acqua
+  for (let y = ty; y <= ty + 4; y++) {
+    const half = 12 - (y - ty) * 2.4;
+    for (let x = Math.round(cx - half); x <= Math.round(cx + half); x++) {
+      const u = (x - cx) / Math.max(1, half);
+      put(x, y, FSTONE[Math.max(1, Math.min(4, Math.round(2.2 + u * 1.4 + (y - ty) * 0.25)))]);
+    }
+  }
+  for (let y = ty - 4; y <= ty + 1; y++) for (let x = cx - 13; x <= cx + 13; x++) {
+    if (!inE(x, y, 13, 3, ty - 1)) continue;
+    if (inE(x, y, 10.5, 1.8, ty - 1)) put(x, y, (x + y + frame) % 4 === 0 ? WATER[3] : WATER[2], null);
+    else put(x, y, y < ty - 1 ? FSTONE[2] : x < cx ? FSTONE[0] : FSTONE[1]);
+  }
+  outline(b, stone, STONE_LINE);
+
+  // cascate dalla tazza alla vasca, a sinistra e a destra, e un velo davanti
+  const flow = (x: number, y: number, i: number) => b.set(x, y, (i - frame * 1.5 + 64) % 5 < 2 ? WATER[4] : (i - frame * 1.5 + 64) % 5 < 3 ? WATER[3] : WATER[2]);
+  for (const side of [-1, 1]) for (const off of [0, 2]) {
+    const n = 24;
+    for (let i = 0; i <= n; i++) {
+      const s2 = i / n;
+      const x = Math.round(cx + side * (12 + off * 0.5 + 6 * s2 + off * s2));
+      const y = Math.round(ty - 1 + s2 * s2 * (by - ty + 1));
+      if (off === 0) b.set(x - side, y, WATER[2]);
+      flow(x, y, i + off);
+    }
+    // spruzzi dove l'acqua arriva nella vasca
+    const sx = cx + side * (19 + off);
+    if ((frame + off) % 2 === 0) b.set(sx + side, by - 1, WATER[4]);
+    else b.set(sx - side, by - 2, WATER[4]);
+  }
+  for (let x = cx - 8; x <= cx + 8; x += 4) for (let y = ty + 2; y <= by - 1; y++) {
+    if (Math.abs(x - cx) < 3 && y > ty + 4) continue; // dietro la colonna non si vede
+    if ((y - frame + 64) % 4 < 2) b.set(x, y, WATER[3]);
+  }
+
+  // zampillo: getto che pulsa e corona di gocce che ricade nella tazza
+  const jetTop = ty - 12;
+  for (let y = jetTop; y <= ty - 2; y++) {
+    const i = y - jetTop;
+    b.set(cx, y, (i + frame * 2) % 4 < 2 ? WATER[4] : WATER[3]);
+    b.set(cx + 1, y, (i + frame * 2) % 4 === 1 ? WATER[3] : WATER[2]);
+    if (i > 3) b.set(cx - 1, y, WATER[3]);
+  }
+  for (const side of [-1, 1]) for (let i = 0; i < 9; i++) {
+    const t = ((i / 9 + F) % 1);
+    const x = Math.round(cx + side * t * 9);
+    const y = Math.max(jetTop, Math.round(jetTop + 1 - 2.5 * Math.sin(t * Math.PI * 0.6) + t * t * 9));
+    b.set(x, y, t < 0.5 ? WATER[4] : WATER[3]);
+  }
 }
 
 function sprite(b: Buf, x0: number, y0: number, rows: string[], colors: Record<string, string>): void {
@@ -288,17 +343,17 @@ export interface LogoPixels {
  * Pixel del logo. `subtitle` è la targa sotto il marchio (accessoria e
  * intercambiabile); null o stringa vuota = solo il marchio.
  */
-export function logoPixels(subtitle: string | null = null): LogoPixels {
-  const W = 220, H = 120;
+export function logoPixels(subtitle: string | null = null, frame = 0): LogoPixels {
+  const W = 220, H = 130;
   const b = new Buf(W, H);
   const glyphW = (ch: string) => (ch === ' ' ? 4 : BIG[ch].rows[0].length);
   const titleW = TITLE.reduce((w, [ch]) => w + glyphW(ch) + 2, -2) + DEPTH;
-  const cx = Math.round(W / 2), base = 40; // riga di base delle lettere
-  const rx = Math.round(titleW / 2) + 32, ry = 12;
+  const cx = Math.round(W / 2), base = 50; // riga di base delle lettere
+  const rx = Math.round(titleW / 2) + 18, ry = 12;
   island(b, cx, base + 1, rx, ry);
-  // a sinistra la fontana di Puli-AMO, a destra alberello, pala e guanto
-  fountain(b, cx - Math.round(titleW / 2) - 15, base + 1);
-  sprite(b, cx + rx - 30, base - 9, TREE, TREE_COLORS);
+  // la fontana al centro, dietro la scritta; alberello a sinistra, pala e guanto a destra
+  fountain(b, cx, base - 12, ((frame % LOGO_FRAMES) + LOGO_FRAMES) % LOGO_FRAMES);
+  sprite(b, cx - rx + 2, base - 9, TREE, TREE_COLORS);
   // lettere
   let x = cx - Math.round(titleW / 2);
   for (const [ch, ramp] of TITLE) {
@@ -353,12 +408,12 @@ export function logoPixels(subtitle: string | null = null): LogoPixels {
 
 const cache = new Map<string, string>();
 
-/** Il logo come immagine (data URL), ingrandito di `scale` senza sfumature. */
-export function logoDataUrl(subtitle: string | null = null, scale = 1): string {
-  const k = `${subtitle ?? ''}|${scale}`;
+/** Il logo come immagine (data URL), ingrandito di `scale` senza sfumature; `frame` è il fotogramma dell'acqua. */
+export function logoDataUrl(subtitle: string | null = null, scale = 1, frame = 0): string {
+  const k = `${subtitle ?? ''}|${scale}|${frame}`;
   const hit = cache.get(k);
   if (hit) return hit;
-  const { w, h, px } = logoPixels(subtitle);
+  const { w, h, px } = logoPixels(subtitle, frame);
   const c = document.createElement('canvas');
   c.width = w * scale;
   c.height = h * scale;
@@ -371,4 +426,27 @@ export function logoDataUrl(subtitle: string | null = null, scale = 1): string {
   const url = c.toDataURL();
   cache.set(k, url);
   return url;
+}
+
+/** Immagine del logo animabile: `animateLogos` le fa scorrere i fotogrammi. */
+export function logoImg(subtitle: string | null, scale: number, cls: string, alt: string): string {
+  const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+  return `<img class="${cls}" src="${logoDataUrl(subtitle, scale)}" alt="${esc(alt)}" data-logo="${esc(subtitle ?? '')}" data-scale="${scale}">`;
+}
+
+let animating = false;
+/**
+ * Fa scorrere l'acqua in tutti i loghi della pagina (immagini fatte con
+ * `logoImg`), anche quelli che compaiono dopo. Ferma per chi chiede meno movimento.
+ */
+export function animateLogos(): void {
+  if (animating || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  animating = true;
+  let frame = 0;
+  setInterval(() => {
+    frame = (frame + 1) % LOGO_FRAMES;
+    for (const img of document.querySelectorAll<HTMLImageElement>('img[data-logo]')) {
+      img.src = logoDataUrl(img.dataset.logo || null, Number(img.dataset.scale) || 1, frame);
+    }
+  }, 110);
 }

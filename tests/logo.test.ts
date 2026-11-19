@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { logoPixels, subtitleWidth } from '../src/game/logo';
+import { LOGO_FRAMES, logoPixels, subtitleWidth } from '../src/game/logo';
 
 describe('logo', () => {
   it('senza sottotitolo resta solo il marchio, con il sottotitolo arriva la targa sotto', () => {
@@ -23,5 +23,14 @@ describe('logo', () => {
     expect(subtitleWidth('Parco più verde')).toBeGreaterThan(subtitleWidth('Parco'));
     expect(subtitleWidth('à')).toBe(subtitleWidth('a'));
     expect(() => logoPixels('Ünïcødé ☺ è ok')).not.toThrow();
+  });
+
+  it("l'acqua della fontana si muove: fotogrammi diversi, stessa misura, e il giro si chiude", () => {
+    const a = logoPixels(null, 0);
+    const b = logoPixels(null, 3);
+    expect(b.w).toBe(a.w);
+    expect(b.h).toBe(a.h);
+    expect(b.px).not.toEqual(a.px);
+    expect(logoPixels(null, LOGO_FRAMES)).toEqual(a);
   });
 });

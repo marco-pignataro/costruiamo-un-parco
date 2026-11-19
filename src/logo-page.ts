@@ -1,5 +1,5 @@
 import { GAME_FULL_TITLE, GAME_SUBTITLE, GAME_TITLE } from './config';
-import { logoDataUrl } from './game/logo';
+import { animateLogos, logoDataUrl } from './game/logo';
 
 // Pagina del logo (logo.html): anteprima, prove di sottotitolo, PNG da scaricare.
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -13,6 +13,8 @@ const subtitle = () => input.value.trim() || null;
 
 function render() {
   main.src = logoDataUrl(subtitle(), scale);
+  main.dataset.logo = subtitle() ?? '';
+  main.dataset.scale = String(scale);
   const downloads = $('downloads');
   downloads.textContent = '';
   for (const s of [1, 4, 8]) {
@@ -56,6 +58,8 @@ for (const [sub, caption] of variants) {
   stage.className = 'stage';
   const img = document.createElement('img');
   img.src = logoDataUrl(sub, 2);
+  img.dataset.logo = sub ?? '';
+  img.dataset.scale = '2';
   img.alt = sub ? `${GAME_TITLE} ${sub}` : GAME_TITLE;
   stage.appendChild(img);
   const cap = document.createElement('figcaption');
@@ -64,3 +68,4 @@ for (const [sub, caption] of variants) {
   $('variants').appendChild(f);
 }
 render();
+animateLogos();

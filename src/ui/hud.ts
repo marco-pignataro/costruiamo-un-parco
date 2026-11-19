@@ -5,11 +5,11 @@ import type { ActiveTask, PraticaStatus, Stage, Volunteer } from '../core/types'
 import type { Insets } from '../game/camera';
 import { ERASER, type EditorTool } from '../game/ParkScene';
 import { inUniform, volunteerLook, volunteerPortrait } from '../game/sprites';
-import { logoDataUrl } from '../game/logo';
+import { animateLogos, logoImg } from '../game/logo';
 
 /** Il logo come immagine; il testo alternativo è il titolo completo. */
 function logo(subtitle: string | null, scale: number, cls: string): string {
-  return `<img class="${cls}" src="${logoDataUrl(subtitle, scale)}" alt="${esc(GAME_FULL_TITLE)}">`;
+  return logoImg(subtitle, scale, cls, GAME_FULL_TITLE);
 }
 import { type Activity, type Kind, activityAvailable, listActivities, walkTarget } from './activities';
 import { type Timeline, type WeekCell, buildTimeline } from './timeline';
@@ -172,6 +172,7 @@ export class Hud {
     const logoEl = document.createElement('h1');
     logoEl.id = 'hud-logo';
     logoEl.innerHTML = logo(GAME_SUBTITLE, 2, 'logo');
+    animateLogos();
     this.brandEl = document.createElement('div');
     this.brandEl.className = 'top-brand';
     this.timelineEl = document.createElement('div');
