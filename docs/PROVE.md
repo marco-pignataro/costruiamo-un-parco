@@ -29,7 +29,7 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
-Editor del parco (19/11), commit: COMMIT.
+Editor del parco (19/11), commit: 1b49040.
 
 - [x] Le aiuole devono essere da una sola tile.
 - [x] Gli alberi del parco si devono poter spostare (ma non rimuovere)
