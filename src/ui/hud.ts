@@ -6,7 +6,7 @@ import type { Insets } from '../game/camera';
 import { ERASER, type EditorTool } from '../game/ParkScene';
 import { inUniform, volunteerLook, volunteerPortrait } from '../game/sprites';
 import { type Activity, type Kind, activityAvailable, listActivities, walkTarget } from './activities';
-import { type Timeline, type WeekCell, buildTimeline, timelineWindow } from './timeline';
+import { type Timeline, type WeekCell, buildTimeline } from './timeline';
 
 /** Mini-puzzle aperto: delegazione scelta, ordine di presentazione e risposte date. */
 interface Puzzle {
@@ -48,8 +48,12 @@ export interface HudActions {
 
 type Region = 'top' | 'left' | 'right' | 'bottom' | 'center';
 type Side = 'left' | 'right';
-/** Su mobile: pannello aperto a tutto schermo dalla barra delle schede. */
-type Sheet = Side | 'timeline' | 'inventory';
+/**
+ * Scheda aperta. Su telefono: pannello a tutto schermo dalla barra in basso
+ * (la timeline è una scheda). Su desktop: scheda del pannello a destra (null =
+ * pannello richiuso sulle sole linguette; il menu è una scheda).
+ */
+type Sheet = Side | 'timeline' | 'inventory' | 'menu';
 
 /** Contenuto della HUD per una fase: in fondo alla colonna sinistra cassa e pulsante della fase. */
 interface Parts {
@@ -63,14 +67,14 @@ interface Parts {
   bottom?: string;
   /** Finestra al centro dello schermo, dentro la HUD (in Fase 2 i candidati). */
   center?: string;
-  /** Inventario (cassa, magazzino, ordini in arrivo): in fondo a sinistra su desktop, scheda a sé su mobile. */
+  /** Inventario (cassa, magazzino, ordini in arrivo): una scheda a sé. */
   inventory?: string;
 }
 
 /** Fasi con la barra della squadra in basso. */
 const CREW_STAGES: Stage[] = ['squadra', 'sopralluogo', 'cantiere'];
 
-/** Nome delle due colonne in ogni fase: titolo della linguetta su desktop e della scheda su mobile. */
+/** Nome delle due colonne in ogni fase: titolo della loro scheda. */
 const COLUMN_NAMES: Record<Stage, Partial<Record<Side, string>>> = {
   terreno: { right: 'Terreni' },
   squadra: {},
@@ -81,7 +85,7 @@ const COLUMN_NAMES: Record<Stage, Partial<Record<Side, string>>> = {
   fallito: {},
 };
 
-/** Icone della barra in basso su mobile (20×20, colore del testo). */
+/** Icone delle schede (20×20, colore del testo). */
 const svg = (d: string) => `<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICONS: Record<string, string> = {
   Menu: svg('<path d="M3 5h14M3 10h14M3 15h14"/>'),
@@ -99,10 +103,12 @@ const MOBILE = '(max-width: 700px)';
 const isMobile = () => globalThis.matchMedia?.(MOBILE).matches ?? false;
 
 /**
- * HUD attorno alla scena: ogni blocco è una scheda con un posto fisso su un
- * bordo dello schermo (in alto stato e comandi della giornata, a sinistra la
- * squadra, a destra le attività e i registri, in basso la barra della squadra,
- * in alto a destra il menu). Le attività si avviano da una modale al centro.
+ * HUD attorno alla scena. Su desktop: a sinistra il titolo e sotto il
+ * progresso delle settimane (in verticale, con i comandi della giornata), a
+ * destra un pannello alto quanto lo schermo con le schede in alto (le colonne
+ * della fase, l'inventario, il menu), in basso a sinistra la barra della
+ * squadra. Su telefono le stesse schede stanno in una barra in basso e si
+ * aprono a tutto schermo. Le attività si avviano da una modale al centro.
  */
 export class Hud {
   private regions: Record<Region, HTMLElement>;
@@ -112,20 +118,19 @@ export class Hud {
   private team = new Set<string>();
   private message = '';
   private puzzle: Puzzle | null = null;
-  private collapsed: Record<Side, boolean> = { left: false, right: false };
   private lastInsets = '';
   /** In progettazione: scheda dell'arredo aperta nella modale centrale. */
   private itemInfo: string | null = null;
   /** Scheda del volontario aperta nella modale centrale. */
   private profile: string | null = null;
   private menuOpen = false;
-  /** Su mobile: pannello aperto a tutto schermo. */
+  /** Scheda aperta (vedi `Sheet`). */
   private sheet: Sheet | null = null;
-  /** Su desktop: timeline aperta su tutte le settimane (chiusa mostra la precedente, quella in corso e la successiva). */
-  private timelineOpen = false;
-  /** Al prossimo disegno la timeline va centrata sulla settimana in corso (appena aperta). */
+  /** Al prossimo disegno la timeline va centrata sulla settimana in corso. */
   private centerTimeline = false;
-  /** In alto: la scheda del titolo e, accanto, la timeline (aggiornate a parte, così la timeline non perde lo scorrimento). */
+  /** Settimana e parte mostrate l'ultima volta dalla timeline: quando cambiano si ricentra. */
+  private lastWeek = '';
+  /** Il titolo e la timeline (su desktop sotto il titolo, su telefono una scheda), aggiornati a parte. */
   private brandEl!: HTMLElement;
   private timelineEl!: HTMLElement;
   private menuEl!: HTMLElement;
@@ -177,6 +182,7 @@ export class Hud {
         this.wasMobile = isMobile();
         this.sheet = null;
         this.menuOpen = false;
+        this.lastPhase = ''; // si riparte come a inizio fase
         this.render();
       }
       this.measure();
@@ -192,7 +198,6 @@ export class Hud {
         }
         else if (this.menuOpen) this.menuOpen = false;
         else if (this.sheet) this.sheet = null;
-        else if (this.timelineOpen) this.timelineOpen = false;
         else return;
         this.render();
       }
@@ -216,7 +221,8 @@ export class Hud {
     this.open = { kind, id };
     this.team = new Set(volunteerIds.filter((v) => !this.sim.volunteer(v).busy));
     this.message = '';
-    this.sheet = null;
+    // Su telefono la scheda copriva la mappa e si chiude; su desktop il pannello resta com'è.
+    if (isMobile()) this.sheet = null;
     this.menuOpen = false;
     this.render();
   }
@@ -249,14 +255,14 @@ export class Hud {
       this.editor.tree = null;
       this.itemInfo = null;
     }
-    // A ogni nuova fase, e tra giorni feriali e weekend, non resta aperta nessuna scheda.
+    // A ogni nuova fase, e tra giorni feriali e weekend, si riparte da capo:
+    // su telefono nessuna scheda aperta, su desktop il pannello sulla scheda principale.
     const phaseKey = `${stage}:${sim.state.phase}`;
-    if (phaseKey !== this.lastPhase) {
-      if (this.lastPhase) {
-        this.sheet = null;
-        this.menuOpen = false;
-        this.timelineOpen = false;
-      }
+    const fresh = phaseKey !== this.lastPhase;
+    if (fresh) {
+      this.sheet = null;
+      this.menuOpen = false;
+      this.centerTimeline = true;
       this.lastPhase = phaseKey;
     }
 
@@ -271,43 +277,57 @@ export class Hud {
     const mobile = isMobile();
     const names = COLUMN_NAMES[stage];
     const html: Record<Region, string> = { top: parts.top ?? '', left: '', right: '', bottom: '', center: parts.center ?? '' };
+    const timeline = buildTimeline(sim);
+    // Le schede: le due colonne della fase, l'inventario e, su desktop, il menu.
+    // Ognuna ha un corpo che scorre e un piede fermo in fondo (comandi della fase).
+    const tabs = new Map<Sheet, { label: string; body: string; foot: string }>();
     for (const side of ['left', 'right'] as Side[]) {
       const body = parts[side] ?? '';
-      // Su desktop l'inventario sta in fondo alla colonna sinistra; su mobile ha la sua scheda.
-      const footHtml = side === 'left' ? (parts.leftFoot ?? '') + (!mobile && parts.inventory ? parts.inventory : '') : (parts.rightFoot ?? '');
-      const foot = footHtml ? `<div class="col-foot">${footHtml}</div>` : '';
-      if (!body && !foot) {
-        if (this.sheet === side) this.sheet = null;
-        continue;
-      }
-      const label = names[side] ?? '';
-      const head = `<div class="sheet-head card"><strong>${esc(label)}</strong><button data-sheet="${side}" title="Chiudi">✕</button></div>`;
-      // Su desktop la colonna si richiude; il pulsante della fase in fondo resta sempre visibile.
-      const collapsed = !mobile && this.collapsed[side];
-      const arrows = side === 'left' ? ['▸', '◂'] : ['◂', '▸'];
-      html[side] = collapsed
-        ? `<button class="card tab" data-toggle="${side}" title="Mostra">${arrows[0]} ${esc(label)}</button>${foot}`
-        : `${head}<button class="card tab hide" data-toggle="${side}" title="Nascondi">${arrows[1]}</button><div class="col-body">${body}</div>${foot}`;
-      this.regions[side].classList.toggle('collapsed', collapsed);
+      const foot = (side === 'left' ? parts.leftFoot : parts.rightFoot) ?? '';
+      if (body || foot) tabs.set(side, { label: names[side] ?? '', body, foot });
     }
-    const timeline = buildTimeline(sim);
-    const inventory = mobile ? parts.inventory ?? '' : '';
-    if (this.sheet === 'timeline' ? !timeline : this.sheet === 'inventory' ? !inventory : !html[this.sheet ?? 'top']) this.sheet = null;
-    if (!timeline) this.timelineOpen = false;
-    const tabs = !!html.left || !!html.right || !!timeline || !!inventory;
-    const invSheet =
-      inventory && this.sheet === 'inventory'
-        ? `<section class="inv-sheet"><div class="sheet-head card"><strong>Inventario</strong><button data-sheet="inventory" title="Chiudi">✕</button></div>${inventory}</section>`
-        : '';
-    html.bottom = (parts.bottom ?? this.crewBar()) + (tabs ? this.controls(names, { left: !!html.left, right: !!html.right }, !!timeline, !!inventory, this.tabInfo(stage, timeline)) : '') + invSheet;
+    if (parts.inventory) tabs.set('inventory', { label: 'Inventario', body: parts.inventory, foot: '' });
+    if (!mobile) tabs.set('menu', { label: 'Menu', body: this.menuItems(), foot: '' });
+    if (fresh && !mobile) this.sheet = tabs.has('right') ? 'right' : tabs.has('left') ? 'left' : null;
+    if (this.sheet && !(this.sheet === 'timeline' ? mobile && timeline : tabs.has(this.sheet))) this.sheet = null;
+    const info = this.tabInfo(stage, timeline);
+    const pane = (k: Sheet) => {
+      const t = tabs.get(k)!;
+      return `<div class="col-body">${t.body}</div>${t.foot ? `<div class="col-foot">${t.foot}</div>` : ''}`;
+    };
     const root = this.regions.top.parentElement!;
+    if (mobile) {
+      for (const side of ['left', 'right'] as Side[]) {
+        if (!tabs.has(side)) continue;
+        html[side] = `<div class="sheet-head card"><strong>${esc(tabs.get(side)!.label)}</strong><button data-sheet="${side}" title="Chiudi">✕</button></div>${pane(side)}`;
+      }
+      const inv =
+        this.sheet === 'inventory'
+          ? `<section class="inv-sheet"><div class="sheet-head card"><strong>Inventario</strong><button data-sheet="inventory" title="Chiudi">✕</button></div>${tabs.get('inventory')!.body}</section>`
+          : '';
+      const list: [Sheet, string][] = [...tabs].map(([k, t]) => [k, t.label]);
+      if (timeline) list.push(['timeline', 'Progresso']);
+      html.bottom = (parts.bottom ?? this.crewBar()) + (list.length ? `<nav class="tabbar">${this.tabButtons(list, info)}</nav>` : '') + inv;
+      root.dataset.tabs = list.length ? '1' : '';
+    } else {
+      // Pannello a destra: linguette in alto e la scheda scelta sotto; senza scheda resta solo la fila di linguette.
+      const list: [Sheet, string][] = [...tabs].map(([k, t]) => [k, t.label]);
+      html.right = `<nav class="panel-tabs card">${this.tabButtons(list, info)}</nav>${this.sheet ? pane(this.sheet) : ''}`;
+      html.bottom = parts.bottom ?? this.crewBar();
+      root.dataset.tabs = '';
+    }
+    this.regions.right.classList.toggle('collapsed', !mobile && !this.sheet);
     root.dataset.sheet = mobile && this.sheet ? this.sheet : '';
-    root.dataset.tabs = tabs ? '1' : '';
+    const weekKey = `${sim.state.week}:${sim.state.phase}`;
+    if (weekKey !== this.lastWeek) {
+      this.lastWeek = weekKey;
+      this.centerTimeline = true;
+    }
     setHTML(this.brandEl, html.top);
     setHTML(this.timelineEl, timeline ? this.timelineHtml(timeline, mobile) : '');
-    setHTML(this.menuEl, this.menu());
+    setHTML(this.menuEl, mobile ? this.menu() : '');
     for (const r of ['left', 'right', 'center', 'bottom'] as Region[]) setHTML(this.regions[r], html[r]);
-    if (this.centerTimeline) {
+    if (this.centerTimeline && this.timelineEl.querySelector('.wk')) {
       this.centerTimeline = false;
       this.scrollTimelineToNow();
     }
@@ -336,10 +356,11 @@ export class Hud {
     const H = window.innerHeight;
     const mobile = isMobile();
     const r = (el: HTMLElement | null) => (el?.childElementCount ? el.getBoundingClientRect() : null);
-    const top = r(this.regions.top);
-    // Su mobile i pannelli si aprono sopra la mappa e non le tolgono spazio; in basso c'è la barra delle schede.
-    const left = mobile ? null : r(this.regions.left);
-    const right = mobile ? null : r(this.regions.right);
+    // Su telefono in alto c'è il titolo e i pannelli si aprono sopra la mappa senza toglierle spazio;
+    // su desktop il titolo e il progresso fanno la colonna di sinistra, il pannello delle schede quella di destra.
+    const top = mobile ? r(this.regions.top) : null;
+    const left = mobile ? null : r(this.regions.top);
+    const right = mobile || !this.sheet ? null : r(this.regions.right);
     // In basso la barra della squadra e, su mobile, la barra delle schede: conta la più alta delle due.
     const lows = [this.regions.bottom.querySelector<HTMLElement>('.crew-bar'), mobile ? this.regions.bottom.querySelector<HTMLElement>('.tabbar') : null]
       .filter((el): el is HTMLElement => !!el)
@@ -361,21 +382,18 @@ export class Hud {
     return `<section class="card brand"><h1>${esc(GAME_TITLE)}</h1><p>${subtitle}</p>${extra}</section>`;
   }
 
-  /** Su mobile, in basso, la barra delle schede: le due colonne, l'inventario e la timeline, ognuna col suo dato in breve. */
-  private controls(names: Partial<Record<Side, string>>, has: Record<Side, boolean>, hasTimeline: boolean, hasInventory: boolean, info: Partial<Record<Sheet, string>>): string {
-    const tab = (sheet: Sheet, label: string) => {
-      const sub = info[sheet] ? `<small class="tab-info">${esc(info[sheet]!)}</small>` : '';
-      return `<button class="tab-btn side ${this.sheet === sheet ? 'on' : ''}" data-sheet="${sheet}">${ICONS[label] ?? ''}<span>${esc(label)}</span>${sub}</button>`;
-    };
-    return `<nav class="tabbar">
-        ${has.left ? tab('left', names.left ?? '') : ''}${has.right ? tab('right', names.right ?? '') : ''}
-        ${hasInventory ? tab('inventory', 'Inventario') : ''}
-        ${hasTimeline ? tab('timeline', 'Progresso') : ''}
-      </nav>`;
+  /** Linguette delle schede, ognuna con la sua icona e il suo dato in breve (in basso su telefono, in cima al pannello su desktop). */
+  private tabButtons(list: [Sheet, string][], info: Partial<Record<Sheet, string>>): string {
+    return list
+      .map(([sheet, label]) => {
+        const sub = info[sheet] ? `<small class="tab-info">${esc(info[sheet]!)}</small>` : '';
+        return `<button class="tab-btn side ${this.sheet === sheet ? 'on' : ''}" data-sheet="${sheet}" title="${esc(label)}">${ICONS[label] ?? ''}<span>${esc(label)}</span>${sub}</button>`;
+      })
+      .join('');
   }
 
   /**
-   * Sotto ogni scheda della barra su mobile, il dato più importante: PV
+   * Sotto ogni linguetta, il dato più importante: PV
    * rimasti, attività in corso su quelle avviabili, cassa, progetto realizzato.
    */
   private tabInfo(stage: Stage, timeline: Timeline | null): Partial<Record<Sheet, string>> {
@@ -395,19 +413,24 @@ export class Hud {
     return info;
   }
 
-  /** In alto a destra, su tutti gli schermi: il pulsante del menu della partita e il menu aperto. */
+  /** Voci del menu della partita: scheda del pannello su desktop, finestra dal pulsante in alto su telefono. */
+  private menuItems(): string {
+    return `<section class="card menu-items">
+        <button data-act="tutorial-toggle">${this.sim.state.tutorial?.on ? 'Spegni il tutorial' : 'Accendi il tutorial'}</button>
+        ${this.sim.hasTutorialStep() ? '<button data-act="tutorial-replay">Rivedi il tutorial di questa fase</button>' : ''}
+        <button data-act="notify">Attiva notifiche</button>
+        <button data-act="export">Esporta salvataggio</button>
+        <button data-act="new">Nuova partita</button>
+        <small>Prototipo. Per provare più in fretta: <code>?velocita=60</code> nell'indirizzo e una nuova partita (1 ora = 1 minuto).</small>
+      </section>`;
+  }
+
+  /** Su telefono, in alto a destra: il pulsante del menu della partita e il menu aperto. */
   private menu(): string {
     const sheet = this.menuOpen
-      ? `<section class="card menu-sheet">
-          <div class="sheet-head"><strong>Menu</strong><button data-act="menu" title="Chiudi">✕</button></div>
-          <div class="menu-items">
-            <button data-act="tutorial-toggle">${this.sim.state.tutorial?.on ? 'Spegni il tutorial' : 'Accendi il tutorial'}</button>
-            ${this.sim.hasTutorialStep() ? '<button data-act="tutorial-replay">Rivedi il tutorial di questa fase</button>' : ''}
-            <button data-act="notify">Attiva notifiche</button>
-            <button data-act="export">Esporta salvataggio</button>
-            <button data-act="new">Nuova partita</button>
-            <small>Prototipo. Per provare più in fretta: <code>?velocita=60</code> nell'indirizzo e una nuova partita (1 ora = 1 minuto).</small>
-          </div>
+      ? `<section class="menu-sheet">
+          <div class="sheet-head card"><strong>Menu</strong><button data-act="menu" title="Chiudi">✕</button></div>
+          ${this.menuItems()}
         </section>`
       : '';
     return `<button class="menu-btn card ${this.menuOpen ? 'on' : ''}" data-act="menu" title="Menu">${ICONS.Menu}<span>Menu</span></button>${sheet}`;
@@ -458,11 +481,10 @@ export class Hud {
   // ---------- timeline delle settimane ----------
 
   /**
-   * Timeline delle settimane di lavoro fino alla data di consegna. Su desktop
-   * è una scheda in alto al centro: chiusa mostra la settimana in corso, la
-   * precedente e la successiva; un clic la apre su tutte, da scorrere in
-   * orizzontale. Su telefono è una scheda della barra in basso, a tutto
-   * schermo e in verticale.
+   * Timeline delle settimane di lavoro fino alla data di consegna, in
+   * verticale. Su desktop sta a sinistra sotto il titolo, sempre visibile, e
+   * le settimane scorrono dentro la scheda; su telefono è la scheda
+   * "Progresso" della barra in basso, a tutto schermo.
    */
   private timelineHtml(t: Timeline, mobile: boolean): string {
     const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -487,17 +509,12 @@ export class Hud {
           <ol class="tl-weeks vertical">${cells(t.weeks)}</ol>
         </section>`;
     }
-    const [a, b] = timelineWindow(t.total, Math.max(1, t.current));
-    const shown = this.timelineOpen ? t.weeks : t.weeks.filter((w) => w.week >= a && w.week <= b);
-    const more = this.timelineOpen
-      ? '<span class="tl-toggle">✕ Chiudi</span>'
-      : t.total > shown.length
-        ? `<span class="tl-toggle">Tutte le ${t.total} ▸</span>`
-        : '';
-    return `<section class="card timeline ${this.timelineOpen ? 'open' : ''}" ${this.timelineOpen ? '' : 'data-act="timeline" title="Mostra tutte le settimane"'}>
-        <div class="tl-head" ${this.timelineOpen ? 'data-act="timeline" title="Chiudi la timeline"' : ''}><span><strong>${esc(title)}</strong> <small>${esc(sub)}</small></span>${more}</div>
-        <ol class="tl-weeks">${!this.timelineOpen && a > 1 ? '<li class="tl-gap">…</li>' : ''}${cells(shown)}${!this.timelineOpen && b < t.total ? '<li class="tl-gap">…</li>' : ''}</ol>
+    // Desktop: a sinistra sotto il titolo, in verticale; le settimane scorrono e si parte da quella in corso.
+    return `<section class="card tl-panel">
+        <h2>Progresso</h2>
+        <strong>${esc(title)}</strong><small>${esc(sub)}</small>
         ${actions}
+        <ol class="tl-weeks vertical">${cells(t.weeks)}</ol>
       </section>`;
   }
 
@@ -543,12 +560,9 @@ export class Hud {
     const list = this.timelineEl.querySelector<HTMLElement>('.tl-weeks');
     const cell = list?.querySelector<HTMLElement>('.wk.st-in-corso') ?? list?.querySelector<HTMLElement>('.wk');
     if (!list || !cell) return;
-    if (list.classList.contains('vertical')) {
-      const box = list.closest<HTMLElement>('.tl-sheet') ?? list;
-      box.scrollTop = cell.offsetTop - (box.clientHeight - cell.offsetHeight) / 2;
-    } else {
-      list.scrollLeft = cell.offsetLeft - list.offsetLeft - (list.clientWidth - cell.offsetWidth) / 2;
-    }
+    // Su telefono scorre tutta la scheda, su desktop solo l'elenco delle settimane.
+    const box = list.closest<HTMLElement>('.tl-sheet') ?? list;
+    box.scrollTop += cell.getBoundingClientRect().top - box.getBoundingClientRect().top - (box.clientHeight - cell.offsetHeight) / 2;
   }
 
   /** Pulsante donazioni: solo nel menu iniziale (scelta del terreno) e all'inaugurazione, mai durante il gioco. */
@@ -1205,13 +1219,6 @@ export class Hud {
       this.render();
       return;
     }
-    const toggle = target.closest<HTMLButtonElement>('button[data-toggle]');
-    if (toggle) {
-      const r = toggle.dataset.toggle as Side;
-      this.collapsed[r] = !this.collapsed[r];
-      this.render();
-      return;
-    }
     const sheetBtn = target.closest<HTMLButtonElement>('button[data-sheet]');
     if (sheetBtn) {
       const side = sheetBtn.dataset.sheet as Sheet;
@@ -1299,13 +1306,6 @@ export class Hud {
       this.render();
       return;
     }
-    // La timeline (scheda chiusa o intestazione di quella aperta) si apre e si chiude con un clic.
-    if (target.closest('[data-act="timeline"]') && !target.closest('button, .tl-actions')) {
-      this.timelineOpen = !this.timelineOpen;
-      this.centerTimeline = this.timelineOpen;
-      this.render();
-      return;
-    }
     const btn = target.closest<HTMLButtonElement>('button[data-act]');
     if (!btn) return;
     const now = Date.now();
@@ -1342,7 +1342,7 @@ export class Hud {
           return;
         case 'menu':
           this.menuOpen = !this.menuOpen;
-          this.sheet = null;
+          if (isMobile()) this.sheet = null;
           this.render();
           return;
         case 'item-close':

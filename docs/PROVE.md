@@ -29,6 +29,11 @@ Funzioni o contenuti nuovi.
 
 ## Risolte
 
+HUD rivista (19/11), commit: COMMIT.
+
+- [x] HUD: Pannelli scuri con leggera trasparenza, testi bianchi, font pixelloso.
+- [x] HUD: Metti tutto nelle icon tab anche nel desktop, queste tab nel desktop però devono stare in un pannello laterale che occupa tutto il bordo destro dello schermo, con le tab in alto invece che in basso. Le tab devono essere le stesse, tranne "Progresso" che ora nel desktop diventa in forma verticale come nel mobile e sta nel bordo sinistro sotto lo specchietto del titolo, e alla barra delle icons tab si aggiunge invece la tab "Menu". Le card della squadra rimangono in basso a sinistra.
+
 Editor del parco (19/11), commit: 1b49040.
 
 - [x] Le aiuole devono essere da una sola tile.
