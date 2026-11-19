@@ -9,7 +9,9 @@ import { CityScene } from './game/CityScene';
 import { ParkScene, type EditorTool } from './game/ParkScene';
 import { type Kind, sceneFor } from './ui/activities';
 import { Hud } from './ui/hud';
-import '@fontsource/jersey-10/latin-400.css';
+import '@fontsource/nunito/latin-600.css';
+import '@fontsource/nunito/latin-800.css';
+import '@fontsource/lilita-one/latin-400.css';
 import './style.css';
 
 async function boot() {

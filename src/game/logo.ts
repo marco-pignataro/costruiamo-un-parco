@@ -5,7 +5,8 @@
  *
  * Due parti indipendenti:
  * - il marchio, fisso: "gLOVEs On!" in lettere a blocchi sull'isoletta, con
- *   un alberello, una pala piantata e un guanto da lavoro col pollice in su;
+ *   la fontana del logo di Puli-AMO Messina a sinistra e, a destra, un
+ *   alberello, una pala piantata e un guanto da lavoro col pollice in su;
  * - il sottotitolo, accessorio e intercambiabile: una targa di legno larga
  *   quanto il testo, scritto con un font pixel che copre lettere, cifre,
  *   punteggiatura e accenti italiani. Senza sottotitolo resta solo il marchio.
@@ -172,7 +173,7 @@ function island(b: Buf, cx: number, cy: number, rx: number, ry: number): void {
     const u = (x - cx) / rx;
     if (Math.abs(u) > 1) continue;
     const yb = Math.round(cy + ry * Math.sqrt(1 - u * u));
-    const depth = Math.round(rx * 0.3 * Math.pow(1 - u * u, 1.6) + 3 + hash(x, 0, 9) * 2);
+    const depth = Math.round(Math.min(rx * 0.3, 18) * Math.pow(1 - u * u, 1.6) + 3 + hash(x, 0, 9) * 2);
     for (let y = yb - 1; y <= yb + depth; y++) {
       const t = (y - yb) / depth;
       const shade = u * 0.9 + t * 1.2 + (hash(x, y, 11) - 0.5) * 0.5;
@@ -204,6 +205,57 @@ function island(b: Buf, cx: number, cy: number, rx: number, ry: number): void {
     const x = Math.round(cx - rx + 4 + hash(n, 3, 18) * (rx * 2 - 8)), y = Math.round(cy - ry + 2 + hash(n, 4, 18) * (ry * 2 - 3));
     if (inTop(x, y)) b.set(x, y, ['#f2c94c', '#ece6d6', '#8c6bc0', '#e86a8a'][n % 4]);
   }
+}
+
+/**
+ * La fontana del logo di Puli-AMO Messina: vasca rotonda di pietra con l'acqua
+ * azzurra, zampillo al centro e getti a ventaglio che si allargano verso l'alto.
+ * `by` è la riga dove la vasca poggia sull'erba.
+ */
+function fountain(b: Buf, cx: number, by: number): void {
+  const top = by - 10; // bocca dello zampillo
+  // getti a ventaglio, dietro alla vasca: spicchi che si allargano salendo
+  for (const deg of [-58, -35, -12, 12, 35, 58]) {
+    const a = (deg * Math.PI) / 180;
+    const len = 20 - Math.abs(deg) / 12;
+    for (let t = 2; t <= len; t += 0.25) {
+      const half = t * 0.075;
+      for (let o = -half; o <= half; o += 0.25) {
+        const x = Math.round(cx + 0.5 + Math.sin(a) * t + Math.cos(a) * o);
+        const y = Math.round(top - Math.cos(a) * t + Math.sin(a) * o);
+        const f = t / len;
+        const edge = o < -half + 0.6;
+        b.set(x, y, f > 0.82 ? '#ffffff' : f > 0.5 ? (edge ? '#7cc0ee' : '#c4e6fb') : edge ? '#2f74c4' : '#5aa6e6');
+      }
+    }
+  }
+  const basin: Mask = new Set();
+  const inE = (x: number, y: number, ex: number, ey: number, rx: number, ry: number) => ((x - ex) / rx) ** 2 + ((y - ey) / ry) ** 2 <= 1;
+  const ry0 = by - 7;
+  // parete e piede della vasca
+  for (let x = cx - 12; x <= cx + 12; x++) for (let y = ry0; y <= by; y++) {
+    const u = (x - cx) / 12;
+    if (Math.abs(u) > 1) continue;
+    const bottom = y >= by - 1;
+    if (bottom && Math.abs(x - cx) > 9) continue;
+    if (!bottom && y > ry0 + Math.round(4 * Math.sqrt(1 - u * u)) + 4) continue;
+    basin.add(key(x, y));
+    const l = -u + (bottom ? -0.6 : 0) + (hash(x, y, 30) - 0.5) * 0.3;
+    b.set(x, y, bottom ? (l > -0.2 ? '#3a3c46' : '#24252c') : l > 0.45 ? '#d8d4c8' : l > -0.2 ? '#b3b0a6' : l > -0.7 ? '#8a8b8f' : '#6d6e74');
+  }
+  // bordo superiore e acqua
+  for (let y = ry0 - 5; y <= ry0 + 4; y++) for (let x = cx - 12; x <= cx + 12; x++) {
+    if (!inE(x, y, cx, ry0, 12, 4.5)) continue;
+    basin.add(key(x, y));
+    const water = inE(x, y, cx, ry0, 9.5, 2.8);
+    const back = y < ry0;
+    b.set(x, y, water ? (y <= ry0 - 2 ? '#2f74c4' : hash(x, y, 31) > 0.8 ? '#a8dcfa' : '#4f9ee0') : back ? '#9b988f' : x < cx ? '#ece6d6' : '#c6c1b4');
+  }
+  outline(b, basin, '#33333d');
+  // zampillo: colonnina con la bocca in cima
+  for (let y = top; y <= ry0; y++) { b.set(cx, y, y === top ? '#ffffff' : '#c9cdd2'); b.set(cx + 1, y, '#8a8f98'); }
+  b.set(cx - 1, ry0, '#33333d'); b.set(cx + 2, ry0, '#33333d');
+  b.set(cx - 1, top + 1, '#9fd2f5'); b.set(cx + 2, top + 1, '#9fd2f5');
 }
 
 function sprite(b: Buf, x0: number, y0: number, rows: string[], colors: Record<string, string>): void {
@@ -242,10 +294,11 @@ export function logoPixels(subtitle: string | null = null): LogoPixels {
   const glyphW = (ch: string) => (ch === ' ' ? 4 : BIG[ch].rows[0].length);
   const titleW = TITLE.reduce((w, [ch]) => w + glyphW(ch) + 2, -2) + DEPTH;
   const cx = Math.round(W / 2), base = 40; // riga di base delle lettere
-  const rx = Math.round(titleW / 2) + 18, ry = 11;
+  const rx = Math.round(titleW / 2) + 32, ry = 12;
   island(b, cx, base + 1, rx, ry);
-  // alberello dietro a sinistra, pala e guanto a destra
-  sprite(b, cx - rx + 2, base - 9, TREE, TREE_COLORS);
+  // a sinistra la fontana di Puli-AMO, a destra alberello, pala e guanto
+  fountain(b, cx - Math.round(titleW / 2) - 15, base + 1);
+  sprite(b, cx + rx - 30, base - 9, TREE, TREE_COLORS);
   // lettere
   let x = cx - Math.round(titleW / 2);
   for (const [ch, ramp] of TITLE) {
