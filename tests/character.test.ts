@@ -34,6 +34,21 @@ describe('personaggi', () => {
     expect(characterColors(look({ uniform: true })).c).toBe(ART.uniform.c);
   });
 
+  it('davanti guarda chi gioca; nei lavori può guardare in basso, di schiena non cambia nulla', () => {
+    const front = characterRows(look());
+    const down = characterRows(look(), false, 'stand', true);
+    expect(down.slice(0, 15)).not.toEqual(front.slice(0, 15));
+    expect(down.slice(15)).toEqual(front.slice(15));
+    expect(characterRows(look(), true, 'stand', true)).toEqual(characterRows(look(), true));
+  });
+
+  it('il volto è simmetrico: testa dritta', () => {
+    for (const row of ART.face.front) {
+      const shape = row.replace(/[^.]/g, '#');
+      expect(shape).toBe([...shape].reverse().join(''));
+    }
+  });
+
   it('acconciature diverse cambiano la testa', () => {
     const heads = new Set(ap.hairstyles.map((h) => characterRows(look({ hairstyle: h.id })).slice(0, 15).join('\n')));
     expect(heads.size).toBe(ap.hairstyles.length);

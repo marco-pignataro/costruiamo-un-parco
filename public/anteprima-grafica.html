@@ -234,7 +234,7 @@ const DRAWS = {
   },
   accogliente: {
     name: 'Accogliente 20×32',
-    desc: 'Dai riferimenti di Marco: volontari 20×32 di tre quarti come quelli del gioco, sullo sprite di riferimento: capelli grandi a ciocche con riflessi, volto piccolo con occhi taglienti, tre o quattro toni per materiale e contorno scuro dello stesso colore invece del nero; oggetti con contorno colorato e un filo di luce in cima; scena all’ora dorata con ombre viola, luci calde e lampioni accesi. Il più caldo e caratteristico, ma ogni volto va curato a mano.',
+    desc: 'Dai riferimenti di Marco: volontari 20×32 come quelli del gioco, sullo sprite di riferimento: testa dritta che guarda chi gioca (in basso mentre lavora), capelli grandi a ciocche con riflessi, occhi alti due pixel, tre o quattro toni per materiale e contorno scuro dello stesso colore invece del nero; oggetti con contorno colorato e un filo di luce in cima; scena all’ora dorata con ombre viola, luci calde e lampioni accesi. Il più caldo e caratteristico, ma ogni volto va curato a mano.',
     body: 'chibi', scale: 1, grade: true, selOutline: true, glow: true,
     // Colori dello sfondo ritoccati per il tramonto (prima della correzione).
     swap: {
@@ -535,7 +535,7 @@ const M_ACC = {
   sacco: { front: { 4: '...kk...', 5: '.k2222k.', 6: 's222322s', 7: '.k2222k.' }, back: { 6: 'c......C' } },
 };
 
-// Volontari 20×32 di tre quarti (stile Accogliente): lo stesso disegno del gioco, da assets/personaggi.json.
+// Volontari 20×32 a testa dritta (stile Accogliente): lo stesso disegno del gioco, da assets/personaggi.json.
 // Testa 0-14 con acconciatura sovrapposta, busto 15-23, gambe 24-31.
 let PERS = null;
 const ACC_ALIAS = { u: 'µ', q: 'θ', a: 'α' };
@@ -546,14 +546,15 @@ const CH_ACC = Object.fromEntries(Object.entries(C_ACC).map(([name, def]) => {
   const sh = o => o && Object.fromEntries(Object.entries(o).map(([r, row]) => [+r + off, ('..' + row + '..').replace(/[uqa]/g, ch => ACC_ALIAS[ch])]));
   return [name, { front: sh(def.front), back: sh(def.back) }];
 }));
-CH_ACC.occhiali = { front: { 10: '....k..kk...k.......', 11: '....k..kk...k.......', 12: '....kkkk.kkkkk......' }, back: {} };
+CH_ACC.occhiali = { front: { 10: '.....k...kk...k.....', 11: '.....k...kk...k.....', 12: '.....kkkkkkkkkk.....' }, back: {} };
 const EYES = ['#6b4423', '#3f8a3a', '#3a8fc8', '#2e9a96', '#a0672a'];
 /** Righe del volontario chibi: volto, busto (divisa o abito), gambe dell'abito, acconciatura sopra. */
-function chibiRows(look, back, legs) {
+function chibiRows(look, back, legs, down = false) {
   const side = back ? 'back' : 'front';
   const o = PERS.outfits[look.outfit] ?? PERS.outfits.casual;
   const rows = [...PERS.face[side], ...PERS.torsos[look.uniform ? 'maglietta' : o.torso][side], ...PERS.legs[o.legs][legs]];
-  for (const [r, str] of Object.entries((PERS.hairstyles[look.hairstyle] ?? PERS.hairstyles.corti)[side])) {
+  const layers = [...(down && !back ? [PERS.face.down] : []), (PERS.hairstyles[look.hairstyle] ?? PERS.hairstyles.corti)[side]];
+  for (const [r, str] of layers.flatMap(o => Object.entries(o))) {
     const row = [...rows[r]];
     [...str].forEach((ch, i) => { if (ch !== '.') row[i] = ch; });
     rows[r] = row.join('');
@@ -618,9 +619,9 @@ function lookColors(look) {
     'µ': PAL.u, 'θ': PAL.q, 'α': PAL.a,
   };
 }
-function charFrame(look, { back = false, legs = 'stand', bob = 0, carry = null, tool = 0 }) {
+function charFrame(look, { back = false, legs = 'stand', bob = 0, carry = null, tool = 0, down = false }) {
   const B = BODY;
-  let rows = B.chibi ? chibiRows(look, back, legs) : [...(back ? B.headB : B.headF), ...(back ? B.torsoB : B.torsoF), ...B.legs[legs]];
+  let rows = B.chibi ? chibiRows(look, back, legs, down) : [...(back ? B.headB : B.headF), ...(back ? B.torsoB : B.torsoF), ...B.legs[legs]];
   if (rows.length !== B.h) errors.push(`corpo: ${rows.length} righe invece di ${B.h}`);
   for (const a of [...(look.acc || []), ...(carry ? [carry] : [])]) {
     const def = B.acc[a];
@@ -636,7 +637,7 @@ const ANIMS = {
   attesa: [{}, {}, {}, { bob: 1 }, { bob: 1 }, { bob: 1 }],
   camminaF: [{ legs: 'a' }, { bob: 1 }, { legs: 'b' }, { bob: 1 }],
   camminaB: [{ back: true, legs: 'a' }, { back: true, bob: 1 }, { back: true, legs: 'b' }, { back: true, bob: 1 }],
-  scavare: [{ tool: 1 }, { tool: 1 }, { bob: 1, tool: 2 }, { bob: 1, tool: 2 }, { tool: 3 }, { tool: 3 }],
+  scavare: [{ tool: 1, down: true }, { tool: 1, down: true }, { bob: 1, tool: 2, down: true }, { bob: 1, tool: 2, down: true }, { tool: 3, down: true }, { tool: 3, down: true }],
   portaF: [{ legs: 'a', carry: 'sacco' }, { bob: 1, carry: 'sacco' }, { legs: 'b', carry: 'sacco' }, { bob: 1, carry: 'sacco' }],
   portaB: [{ back: true, legs: 'a', carry: 'sacco' }, { back: true, bob: 1, carry: 'sacco' }, { back: true, legs: 'b', carry: 'sacco' }, { back: true, bob: 1, carry: 'sacco' }],
   scatolaF: [{ legs: 'a', carry: 'scatola' }, { bob: 1, carry: 'scatola' }, { legs: 'b', carry: 'scatola' }, { bob: 1, carry: 'scatola' }],

@@ -1,7 +1,7 @@
 import art from '../data/personaggi.json';
 
 /**
- * Volontari 20×32 visti di tre quarti, composti da `personaggi.json`: volto,
+ * Volontari 20×32 con la testa dritta, composti da `personaggi.json`: volto,
  * acconciatura sovrapposta riga per riga, busto e gambe dell'abito scelto.
  * Sul campo il busto diventa la maglietta di gruppo e le gambe restano quelle
  * dell'abito. Niente Phaser né DOM: restituisce righe di caratteri e colori.
@@ -13,7 +13,7 @@ type Legs = 'stand' | 'a' | 'b';
 type Overlay = Record<string, string>;
 
 interface Art {
-  face: Record<Side, string[]>;
+  face: Record<Side, string[]> & { down: Overlay };
   hairstyles: Record<string, Record<Side, Overlay>>;
   torsos: Record<string, Record<Side, string[]>>;
   legs: Record<string, Record<Legs, string[]>>;
@@ -47,12 +47,16 @@ function overlay(rows: string[], ov: Overlay | undefined): void {
   }
 }
 
-/** Le 28 righe del volontario, davanti o di schiena, fermo o a metà passo. */
-export function characterRows(look: CharacterLook, back = false, legs: Legs = 'stand'): string[] {
+/**
+ * Le righe del volontario, davanti o di schiena, fermo o a metà passo. Davanti
+ * guarda chi gioca; con `down` guarda in basso (lavori come scavare o piantare).
+ */
+export function characterRows(look: CharacterLook, back = false, legs: Legs = 'stand', down = false): string[] {
   const side: Side = back ? 'back' : 'front';
   const outfit = ART.outfits[look.outfit] ?? Object.values(ART.outfits)[0];
   const torso = ART.torsos[look.uniform ? UNIFORM_TORSO : outfit.torso][side];
   const rows = [...ART.face[side], ...torso, ...ART.legs[outfit.legs][legs]];
+  if (down && !back) overlay(rows, ART.face.down);
   overlay(rows, (ART.hairstyles[look.hairstyle] ?? Object.values(ART.hairstyles)[0])[side]);
   return rows;
 }
