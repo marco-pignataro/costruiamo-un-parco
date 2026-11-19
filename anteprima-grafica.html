@@ -53,7 +53,6 @@ section { display: grid; gap: 14px; }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
 .controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
 .controls label, .controls .label { font-weight: 600; font-size: 14px; }
-.style-desc { color: var(--muted); font-size: 14px; min-height: 3em; }
 #progress { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
 .seg { display: flex; gap: 6px; flex-wrap: wrap; }
 button {
@@ -76,23 +75,21 @@ figcaption small { display: block; color: var(--muted); font-size: 12px; }
 .sw span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sw code { color: var(--muted); font-size: 11px; }
 ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72ch; }
+.logo { display: flex; justify-content: center; }
+.logo img { image-rendering: pixelated; image-rendering: crisp-edges; display: block; max-width: 100%; height: auto; }
 .err { color: #c0392b; font-family: monospace; white-space: pre-wrap; }
 </style>
 </head>
 <body>
 <main>
   <header>
+    <div class="logo" id="logo"></div>
     <div class="eyebrow">Puli-AMO Messina · anteprima della grafica</div>
     <h1>Il parco sullo Stretto, dal degrado all'inaugurazione</h1>
-    <p class="lead">Una prova di stile, non la grafica finale. Scegli uno stile di disegno per confrontarli sulla stessa scena: cambiano proporzioni dei volontari, risoluzione e tecnica, mentre ambientazione e palette di base restano le stesse (lo stile Accogliente le scalda con la luce della sera). Sposta il cursore per vedere il terreno passare dal cemento al verde.</p>
+    <p class="lead">Una prova di stile, non la grafica finale: volontari 20×32 come quelli del gioco, oggetti con contorno colorato e un filo di luce in cima, scena all'ora dorata con ombre viola, luci calde e lampioni accesi. Sposta il cursore per vedere il terreno passare dal cemento al verde.</p>
   </header>
 
   <section class="sheet" aria-label="Scena del parco">
-    <div class="controls">
-      <span class="label" id="styleLabel">Stile di disegno</span>
-      <div class="seg" role="group" aria-labelledby="styleLabel" id="styleButtons"></div>
-    </div>
-    <p class="style-desc" id="styleDesc"></p>
     <div class="stage" id="stageWrap"><canvas id="scene" width="480" height="288" aria-label="Scena isometrica del parco con lo Stretto sullo sfondo"></canvas></div>
     <div class="controls">
       <label for="progress">Avanzamento del cantiere</label>
@@ -110,7 +107,7 @@ ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72
 
   <section>
     <h2>Volontari</h2>
-    <p class="lead">Un corpo comune; l'archetipo si riconosce dall'accessorio. In città ognuno ha la maglietta del suo ruolo; sul campo tutti indossano quella blu di Puli-AMO, con il logo sul cuore e la scritta sulla schiena. Le schede seguono lo stile scelto sopra.</p>
+    <p class="lead">Un corpo comune; l'archetipo si riconosce dall'accessorio. In città ognuno ha la maglietta del suo ruolo; sul campo tutti indossano quella blu di Puli-AMO, con il logo sul cuore e la scritta sulla schiena.</p>
     <div class="sheet">
       <div class="grid" id="archetypes"></div>
     </div>
@@ -119,10 +116,10 @@ ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72
       <div class="grid small" id="anims"></div>
     </div>
     <div class="sheet">
-      <p><strong>Varietà.</strong> Stesso corpo, pelle e capelli diversi presi da <code>appearance.json</code>; nello stile Accogliente anche acconciatura e colore degli occhi.</p>
+      <p><strong>Varietà.</strong> Stesso corpo, con pelle, capelli, acconciatura e colore degli occhi presi da <code>appearance.json</code>.</p>
       <div class="grid small" id="swaps"></div>
     </div>
-    <div class="sheet" id="outfitsSheet" hidden>
+    <div class="sheet">
       <p><strong>Abiti completi.</strong> In Fase 2 si sceglie lo stile intero, non i singoli capi. In città si vede l'abito; sul campo la parte di sopra diventa la maglietta di Puli-AMO.</p>
       <div class="grid" id="outfits"></div>
     </div>
@@ -136,7 +133,7 @@ ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72
 
   <section>
     <h2>Palette</h2>
-    <p class="lead">Circa 32 colori presi da Messina: lo Stretto, la macchia mediterranea, la terra, i coppi, il cemento dei terreni degradati. È la base di tutti gli stili; Accogliente la ritocca con ombre viola e luci calde.</p>
+    <p class="lead">Circa 32 colori presi da Messina: lo Stretto, la macchia mediterranea, la terra, i coppi, il cemento dei terreni degradati. La luce della sera la ritocca con ombre viola e luci calde.</p>
     <div class="sheet"><div class="swatches" id="palette"></div></div>
   </section>
 
@@ -144,9 +141,9 @@ ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72
     <h2>Cosa resta da decidere</h2>
     <div class="sheet">
       <ul class="notes">
-        <li>Questa anteprima è generata in codice. Quella definitiva passerà da Aseprite, con le animazioni su livelli separati, ma proporzioni, risoluzione e palette dello stile scelto saranno quelle che vedi qui.</li>
-        <li>Gli stili si possono combinare: per esempio volontari slanciati con la linea chiara, o pixel grossi solo per la città e compatti al parco. La luce della sera di Accogliente può anche diventare un'ora del giorno (mattina chiara nei giorni feriali, tramonto nel weekend).</li>
-        <li>Più pixel ha un volontario, più costa ogni fotogramma di animazione: a 16×32 un gesto richiede circa il 30% di lavoro in più che a 16×24, a 8×12 circa un terzo.</li>
+        <li>Questa anteprima è generata in codice. Quella definitiva passerà da Aseprite, con le animazioni su livelli separati, ma proporzioni, risoluzione e palette saranno quelle che vedi qui.</li>
+        <li>La luce della sera può diventare un'ora del giorno: mattina chiara nei giorni feriali, tramonto nel weekend.</li>
+        <li>Ogni volto va curato a mano: a 20×32 un volontario ha molti pixel e ogni fotogramma di animazione costa lavoro.</li>
         <li>Sfondo: Stretto con traghetto, costa calabra con il pilone, Madonnina del porto, lungomare con palme e ringhiera.</li>
       </ul>
       <div class="err" id="err"></div>
@@ -154,8 +151,12 @@ ul.notes { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72
   </section>
 </main>
 
-<script>
-'use strict';
+<script type="module">
+import { GAME_FULL_TITLE, GAME_SUBTITLE } from '/src/config.ts';
+import { animateLogos, logoImg } from '/src/game/logo.ts';
+// I volontari sono quelli del gioco: stesso disegno di src/game/character.ts.
+import PERS from '/src/data/personaggi.json';
+
 const errors = [];
 
 /* ---------- Palette ---------- */
@@ -180,7 +181,6 @@ const PAL_NAMES = [
 
 const SKINS = ['#f2c9a5', '#e8b48a', '#c98e62', '#9a6440', '#6b4329'];
 const HAIRS = ['#22201e', '#3b2a1e', '#6b4423', '#a4482a', '#d9b25c', '#9a9a96', '#e6e3dc'];
-const UNIFORM = '#2a5fa8';
 
 const rgbCache = new Map();
 function rgb(hex) {
@@ -209,54 +209,20 @@ function noise(x, y, s = 0) {
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - 0.47);
 const bayer = (x, y) => BAYER[(y & 3) * 4 + (x & 3)];
 
-/* ---------- Stili di disegno ---------- */
-const DRAW_ORDER = ['compatto', 'slanciato', 'micro', 'linea', 'accogliente'];
-const DRAWS = {
-  compatto: {
-    name: 'Compatto 16×24',
-    desc: 'Testa grande e corpo corto: il volontario si riconosce anche piccolo sulla mappa e l’accessorio del ruolo si legge bene. Tile 32×16 con grana e ombre retinate. È la proposta di partenza.',
-    body: 'compatto', scale: 1,
-  },
-  slanciato: {
-    name: 'Slanciato 16×32',
-    desc: 'Proporzioni più realistiche: testa piccola, busto e gambe lunghi. Più eleganti e adulti, ma faccia e accessori hanno meno pixel e ogni fotogramma di animazione costa di più.',
-    body: 'slanciato', scale: 1,
-  },
-  micro: {
-    name: 'Pixel grossi 8×12',
-    desc: 'Tutto a metà risoluzione e ingrandito il doppio: tile 16×8 e volontari 8×12. Sul telefono si vede il parco intero, disegnare e animare costa molto meno, ma facce e dettagli quasi spariscono.',
-    body: 'micro', scale: 0.5,
-  },
-  linea: {
-    name: 'Linea chiara',
-    desc: 'Campiture piatte senza grana né retinatura e un contorno scuro attorno a ogni oggetto, come in un fumetto. Molto pulito e leggibile; si perde la materia di terra, cemento ed erba.',
-    body: 'compatto', scale: 1, flat: true, outline: '#241a26',
-  },
-  accogliente: {
-    name: 'Accogliente 20×32',
-    desc: 'Dai riferimenti di Marco: volontari 20×32 come quelli del gioco, sullo sprite di riferimento: testa dritta che guarda chi gioca (in basso mentre lavora), capelli grandi a ciocche con riflessi, occhi alti due pixel, tre o quattro toni per materiale e contorno scuro dello stesso colore invece del nero; oggetti con contorno colorato e un filo di luce in cima; scena all’ora dorata con ombre viola, luci calde e lampioni accesi. Il più caldo e caratteristico, ma ogni volto va curato a mano.',
-    body: 'chibi', scale: 1, grade: true, selOutline: true, glow: true,
-    // Colori dello sfondo ritoccati per il tramonto (prima della correzione).
-    swap: {
-      '#7fb2d6': '#4f5c9e', '#93c1df': '#7a76b4', '#accfe6': '#c08cb0', '#c6e1ec': '#efb592',
-      '#dcebf0': '#f0a89a', '#f4f8f8': '#ffd8b0', '#9db4c4': '#9a7fae', '#7f9bb0': '#6f6198', '#7290a6': '#62578c',
-      '#5f7383': '#4f4374', '#6f8393': '#5d5184', '#6aa6cf': '#c48fae', '#4f90c0': '#6f78b8', '#cfe8ef': '#ffd9a8',
-      '#3f82b4': '#5470b0', '#3576a8': '#46619f', '#2c6898': '#3b538d',
-    },
-  },
+/* ---------- Luce della sera ---------- */
+// Colori dello sfondo ritoccati per il tramonto (prima della correzione).
+const SWAP = {
+  '#7fb2d6': '#4f5c9e', '#93c1df': '#7a76b4', '#accfe6': '#c08cb0', '#c6e1ec': '#efb592',
+  '#dcebf0': '#f0a89a', '#f4f8f8': '#ffd8b0', '#9db4c4': '#9a7fae', '#7f9bb0': '#6f6198', '#7290a6': '#62578c',
+  '#5f7383': '#4f4374', '#6f8393': '#5d5184', '#6aa6cf': '#c48fae', '#4f90c0': '#6f78b8', '#cfe8ef': '#ffd9a8',
+  '#3f82b4': '#5470b0', '#3576a8': '#46619f', '#2c6898': '#3b538d',
 };
-let DRAW = DRAWS.compatto;
-/** Scala del mondo sullo schermo: 1 = tile 32×16, 0,5 = tile 16×8. */
-let S = 1;
-let FLAT = false;
-
-/* ---------- Luce della sera (stile Accogliente) ---------- */
 const gradeCache = new Map();
 /** Ombre verso il viola, luci verso l'arancio, colori un po' più saturi. */
 function graded(hex) {
   let v = gradeCache.get(hex);
   if (v) return v;
-  let [r, g, b] = rgb(DRAW.swap?.[hex] ?? hex);
+  let [r, g, b] = rgb(SWAP[hex] ?? hex);
   const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255, m = (r + g + b) / 3;
   [r, g, b] = [r, g, b].map(c => m + (c - m) * 1.2);
   const ws = (1 - L) ** 2 * 0.42, wh = L ** 2 * 0.2;
@@ -265,7 +231,6 @@ function graded(hex) {
   return v;
 }
 let NOGRADE = false;
-const tint = hex => DRAW.grade ? graded(hex) : hex;
 function mix(a, b, t) { const [r1, g1, b1] = rgb(a), [r2, g2, b2] = rgb(b); return toHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t); }
 
 /* ---------- Buffer di pixel ---------- */
@@ -280,7 +245,7 @@ function makeBuf(w, h) {
     set(x, y, col, a = 255) {
       x |= 0; y |= 0;
       if (x < 0 || y < 0 || x >= w || y >= h || !col) return;
-      if (DRAW.grade && !NOGRADE) col = graded(col);
+      if (!NOGRADE) col = graded(col);
       const i = (y * w + x) * 4, [r, g, b] = rgb(col);
       d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = a;
     },
@@ -304,51 +269,7 @@ function gridSprite(rows, map = {}, name = '') {
   return { canvas: b.flush(), ax: Math.floor(w / 2), ay: h - 1 };
 }
 
-/** Metà risoluzione (stile a pixel grossi): ogni blocco 2×2 prende il colore più frequente. */
-function shrink(spr) {
-  const src = spr.canvas, sw = src.width, sh = src.height;
-  const sd = src.getContext('2d').getImageData(0, 0, sw, sh).data;
-  const w = Math.ceil(sw / 2), h = Math.ceil(sh / 2);
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const ctx = c.getContext('2d'), img = ctx.createImageData(w, h), d = img.data;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const count = new Map();
-    let best = -1, bestN = 0;
-    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
-      const sx = 2 * x + dx, sy = 2 * y + dy;
-      if (sx >= sw || sy >= sh) continue;
-      const i = (sy * sw + sx) * 4;
-      if (sd[i + 3] === 0) continue;
-      const key = (sd[i] << 16) | (sd[i + 1] << 8) | sd[i + 2];
-      const m = (count.get(key) || 0) + 1;
-      count.set(key, m);
-      if (m > bestN) { bestN = m; best = i; }
-    }
-    if (best < 0) continue;
-    const o = (y * w + x) * 4;
-    d[o] = sd[best]; d[o + 1] = sd[best + 1]; d[o + 2] = sd[best + 2]; d[o + 3] = sd[best + 3];
-  }
-  ctx.putImageData(img, 0, 0);
-  return { canvas: c, ax: Math.floor(spr.ax / 2), ay: Math.floor(spr.ay / 2) };
-}
-/** Contorno di 1 pixel attorno alla sagoma (stile Linea chiara). */
-function outlined(spr, col) {
-  const src = spr.canvas, w = src.width + 2, h = src.height + 2;
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(src, 1, 1);
-  const img = ctx.getImageData(0, 0, w, h), d = img.data, [r, g, b] = rgb(col);
-  const solid = (x, y) => x >= 0 && y >= 0 && x < w && y < h && d[(y * w + x) * 4 + 3] > 200;
-  const mark = [];
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    if (d[(y * w + x) * 4 + 3] > 0) continue;
-    if (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1)) mark.push((y * w + x) * 4);
-  }
-  for (const i of mark) { d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; }
-  ctx.putImageData(img, 0, 0);
-  return { canvas: c, ax: spr.ax + 1, ay: spr.ay + 1 };
-}
-/** Contorno selettivo (stile Accogliente): ogni bordo prende il colore vicino scurito verso il viola,
+/** Contorno selettivo: ogni bordo prende il colore vicino scurito verso il viola,
  *  e i pixel in cima alla sagoma prendono un filo di luce calda. */
 function selOutlined(spr) {
   const src = spr.canvas, w = src.width + 2, h = src.height + 2;
@@ -374,17 +295,9 @@ function selOutlined(spr) {
   ctx.putImageData(img, 0, 0);
   return { canvas: c, ax: spr.ax + 1, ay: spr.ay + 1 };
 }
-/** Adatta uno sprite allo stile: metà risoluzione se serve (i modelli nascono già in scala) e contorno. */
-function styled(spr) {
-  let out = S < 1 && !spr.model ? shrink(spr) : spr;
-  if (DRAW.outline) out = outlined(out, DRAW.outline);
-  if (DRAW.selOutline) out = selOutlined(out);
-  return out;
-}
-
 /* ---------- Modelli isometrici a scatole ---------- */
-// Coordinate del mondo: 16 unità per tile; schermo: sx = (x - y)·S, sy = ((x + y) / 2 - z)·S.
-const proj = (x, y, z) => [(x - y) * S, ((x + y) / 2 - z) * S];
+// Coordinate del mondo: 16 unità per tile; schermo: sx = x - y, sy = (x + y) / 2 - z.
+const proj = (x, y, z) => [x - y, (x + y) / 2 - z];
 function fillPoly(b, pts, col, ox, oy) {
   const xs = pts.map(p => p[0] + ox), ys = pts.map(p => p[1] + oy);
   const x0 = Math.floor(Math.min(...xs)), x1 = Math.ceil(Math.max(...xs));
@@ -416,140 +329,56 @@ function model(boxes) {
     }
     fillPoly(b, [proj(x, y, z + h), proj(x + w, y, z + h), proj(x + w, y + d, z + h), proj(x, y + d, z + h)], bx.top, ox, oy);
   }
-  return { canvas: b.flush(), ax: ox, ay: oy, model: true };
+  return { canvas: b.flush(), ax: ox, ay: oy };
 }
 const tone = (top, left, right) => ({ top, left, right });
-const noisy = (cols, s) => (x, y) => FLAT ? cols[Math.floor(cols.length / 2)]
-  : cols[Math.min(cols.length - 1, Math.floor((hash(x, y, s) * 0.6 + noise(x / 2, y / 2, s) * 0.6) * cols.length * 0.85))];
+const noisy = (cols, s) => (x, y) => cols[Math.min(cols.length - 1, Math.floor((hash(x, y, s) * 0.6 + noise(x / 2, y / 2, s) * 0.6) * cols.length * 0.85))];
 
-/* ---------- Volontari: tre corpi ---------- */
-// Compatto 16×24: testa (0-11), busto (12-17), gambe (18-23).
-const C_HEAD_F = [
-  '................', '......kkkk......', '....kkhhhhkk....', '...khhhhhhhhk...', '..khhhhhhhhhhk..', '..khhhhhhhhhHk..',
-  '..khhssssshhHk..', '..khsssssssshk..', '..khskssssksSk..', '..kssssssssSSk..', '...ksssssssSk...', '....kkSssSkk....',
-];
-const C_HEAD_B = [
-  '................', '......kkkk......', '....kkhhhhkk....', '...khhhhhhhhk...', '..khhhhhhhhhhk..', '..khhhhhhhhhHk..',
-  '..khhhhhhhhhHk..', '..khhhhhhhhhHk..', '..kshhhhhhhhSk..', '..kHhhhhhhhHHk..', '...kHHhhhHHHk...', '....kkSssSkk....',
-];
-const C_TORSO_F = ['...kcccccccCk...', '..kccccccwwcCk..', '..kcCccccccCCk..', '..kcCccccccCCk..', '..kscccccccCsk..', '..ksppppppPPsk..'];
-const C_TORSO_B = ['...kcccccccCk...', '..kcwwwwwwwCCk..', '..kccccccccCCk..', '..kcwcwwcwcCCk..', '..kscccccccCsk..', '..ksppppppPPsk..'];
-const C_LEGS = {
-  stand: ['...kpppppPPPk...', '...kpppkkpPPk...', '...kppk..kpPk...', '...kppk..kpPk...', '...kbbk..kbbk...', '....kk....kk....'],
-  a:     ['...kpppppPPPk...', '...kpppkkpPPk...', '...kppk..kpPk...', '...kbbk..kpPk...', '....kk...kbbk...', '..........kk....'],
-  b:     ['...kpppppPPPk...', '...kpppkkpPPk...', '...kppk..kpPk...', '...kppk..kbbk...', '...kbbk...kk....', '....kk..........'],
-};
-const C_ACC = {
-  cappello: { front: { 1: '....kkkkkkkk....', 2: '...kUUUUUUUUk...', 3: '...kRRRRRRRRk...', 4: '.kkUUUUUUUUUUkk.', 5: '.kuuuuuuuuuuuuk.' } },
-  berretto: {
-    front: { 2: '....kkkkkkkk....', 3: '...kqqqqqqqqk...', 4: '..kqqqqqqqqqqk..', 5: '..kaaaaaaaaaakk.' },
-    back: { 2: '....kkkkkkkk....', 3: '...kqqqqqqqqk...', 4: '..kqqqqqqqqqqk..', 5: '..kaqqqqqqqqak..' },
-  },
-  occhiali: { front: { 7: '...kkkk..kkkk...', 8: '...k5k....k5k...' }, back: {} },
-  tesserino: { front: { 12: '......y..y......', 13: '.......yy.......', 14: '.......55.......', 15: '.......55.......' }, back: { 12: '......y..y......' } },
-  gilet: {
-    front: { 12: '....YY....YY....', 13: '...YYYY..YYYY...', 14: '...YYYY..YYYY...', 15: '...5555..5555...', 16: '....YYY..YYY....' },
-    back: { 12: '...YYYYYYYYYY...', 13: '..kYYYYYYYYYYk..', 14: '..kYYYYYYYYYYk..', 15: '..k5555555555k..', 16: '....YYYYYYYY....' },
-  },
-  cassetta: {
-    front: { 16: '.............kk.', 17: '............kRRk', 18: '............kRRk', 19: '............kkkk' },
-    back: { 16: '.kk.............', 17: 'kRRk............', 18: 'kRRk............', 19: 'kkkk............' },
-  },
-  cartellina: { front: { 13: '..kuuuk.........', 14: '..ku5uk.........', 15: '..ku5uk.........', 16: '..kuuuk.........', 17: '...kkk..........' }, back: {} },
-  telefono: { front: { 15: '............kk..', 16: '............kqk.', 17: '............kkk.' }, back: {} },
-  scatola: {
-    front: { 13: '...kkkkkkkkkk...', 14: '...kuuUUUUuuk...', 15: '..skuuuuuuuuks..', 16: '..skuuuuuuuuks..', 17: '...kkkkkkkkkk...' },
-    back: { 13: '..u..........u..', 16: '...c........C...', 17: '...p........P...' },
-  },
-  sacco: {
-    front: { 12: '.......kk.......', 13: '....kk2kk2kk....', 14: '...k22222232k...', 15: '..sk22222322ks..', 16: '..sk22223222ks..', 17: '...kkkkkkkkkk...' },
-    back: { 13: '..2..........2..', 16: '...c........C...', 17: '...p........P...' },
-  },
-};
-
-// Slanciato 16×32: testa (0-8), busto (9-19), gambe (20-31).
-const T_HEAD_F = ['................', '......kkkk......', '.....khhhhk.....', '....khhhhhHk....', '....khsssshk....', '....kskssksk....', '....kssssssk....', '.....kssSSk.....', '......kSSk......'];
-const T_HEAD_B = ['................', '......kkkk......', '.....khhhhk.....', '....khhhhhHk....', '....khhhhhHk....', '....khhhhhHk....', '....kHhhhHHk....', '.....kHHHHk.....', '......kSSk......'];
-const T_TORSO_F = [
-  '....kccccCCk....', '...kccccccwCk...', '..kcCccccccCCk..', '..kcCccccccCCk..', '..kckcccccckCk..', '..kskcccccckSk..',
-  '..kskcccccckSk..', '..kskppppPPkSk..', '...kkppppPPkk...', '....kppppPPk....', '....kpppkPPk....',
-];
-const T_TORSO_B = [
-  '....kccccCCk....', '...kcwwwwwwCk...', '..kcCccccccCCk..', '..kcCwcwwcwCCk..', '..kckcccccckCk..', '..kskcccccckSk..',
-  '..kskcccccckSk..', '..kskppppPPkSk..', '...kkppppPPkk...', '....kppppPPk....', '....kpppkPPk....',
-];
-const TL = '....kppkkPPk....';
-const T_LEGS = {
-  stand: [...Array(9).fill(TL), '...kbbbkkbbbk...', '...kbbbkkbbbk...', '...kkkkkkkkkk...'],
-  a: [...Array(7).fill(TL), '...kbbbkkPPk....', '...kkkkkkPPk....', '........kPPk....', '........kbbbk...', '........kkkkk...'],
-  b: [...Array(7).fill(TL), '....kppkkbbbk...', '....kppkkkkkk...', '....kppk........', '...kbbbk........', '...kkkkk........'],
-};
-const T_ACC = {
-  cappello: { front: { 0: '.....kkkkkk.....', 1: '....kUUUUUUk....', 2: '....kRRRRRRk....', 3: '..kkUUUUUUUUkk..', 4: '..kuuuuuuuuuuk..' } },
-  berretto: {
-    front: { 1: '.....kkkkkk.....', 2: '....kqqqqqqk....', 3: '....kqqqqqqk....', 4: '....kaaaaaaakk..' },
-    back: { 1: '.....kkkkkk.....', 2: '....kqqqqqqk....', 3: '....kqqqqqqk....', 4: '....kaqqqqak....' },
-  },
-  occhiali: { front: { 5: '.....2k..k2.....' }, back: {} },
-  tesserino: { front: { 9: '.....y..y.......', 10: '......yy........', 11: '......55........', 12: '......55........' }, back: { 9: '.....y..y.......' } },
-  gilet: {
-    front: { 10: '.....YY..YY.....', 11: '.....YY..YY.....', 12: '.....YY..YY.....', 13: '.....YY..YY.....', 14: '.....55..55.....', 15: '.....YY..YY.....' },
-    back: { 10: '....YYYYYYYY....', 11: '...kYYYYYYYYk...', 12: '...kYYYYYYYYk...', 13: '.....YYYYYY.....', 14: '.....555555.....', 15: '.....YYYYYY.....' },
-  },
-  cassetta: {
-    front: { 17: '............kk..', 18: '...........kRRk.', 19: '...........kRRk.', 20: '...........kkkk.' },
-    back: { 17: '..kk............', 18: '.kRRk...........', 19: '.kRRk...........', 20: '.kkkk...........' },
-  },
-  cartellina: { front: { 11: '..kuuuk.........', 12: '..ku5uk.........', 13: '..ku5uk.........', 14: '..kuuuk.........', 15: '...kkk..........' }, back: {} },
-  telefono: { front: { 14: '............kk..', 15: '............kqk.', 16: '............kkk.' }, back: {} },
-  scatola: {
-    front: { 11: '...kkkkkkkkkk...', 12: '...kuuUUUUuuk...', 13: '..skuuuuuuuuks..', 14: '..skuuuuuuuuks..', 15: '...kkkkkkkkkk...' },
-    back: { 11: '..u..........u..', 14: '...c........C...', 15: '...c........C...', 16: '...p........P...' },
-  },
-  sacco: {
-    front: { 10: '.......kk.......', 11: '....kk2kk2kk....', 12: '...k22222232k...', 13: '..sk22222322ks..', 14: '..sk22223222ks..', 15: '...kkkkkkkkkk...' },
-    back: { 11: '..2..........2..', 14: '...c........C...', 15: '...c........C...', 16: '...p........P...' },
-  },
-};
-
-// Pixel grossi 8×12: testa (0-4), busto (5-8), gambe (9-11).
-const M_HEAD_F = ['..kkkk..', '.khhhhk.', '.khsssk.', '.kssssk.', '..kSSk..'];
-const M_HEAD_B = ['..kkkk..', '.khhhhk.', '.khhhHk.', '.kHhhHk.', '..kSSk..'];
-const M_TORSO_F = ['.kccwck.', 'kscccCsk', '.kcccCk.', '.kppPPk.'];
-const M_TORSO_B = ['.kcwwck.', 'kscccCsk', '.kwcwCk.', '.kppPPk.'];
-const M_LEGS = {
-  stand: ['.kpkkPk.', '.kbkkbk.', '..k..k..'],
-  a: ['.kpkkPk.', '.kkkkPk.', '....kbk.'],
-  b: ['.kpkkPk.', '.kpkkkk.', '.kbk....'],
-};
-const M_ACC = {
-  cappello: { front: { 0: '.kUUUUk.', 1: 'kuuuuuuk' } },
-  berretto: { front: { 0: '..qqqq..', 1: '.kaaaak.' }, back: { 0: '..qqqq..', 1: '.kqqqqk.' } },
-  occhiali: { front: { 3: '..2kk2..' }, back: {} },
-  tesserino: { front: { 6: '...y....' }, back: {} },
-  gilet: { front: { 5: '..Y..Y..', 6: '..Y..Y..', 7: '..5..5..' }, back: { 5: '..YYYY..', 6: '.kYYYYk.', 7: '..5555..' } },
-  cassetta: { front: { 7: '.......k', 8: '......RR', 9: '......RR' }, back: { 7: 'k.......', 8: 'RR......', 9: 'RR......' } },
-  cartellina: { front: { 5: '.u......', 6: 'uu......' }, back: {} },
-  telefono: { front: { 6: '.......q' }, back: {} },
-  scatola: { front: { 5: '.kuuuuk.', 6: 'suuUUuus', 7: '.kuuuuk.' }, back: { 6: 'c......C' } },
-  sacco: { front: { 4: '...kk...', 5: '.k2222k.', 6: 's222322s', 7: '.k2222k.' }, back: { 6: 'c......C' } },
-};
-
-// Volontari 20×32 a testa dritta (stile Accogliente): lo stesso disegno del gioco, da assets/personaggi.json.
+/* ---------- Volontari ---------- */
+// Volontari 20×32 a testa dritta, da src/data/personaggi.json.
 // Testa 0-14 con acconciatura sovrapposta, busto 15-23, gambe 24-31.
-let PERS = null;
-const ACC_ALIAS = { u: 'µ', q: 'θ', a: 'α' };
-// Accessori del corpo compatto allargati a 20 colonne e spostati: in giù di una riga quelli sulla testa, di tre quelli sul busto.
-const CH_ACC = Object.fromEntries(Object.entries(C_ACC).map(([name, def]) => {
-  const off = name === 'cappello' || name === 'berretto' ? 1 : 3;
-  // u, q e a negli accessori sono colori della palette, che qui hanno un altro significato: si rinominano.
-  const sh = o => o && Object.fromEntries(Object.entries(o).map(([r, row]) => [+r + off, ('..' + row + '..').replace(/[uqa]/g, ch => ACC_ALIAS[ch])]));
-  return [name, { front: sh(def.front), back: sh(def.back) }];
-}));
-CH_ACC.occhiali = { front: { 10: '.....k...kk...k.....', 11: '.....k...kk...k.....', 12: '.....kkkkkkkkkk.....' }, back: {} };
+// Negli accessori µ, θ e α sono l'ocra e i blu della palette (u, q e a nei volontari sono altri colori).
+const ACC = {
+  cappello: {
+    front: { 2: '......kkkkkkkk......', 3: '.....kUUUUUUUUk.....', 4: '.....kRRRRRRRRk.....', 5: '...kkUUUUUUUUUUkk...', 6: '...kµµµµµµµµµµµµk...' },
+  },
+  berretto: {
+    front: { 3: '......kkkkkkkk......', 4: '.....kθθθθθθθθk.....', 5: '....kθθθθθθθθθθk....', 6: '....kααααααααααkk...' },
+    back: { 3: '......kkkkkkkk......', 4: '.....kθθθθθθθθk.....', 5: '....kθθθθθθθθθθk....', 6: '....kαθθθθθθθθαk....' },
+  },
+  tesserino: {
+    front: { 15: '........y..y........', 16: '.........yy.........', 17: '.........55.........', 18: '.........55.........' },
+    back: { 15: '........y..y........' },
+  },
+  gilet: {
+    front: { 15: '......YY....YY......', 16: '.....YYYY..YYYY.....', 17: '.....YYYY..YYYY.....', 18: '.....5555..5555.....', 19: '......YYY..YYY......' },
+    back: { 15: '.....YYYYYYYYYY.....', 16: '....kYYYYYYYYYYk....', 17: '....kYYYYYYYYYYk....', 18: '....k5555555555k....', 19: '......YYYYYYYY......' },
+  },
+  cassetta: {
+    front: { 19: '...............kk...', 20: '..............kRRk..', 21: '..............kRRk..', 22: '..............kkkk..' },
+    back: { 19: '...kk...............', 20: '..kRRk..............', 21: '..kRRk..............', 22: '..kkkk..............' },
+  },
+  cartellina: {
+    front: { 16: '....kµµµk...........', 17: '....kµ5µk...........', 18: '....kµ5µk...........', 19: '....kµµµk...........', 20: '.....kkk............' },
+    back: {  },
+  },
+  telefono: {
+    front: { 18: '..............kk....', 19: '..............kθk...', 20: '..............kkk...' },
+    back: {  },
+  },
+  scatola: {
+    front: { 16: '.....kkkkkkkkkk.....', 17: '.....kµµUUUUµµk.....', 18: '....skµµµµµµµµks....', 19: '....skµµµµµµµµks....', 20: '.....kkkkkkkkkk.....' },
+    back: { 16: '....µ..........µ....', 19: '.....c........C.....', 20: '.....p........P.....' },
+  },
+  sacco: {
+    front: { 15: '.........kk.........', 16: '......kk2kk2kk......', 17: '.....k22222232k.....', 18: '....sk22222322ks....', 19: '....sk22223222ks....', 20: '.....kkkkkkkkkk.....' },
+    back: { 16: '....2..........2....', 19: '.....c........C.....', 20: '.....p........P.....' },
+  },
+  occhiali: { front: { 10: '.....k...kk...k.....', 11: '.....k...kk...k.....', 12: '.....kkkkkkkkkk.....' }, back: {} },
+};
 const EYES = ['#6b4423', '#3f8a3a', '#3a8fc8', '#2e9a96', '#a0672a'];
-/** Righe del volontario chibi: volto, busto (divisa o abito), gambe dell'abito, acconciatura sopra. */
-function chibiRows(look, back, legs, down = false) {
+/** Righe del volontario: volto, busto (divisa o abito), gambe dell'abito, acconciatura sopra. */
+function volunteerRows(look, back, legs, down = false) {
   const side = back ? 'back' : 'front';
   const o = PERS.outfits[look.outfit] ?? PERS.outfits.casual;
   const rows = [...PERS.face[side], ...PERS.torsos[look.uniform ? 'maglietta' : o.torso][side], ...PERS.legs[o.legs][legs]];
@@ -562,25 +391,19 @@ function chibiRows(look, back, legs, down = false) {
   return rows;
 }
 
-const BODIES = {
-  compatto: { w: 16, h: 24, bobRow: 18, headF: C_HEAD_F, headB: C_HEAD_B, torsoF: C_TORSO_F, torsoB: C_TORSO_B, legs: C_LEGS, acc: C_ACC, tool: { top: 7, blade: 17, hands: [12, 15], len: 3, drop: 3 } },
-  slanciato: { w: 16, h: 32, bobRow: 20, headF: T_HEAD_F, headB: T_HEAD_B, torsoF: T_TORSO_F, torsoB: T_TORSO_B, legs: T_LEGS, acc: T_ACC, tool: { top: 8, blade: 24, hands: [13, 17], len: 4, drop: 3 } },
-  chibi: { w: 20, h: 32, bobRow: 24, acc: CH_ACC, tool: { top: 11, blade: 25, hands: [21, 22], len: 3, drop: 2 }, chibi: true },
-  micro: { w: 8, h: 12, bobRow: 9, headF: M_HEAD_F, headB: M_HEAD_B, torsoF: M_TORSO_F, torsoB: M_TORSO_B, legs: M_LEGS, acc: M_ACC, tool: { top: 2, blade: 8, hands: [5], len: 2, drop: 1 } },
-};
-let BODY = BODIES.compatto;
+const BODY = { w: 20, h: 32, bobRow: 24, tool: { top: 11, blade: 25, hands: [21, 22], len: 3, drop: 2 } };
 
-function overlay(B, rows, ov, name) {
+function overlay(rows, ov, name) {
   for (const [r, s] of Object.entries(ov || {})) {
-    if (s.length !== B.w) errors.push(`${name}: riga ${r} lunga ${s.length} invece di ${B.w}`);
+    if (s.length !== BODY.w) errors.push(`${name}: riga ${r} lunga ${s.length} invece di ${BODY.w}`);
     const row = [...rows[r]];
     [...s].forEach((ch, i) => { if (ch !== '.') row[i] = ch; });
     rows[r] = row.join('');
   }
 }
 /** Pala in mano, a destra del volontario: 1 alzata, 2 nella terra, 3 alzata con la zolla. */
-function shovel(B, phase) {
-  const { w, h } = B, t = B.tool, c = w - 2, off = phase === 2 ? t.drop : 0, rows = {};
+function shovel(phase) {
+  const { w, h } = BODY, t = BODY.tool, c = w - 2, off = phase === 2 ? t.drop : 0, rows = {};
   const put = (r, col, ch) => {
     if (r < 0 || r >= h || col < 0 || col >= w) return;
     const row = [...(rows[r] ?? '.'.repeat(w))];
@@ -591,24 +414,16 @@ function shovel(B, phase) {
   for (const hr of t.hands) put(hr + off, c - 1, 's');
   for (let k = 0; k < t.len; k++) { const r = t.blade + off + k; put(r, c - 1, 'k'); put(r, c, k === 0 ? '4' : '3'); put(r, c + 1, 'k'); }
   put(t.blade + off + t.len, c, 'k');
-  if (phase === 3) { put(t.blade - 1, c - 1, 'O'); put(t.blade - 1, c, 'u'); put(t.blade - 1, c + 1, 'O'); }
-  if (phase === 2) for (let x = c - 3; x <= c + 1; x++) { put(h - 1, x, x % 2 ? 'O' : 'u'); if (x > c - 3) put(h - 2, x, 'O'); }
+  if (phase === 3) { put(t.blade - 1, c - 1, 'O'); put(t.blade - 1, c, 'µ'); put(t.blade - 1, c + 1, 'O'); }
+  if (phase === 2) for (let x = c - 3; x <= c + 1; x++) { put(h - 1, x, x % 2 ? 'O' : 'µ'); if (x > c - 3) put(h - 2, x, 'O'); }
   return rows;
 }
+/** Colori del volontario: come characterColors nel gioco (src/game/character.ts). */
 function lookColors(look) {
-  const shirt = look.uniform ? UNIFORM : look.shirt;
-  const base = {
-    s: look.skin, S: shade(look.skin, 0.8), h: look.hair, H: shade(look.hair, 0.72),
-    c: shirt, C: shade(shirt, 0.72), w: look.uniform ? '#f4f1e8' : shirt,
-    p: '#34405e', P: '#262f47', b: '#2a2224',
-  };
-  if (!BODY.chibi) return base;
-  // Chibi: come characterColors nel gioco (src/game/character.ts).
   const o = PERS.outfits[look.outfit] ?? PERS.outfits.casual;
   const top = look.uniform ? PERS.uniform.c : o.c, eye = look.eyes ?? EYES[0];
-  const hair = look.hair, skin = look.skin;
+  const { hair, skin } = look;
   return {
-    ...base,
     F: mix(hair, '#fff3c8', 0.42), f: mix(hair, '#ffe2a8', 0.2), h: hair, H: mix(hair, '#2a1030', 0.35), n: mix(hair, '#12061a', 0.62),
     a: mix(skin, '#fff4e0', 0.4), s: skin, S: mix(skin, '#8a3a3a', 0.25), D: mix(skin, '#3a1418', 0.62),
     e: '#1a1420', Z: '#f6f6f2', z: eye, t: mix(skin, '#7a2030', 0.45),
@@ -620,15 +435,14 @@ function lookColors(look) {
   };
 }
 function charFrame(look, { back = false, legs = 'stand', bob = 0, carry = null, tool = 0, down = false }) {
-  const B = BODY;
-  let rows = B.chibi ? chibiRows(look, back, legs, down) : [...(back ? B.headB : B.headF), ...(back ? B.torsoB : B.torsoF), ...B.legs[legs]];
-  if (rows.length !== B.h) errors.push(`corpo: ${rows.length} righe invece di ${B.h}`);
+  let rows = volunteerRows(look, back, legs, down);
+  if (rows.length !== BODY.h) errors.push(`corpo: ${rows.length} righe invece di ${BODY.h}`);
   for (const a of [...(look.acc || []), ...(carry ? [carry] : [])]) {
-    const def = B.acc[a];
-    overlay(B, rows, back ? (def.back ?? def.front) : def.front, a);
+    const def = ACC[a];
+    overlay(rows, back ? (def.back ?? def.front) : def.front, a);
   }
-  if (bob) rows = ['.'.repeat(B.w), ...rows.slice(0, B.bobRow), ...rows.slice(B.bobRow + 1)];
-  if (tool) overlay(B, rows, shovel(B, tool), 'pala');
+  if (bob) rows = ['.'.repeat(BODY.w), ...rows.slice(0, BODY.bobRow), ...rows.slice(BODY.bobRow + 1)];
+  if (tool) overlay(rows, shovel(tool), 'pala');
   // I volontari restano con i loro colori pieni anche nella luce della sera.
   NOGRADE = true;
   try { return gridSprite(rows, lookColors(look), 'volontario'); } finally { NOGRADE = false; }
@@ -658,17 +472,14 @@ function blob(w, h, circles, cols, seed) {
       const c = inC(x, y);
       if (!c) continue;
       const nx = (x + 0.5 - c[0]) / c[2], ny = (y + 0.5 - c[1]) / (c[3] ?? c[2]);
-      let l = -(nx * 0.55 + ny * 0.85);
-      if (!FLAT) l += (noise(x / 2.3, y / 2.3, seed) - 0.5) * 1.1 + bayer(x, y) * 0.35;
+      const l = -(nx * 0.55 + ny * 0.85) + (noise(x / 2.3, y / 2.3, seed) - 0.5) * 1.1 + bayer(x, y) * 0.35;
       let idx = l > 0.5 ? 3 : l > -0.05 ? 2 : l > -0.6 ? 1 : 0;
-      if (FLAT) idx = Math.max(1, idx);
-      else if (!inC(x, y + 1) || !inC(x + 1, y + 1)) idx = 0;
+      if (!inC(x, y + 1) || !inC(x + 1, y + 1)) idx = 0;
       b.set(x, y, cols[idx]);
     }
   } };
 }
 function shadowSprite(rx, ry) {
-  rx = Math.max(1, Math.round(rx * S)); ry = Math.max(1, Math.round(ry * S));
   const w = rx * 2 + 1, h = ry * 2 + 1, b = makeBuf(w, h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     if (((x - rx) / (rx + 0.5)) ** 2 + ((y - ry) / (ry + 0.5)) ** 2 <= 1) b.set(x, y, '#10202a', 70);
@@ -703,7 +514,7 @@ function palma() {
   for (let y = top; y < h; y++) {
     const k = (h - y) / (h - top);
     const x = 16 + Math.round(k * k * 3);
-    const ring = !FLAT && y % 3 === 0;
+    const ring = y % 3 === 0;
     b.set(x, y, ring ? '#5c3a22' : '#8a6a48'); b.set(x + 1, y, ring ? '#4a2f20' : '#6e5038');
   }
   const cx = 19, cy = top;
@@ -711,7 +522,7 @@ function palma() {
   fronds.forEach(([a, len, droop], n) => {
     for (let t = 0; t <= len; t++) {
       const px = cx + Math.cos(a) * t, py = cy + Math.sin(a) * t * 0.55 + t * t * 0.045 * droop;
-      const col = t < 3 ? '#2e5e37' : !FLAT && (t + n) % 3 === 0 ? '#84b84a' : '#4a8a3a';
+      const col = t < 3 ? '#2e5e37' : (t + n) % 3 === 0 ? '#84b84a' : '#4a8a3a';
       b.set(Math.round(px), Math.round(py), col);
       if (t > 2 && t % 2 === 0) b.set(Math.round(px), Math.round(py) + 1, '#2e5e37');
     }
@@ -724,13 +535,13 @@ function cespuglio(flower, seed) {
   const t = blob(w, h, [[5.5, 4.5, 5.5, 3.6]], ['#1e3a2a', '#2e5e37', '#4a8a3a', '#6f9f45'], seed);
   t.paint();
   for (let y = 0; y < 5; y++) for (let x = 0; x < w; x++) {
-    if (t.inC(x, y) && hash(x, y, seed + 9) > (y < 3 ? 0.35 : 0.7)) t.b.set(x, y, FLAT || hash(x, y, seed + 4) > 0.5 ? flower : shade(flower, 0.8));
+    if (t.inC(x, y) && hash(x, y, seed + 9) > (y < 3 ? 0.35 : 0.7)) t.b.set(x, y, hash(x, y, seed + 4) > 0.5 ? flower : shade(flower, 0.8));
   }
   return { canvas: t.b.flush(), ax: 5, ay: h - 2 };
 }
 function erbacce(seed) {
   const w = 9, h = 8, b = makeBuf(w, h);
-  const cols = FLAT ? ['#857f38', '#857f38', '#a19544', '#857f38'] : ['#6b6a2e', '#857f38', '#a19544', '#4f5a28'];
+  const cols = ['#6b6a2e', '#857f38', '#a19544', '#4f5a28'];
   for (let k = 0; k < 7; k++) {
     const x = 1 + k, hh = 3 + Math.floor(hash(k, 1, seed) * 5), lean = hash(k, 2, seed) > 0.5 ? 1 : -1;
     const col = cols[Math.floor(hash(k, 3, seed) * 4)];
@@ -808,12 +619,9 @@ function ringhiera(alongY, len) {
 }
 
 /* ---------- Mondo ---------- */
-// Misure dello schermo a scala 1; con lo stile a pixel grossi si dimezzano.
-let W, H, OX, OY, HORIZON;
-function setDims() { W = 480 * S; H = 288 * S; OX = 240 * S; OY = 60 * S; HORIZON = 50 * S; }
-setDims();
+const W = 480, H = 288, OX = 240, OY = 60, HORIZON = 50;
 const PARK = 48; // tile da 3 a 12
-const toScreen = (X, Y, Z = 0) => [OX + (X - Y) * S, OY + ((X + Y) / 2 - Z) * S];
+const toScreen = (X, Y, Z = 0) => [OX + X - Y, OY + (X + Y) / 2 - Z];
 const tileT = (i, j) => ((i + j) / 18) * 0.85 + hash(i, j, 3) * 0.15;
 const pathY = lx => 80 + 6 * Math.sin(lx / 22);
 const pathX = ly => 80 + 6 * Math.sin(ly / 22 + 1);
@@ -846,23 +654,22 @@ function worldType(X, Y, p) {
   if (tx === 2 || ty === 2 || tx === 13 || ty === 13) return 'marciapiede';
   return parkType(X - PARK, Y - PARK, p);
 }
-/** Colore di una superficie in un punto del mondo; con la linea chiara niente grana. */
+/** Colore di una superficie in un punto del mondo. */
 function surfaceColor(type, X, Y) {
   const ix = Math.floor(X), iy = Math.floor(Y);
-  const h = FLAT ? 0.5 : hash(ix, iy, 1), h2 = FLAT ? 0.5 : hash(ix, iy, 2);
+  const h = hash(ix, iy, 1), h2 = hash(ix, iy, 2);
   switch (type) {
     case 'terra': return h2 > 0.97 ? '#b3b0a6' : h < 0.16 ? '#4f3425' : h > 0.86 ? '#8a5a38' : '#6e4630';
-    case 'erbacce': { const n = noise(X / 3, Y / 3, 5) + h * 0.5; return FLAT ? '#857f38' : n > 1.15 ? '#a19544' : n > 0.85 ? '#857f38' : n > 0.55 ? '#6b6a2e' : h2 > 0.5 ? '#5e4a2c' : '#6e4630'; }
+    case 'erbacce': { const n = noise(X / 3, Y / 3, 5) + h * 0.5; return n > 1.15 ? '#a19544' : n > 0.85 ? '#857f38' : n > 0.55 ? '#6b6a2e' : h2 > 0.5 ? '#5e4a2c' : '#6e4630'; }
     case 'cemento': {
       if (Math.abs(noise(X / 9, Y / 9, 7) - 0.5) < 0.022) return '#4b4e5a';
       if (ix % 32 === 0 || iy % 32 === 0) return '#6d6e74';
-      if (!FLAT && noise(X / 6, Y / 6, 8) > 0.74) return h > 0.5 ? '#6f7066' : '#76776c';
+      if (noise(X / 6, Y / 6, 8) > 0.74) return h > 0.5 ? '#6f7066' : '#76776c';
       return h < 0.2 ? '#7d7f86' : h > 0.85 ? '#a3a3a0' : '#8f9093';
     }
     case 'vangata': return (ix + iy) % 4 === 0 ? '#3a251b' : h > 0.8 ? '#6e4630' : '#553626';
     case 'prato': {
       if (h2 > 0.992) return h > 0.5 ? '#ece6d6' : '#f2c94c';
-      if (FLAT) return '#4a8a3a';
       const n = noise(X / 10, Y / 10, 9) * 0.6 + h * 0.6;
       return n > 0.95 ? '#84b84a' : n > 0.62 ? '#5d9a3f' : n > 0.3 ? '#4a8a3a' : '#3f7a35';
     }
@@ -874,8 +681,8 @@ function surfaceColor(type, X, Y) {
     case 'passeggiata': { const c = ((ix >> 3) + (iy >> 3)) & 1; return (ix % 8 === 0 || iy % 8 === 0) ? '#a4927a' : c ? (h > 0.85 ? '#d6c6a8' : '#c9b89a') : (h > 0.85 ? '#c9b89a' : '#bba98a'); }
     case 'basolato': return (X < 2 || Y < 2) ? '#d8d4c8' : ((ix % 12 === 0) || (iy % 6 === 0)) ? '#3a3c46' : h > 0.8 ? '#5a5d69' : '#4b4e5a';
     case 'asfalto': {
-      if (Math.abs(Y - 248) < 0.8 / S && X < 216 && Math.floor(X / 10) % 2 === 0) return '#d8d4c8';
-      if (Math.abs(X - 248) < 0.8 / S && Y < 216 && Math.floor(Y / 10) % 2 === 0) return '#d8d4c8';
+      if (Math.abs(Y - 248) < 0.8 && X < 216 && Math.floor(X / 10) % 2 === 0) return '#d8d4c8';
+      if (Math.abs(X - 248) < 0.8 && Y < 216 && Math.floor(Y / 10) % 2 === 0) return '#d8d4c8';
       if ((Math.floor(X / 16) === 14 && Y < 224 && X < 226) || (Math.floor(Y / 16) === 14 && X < 224 && Y < 226)) return '#8a8b8f';
       return h < 0.2 ? '#33353e' : h > 0.9 ? '#4b4e5a' : '#3a3c46';
     }
@@ -886,10 +693,10 @@ function surfaceColor(type, X, Y) {
 function renderGround(p) {
   const b = makeBuf(W, H);
   for (let sy = HORIZON; sy < H; sy++) for (let sx = 0; sx < W; sx++) {
-    const dx = (sx + 0.5 - OX) / S, dy = (sy + 0.5 - OY) / S;
+    const dx = sx + 0.5 - OX, dy = sy + 0.5 - OY;
     const X = (dx + 2 * dy) / 2, Y = (2 * dy - dx) / 2;
     if (X < 0 || Y < 0) {
-      if (X > -2.5 / S && Y > -2.5 / S && hash(sx, sy, 40) > 0.45) b.set(sx, sy, '#cfe8ef');
+      if (X > -2.5 && Y > -2.5 && hash(sx, sy, 40) > 0.45) b.set(sx, sy, '#cfe8ef');
       continue;
     }
     b.set(sx, sy, surfaceColor(worldType(X, Y, p), X, Y));
@@ -917,48 +724,47 @@ const madonninaSprite = () => gridSprite([
   '......k5544k......', '.....k555444k.....', 'kkkkk44444444kkkkk', '4444444433333333kk', '3333333322222222..',
 ], {}, 'madonnina');
 
-/** Bande di colore con passaggio a scacchiera (nella linea chiara il passaggio è netto). */
+/** Bande di colore con passaggio a scacchiera. */
 function bands(b, y0, y1, stops) {
   for (let y = y0; y < y1; y++) {
     let k = 0;
     while (k + 1 < stops.length && y >= stops[k + 1][0]) k++;
     for (let x = 0; x < W; x++) {
       let col = stops[k][1];
-      if (!FLAT && k + 1 < stops.length && stops[k + 1][0] - y <= 2 && (x + y) % 2 === 0) col = stops[k + 1][1];
+      if (k + 1 < stops.length && stops[k + 1][0] - y <= 2 && (x + y) % 2 === 0) col = stops[k + 1][1];
       b.set(x, y, col);
     }
   }
 }
 function renderBackdrop() {
   const b = makeBuf(W, H);
-  bands(b, 0, HORIZON, [[0, '#7fb2d6'], [13 * S, '#93c1df'], [26 * S, '#accfe6'], [38 * S, '#c6e1ec']]);
-  for (const [cx0, cy0, r0] of [[90, 12, 8], [104, 10, 6], [330, 18, 9], [346, 15, 6], [360, 19, 5]]) {
-    const cx = cx0 * S, cy = cy0 * S, r = r0 * S;
-    for (let y = Math.floor(cy - r); y <= cy + 2 * S; y++) for (let x = Math.floor(cx - r * 2); x <= cx + r * 2; x++) {
+  bands(b, 0, HORIZON, [[0, '#7fb2d6'], [13, '#93c1df'], [26, '#accfe6'], [38, '#c6e1ec']]);
+  for (const [cx, cy, r] of [[90, 12, 8], [104, 10, 6], [330, 18, 9], [346, 15, 6], [360, 19, 5]]) {
+    for (let y = cy - r; y <= cy + 2; y++) for (let x = cx - r * 2; x <= cx + r * 2; x++) {
       if (((x - cx) / (r * 2)) ** 2 + ((y - cy) / r) ** 2 <= 1) b.set(x, y, y > cy ? '#dcebf0' : '#f4f8f8');
     }
   }
-  const far = x => HORIZON + S * (-24 + 7 * noise(x / S / 55, 0.3, 21) + 4 * noise(x / S / 16, 0.7, 22) - (x / S > 380 ? (x / S - 380) * 0.05 : 0));
-  const near = x => HORIZON + S * (-13 + 6 * noise(x / S / 38, 0.3, 23) + 3 * noise(x / S / 10, 0.6, 24));
+  const far = x => HORIZON - 24 + 7 * noise(x / 55, 0.3, 21) + 4 * noise(x / 16, 0.7, 22) - (x > 380 ? (x - 380) * 0.05 : 0);
+  const near = x => HORIZON - 13 + 6 * noise(x / 38, 0.3, 23) + 3 * noise(x / 10, 0.6, 24);
   for (let x = 0; x < W; x++) {
     for (let y = Math.floor(far(x)); y < HORIZON; y++) b.set(x, y, '#9db4c4');
-    for (let y = Math.floor(near(x)); y < HORIZON; y++) b.set(x, y, !FLAT && hash(x, y, 25) > 0.85 ? '#7290a6' : '#7f9bb0');
-    for (let y = HORIZON - Math.max(1, Math.round(3 * S)); y < HORIZON; y++) {
+    for (let y = Math.floor(near(x)); y < HORIZON; y++) b.set(x, y, hash(x, y, 25) > 0.85 ? '#7290a6' : '#7f9bb0');
+    for (let y = HORIZON - 3; y < HORIZON; y++) {
       const hh = hash(x, y, 26);
       if (hh > 0.7) b.set(x, y, hh > 0.9 ? '#e8e2d4' : hh > 0.8 ? '#d9b49a' : '#b9c4c9');
     }
   }
   // pilone sulla costa calabra
-  const px = Math.round(420 * S), base = Math.floor(near(px)) + 1, ph = Math.round(26 * S);
+  const px = 420, base = Math.floor(near(px)) + 1, ph = 26;
   for (let k = 0; k < ph; k++) {
-    const half = Math.round((k / ph) * 3 * S);
+    const half = Math.round((k / ph) * 3);
     b.set(px - half, base - ph + k, '#5f7383'); b.set(px + half, base - ph + k, '#5f7383');
     if (k % 4 === 0) for (let x = px - half; x <= px + half; x++) b.set(x, base - ph + k, '#6f8393');
   }
-  bands(b, HORIZON, H, [[HORIZON, '#6aa6cf'], [HORIZON + 6 * S, '#4f90c0'], [HORIZON + 20 * S, '#3f82b4'], [HORIZON + 50 * S, '#3576a8'], [HORIZON + 100 * S, '#2c6898']]);
+  bands(b, HORIZON, H, [[HORIZON, '#6aa6cf'], [HORIZON + 6, '#4f90c0'], [HORIZON + 20, '#3f82b4'], [HORIZON + 50, '#3576a8'], [HORIZON + 100, '#2c6898']]);
   b.flush();
-  const mole = styled(madonninaSprite());
-  b.c.getContext('2d').drawImage(mole.canvas, Math.round(54 * S), Math.round(HORIZON + 8 * S - mole.canvas.height));
+  const mole = selOutlined(madonninaSprite());
+  b.c.getContext('2d').drawImage(mole.canvas, 54, HORIZON + 8 - mole.canvas.height);
   return b.c;
 }
 /** Alone di un lampione acceso: dischi retinati di luce calda, più fitti al centro. */
@@ -976,13 +782,13 @@ function glowSprite() {
 }
 const makeSparkles = () => Array.from({ length: 90 }, (_, n) => ({
   x: Math.floor(hash(n, 1, 50) * W), y: HORIZON + 2 + Math.floor(hash(n, 2, 50) ** 1.6 * (H - HORIZON - 4)),
-  ph: hash(n, 3, 50) * 6.28, len: Math.max(1, Math.round((1 + Math.floor(hash(n, 4, 50) * 3)) * S)),
+  ph: hash(n, 3, 50) * 6.28, len: 1 + Math.floor(hash(n, 4, 50) * 3),
 }));
 
 /* ---------- Oggetti della scena ---------- */
 function buildObjects() {
   const objs = [];
-  const add = (spr, X, Y, show, shadow, extra = {}) => objs.push({ spr: styled(spr), X, Y, show, shadow, key: extra.key ?? X + Y, glow: extra.glow });
+  const add = (spr, X, Y, show, shadow, extra = {}) => objs.push({ spr: selOutlined(spr), X, Y, show, shadow, key: extra.key ?? X + Y, glow: extra.glow });
   const always = () => true;
   const prima = (i, j) => p => p <= tileT(i, j);
   const dopo = (i, j) => p => p > tileT(i, j) + 0.08;
@@ -1042,10 +848,10 @@ function buildObjects() {
 
 /* ---------- Volontari in scena ---------- */
 const CREW = [
-  { skin: SKINS[1], hair: HAIRS[1], shirt: '#27ae60', uniform: true, acc: ['cappello'], hairstyle: 'corti', eyes: EYES[0], outfit: 'casual' },
-  { skin: SKINS[3], hair: HAIRS[0], shirt: '#2e9e5b', uniform: true, acc: [], hairstyle: 'spettinati', eyes: EYES[0], outfit: 'casual' },
-  { skin: SKINS[0], hair: HAIRS[3], shirt: '#e84393', uniform: true, acc: ['gilet'], hairstyle: 'caschetto', eyes: EYES[3], outfit: 'vestito' },
-  { skin: SKINS[2], hair: HAIRS[4], shirt: '#16a085', uniform: true, acc: ['berretto'], hairstyle: 'coda', eyes: EYES[2], outfit: 'sportivo' },
+  { skin: SKINS[1], hair: HAIRS[1], uniform: true, acc: ['cappello'], hairstyle: 'corti', eyes: EYES[0], outfit: 'casual' },
+  { skin: SKINS[3], hair: HAIRS[0], uniform: true, acc: [], hairstyle: 'spettinati', eyes: EYES[0], outfit: 'casual' },
+  { skin: SKINS[0], hair: HAIRS[3], uniform: true, acc: ['gilet'], hairstyle: 'caschetto', eyes: EYES[3], outfit: 'vestito' },
+  { skin: SKINS[2], hair: HAIRS[4], uniform: true, acc: ['berretto'], hairstyle: 'coda', eyes: EYES[2], outfit: 'sportivo' },
 ];
 function crewPlacement(p, time) {
   const out = [];
@@ -1082,7 +888,12 @@ function crewPlacement(p, time) {
 /* ---------- Disegno della scena ---------- */
 const scene = document.getElementById('scene');
 const sctx = scene.getContext('2d');
-let backdrop, objects, ground, SH, FERRY, GULL, SPARKLES, GLOW;
+const GLOW = glowSprite();
+const SH = { grande: shadowSprite(11, 4), media: shadowSprite(7, 3), piccola: shadowSprite(5, 2) };
+const FERRY = selOutlined(ferrySprite()), GULL = gullSprites().map(selOutlined), SPARKLES = makeSparkles();
+const backdrop = renderBackdrop();
+const objects = buildObjects();
+let ground;
 let progress = 0.45;
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1092,11 +903,11 @@ function drawSprite(ctx, spr, sx, sy) {
 function drawScene(time) {
   const tick = Math.max(0, Math.floor(time * 8));
   sctx.drawImage(backdrop, 0, 0);
-  sctx.fillStyle = tint('#cfe8ef');
+  sctx.fillStyle = graded('#cfe8ef');
   for (const s of SPARKLES) if (Math.sin(time * 2 + s.ph) > 0.55) sctx.fillRect(s.x, s.y, s.len, 1);
-  const fx = ((time * 4 + 150) % (480 + 120) - 60) * S;
-  for (let k = 0; k < 14; k += 2) sctx.fillRect(Math.round(fx - (4 + k * 2) * S), Math.round(HORIZON + (17 + (k % 4 ? 0 : 1)) * S), Math.max(1, 2 * S), 1);
-  sctx.drawImage(FERRY.canvas, Math.round(fx), Math.round(HORIZON + 9 * S));
+  const fx = Math.round((time * 4 + 150) % (480 + 120) - 60);
+  for (let k = 0; k < 14; k += 2) sctx.fillRect(fx - 4 - k * 2, HORIZON + 17 + (k % 4 ? 0 : 1), 2, 1);
+  sctx.drawImage(FERRY.canvas, fx, HORIZON + 9);
   sctx.drawImage(ground, 0, 0);
   const items = objects.filter(o => o.show(progress));
   const crew = crewPlacement(progress, time).map(v => {
@@ -1107,9 +918,9 @@ function drawScene(time) {
   for (const o of all) if (o.shadow) { const [sx, sy] = toScreen(o.X, o.Y); drawSprite(sctx, o.shadow, sx, sy); }
   all.sort((a, b) => a.key - b.key);
   for (const o of all) { const [sx, sy] = toScreen(o.X, o.Y); drawSprite(sctx, o.spr, sx, sy); }
-  if (DRAW.glow) for (const o of items) if (o.glow) { const [sx, sy] = toScreen(o.X, o.Y, 29); drawSprite(sctx, GLOW, sx, sy); }
+  for (const o of items) if (o.glow) { const [sx, sy] = toScreen(o.X, o.Y, 29); drawSprite(sctx, GLOW, sx, sy); }
   for (let g = 0; g < 2; g++) {
-    const gx = (((time * (9 + g * 3) + g * 210) % 520) - 20) * S, gy = (16 + g * 12 + Math.sin(time + g) * 3) * S;
+    const gx = ((time * (9 + g * 3) + g * 210) % 520) - 20, gy = 16 + g * 12 + Math.sin(time + g) * 3;
     sctx.drawImage(GULL[(tick + g) % 2].canvas, Math.round(gx), Math.round(gy));
   }
 }
@@ -1128,7 +939,7 @@ let pending = null;
 slider.addEventListener('input', () => { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => setProgress(+slider.value)); });
 buttons.forEach(b => b.addEventListener('click', () => setProgress(+b.dataset.p)));
 
-/** La scena occupa sempre lo stesso spazio: con i pixel grossi ogni pixel è grande il doppio. */
+/** La scena si ingrandisce a multipli interi quando c'è spazio, altrimenti si stringe. */
 function fitStage() {
   const w = document.getElementById('stageWrap').clientWidth;
   const scale = w >= 480 ? Math.min(3, Math.floor(w / 480)) : w / 480;
@@ -1138,14 +949,14 @@ new ResizeObserver(fitStage).observe(document.getElementById('stageWrap'));
 
 /* ---------- Schede: volontari ---------- */
 const ARCH = [
-  { name: 'Presidente', note: 'tesserino e occhiali', shirt: '#c0392b', skin: SKINS[1], hair: HAIRS[5], acc: ['occhiali', 'tesserino'], hairstyle: 'chignon', eyes: EYES[0], outfit: 'camicia' },
-  { name: 'Segretaria', note: 'cartellina', shirt: '#8e44ad', skin: SKINS[0], hair: HAIRS[2], acc: ['cartellina'], hairstyle: 'caschetto', eyes: EYES[1], outfit: 'vestito' },
-  { name: 'Giardiniere', note: 'cappello di paglia', shirt: '#27ae60', skin: SKINS[2], hair: HAIRS[1], acc: ['cappello'], hairstyle: 'corti', eyes: EYES[4], outfit: 'salopette' },
-  { name: 'Falegname', note: 'cassetta degli attrezzi', shirt: '#d35400', skin: SKINS[3], hair: HAIRS[0], acc: ['cassetta'], hairstyle: 'rasati', eyes: EYES[0], outfit: 'giacca' },
-  { name: 'Comunicatrice', note: 'berretto e telefono', shirt: '#2980b9', skin: SKINS[4], hair: HAIRS[0], acc: ['berretto', 'telefono'], hairstyle: 'lunghi', eyes: EYES[0], outfit: 'felpa' },
-  { name: 'Coordinatore', note: 'gilet ad alta visibilità', shirt: '#e84393', skin: SKINS[1], hair: HAIRS[3], acc: ['gilet'], hairstyle: 'spettinati', eyes: EYES[1], outfit: 'casual' },
+  { name: 'Presidente', note: 'tesserino e occhiali', skin: SKINS[1], hair: HAIRS[5], acc: ['occhiali', 'tesserino'], hairstyle: 'chignon', eyes: EYES[0], outfit: 'camicia' },
+  { name: 'Segretaria', note: 'cartellina', skin: SKINS[0], hair: HAIRS[2], acc: ['cartellina'], hairstyle: 'caschetto', eyes: EYES[1], outfit: 'vestito' },
+  { name: 'Giardiniere', note: 'cappello di paglia', skin: SKINS[2], hair: HAIRS[1], acc: ['cappello'], hairstyle: 'corti', eyes: EYES[4], outfit: 'salopette' },
+  { name: 'Falegname', note: 'cassetta degli attrezzi', skin: SKINS[3], hair: HAIRS[0], acc: ['cassetta'], hairstyle: 'rasati', eyes: EYES[0], outfit: 'giacca' },
+  { name: 'Comunicatrice', note: 'berretto e telefono', skin: SKINS[4], hair: HAIRS[0], acc: ['berretto', 'telefono'], hairstyle: 'lunghi', eyes: EYES[0], outfit: 'felpa' },
+  { name: 'Coordinatore', note: 'gilet ad alta visibilità', skin: SKINS[1], hair: HAIRS[3], acc: ['gilet'], hairstyle: 'spettinati', eyes: EYES[1], outfit: 'casual' },
 ];
-const BASE_LOOK = { skin: SKINS[1], hair: HAIRS[2], shirt: '#2e9e5b', uniform: true, acc: [], hairstyle: 'spettinati', eyes: EYES[1], outfit: 'casual' };
+const BASE_LOOK = { skin: SKINS[1], hair: HAIRS[2], uniform: true, acc: [], hairstyle: 'spettinati', eyes: EYES[1], outfit: 'casual' };
 const ANIM_CARDS = [
   ['attesa', 'Attesa', '', 1], ['camminaF', 'Camminata', 'verso chi guarda', 2], ['camminaB', 'Camminata', 'di schiena', 2],
   ['scavare', 'Scavare', 'vangatura, bonifica', 1], ['portaF', 'Trasportare', 'sacchi dei rifiuti', 2], ['scatolaF', 'Trasportare', 'materiali', 2],
@@ -1155,7 +966,7 @@ const hairNames = ['neri', 'castano scuro', 'castani', 'rossi', 'biondi', 'grigi
 const archEl = document.getElementById('archetypes');
 const animEl = document.getElementById('anims');
 const swapEl = document.getElementById('swaps');
-let living = [];
+const living = [];
 /** Le schede mostrano i volontari alla stessa grandezza a schermo che hanno nella scena, ingranditi. */
 function spriteCanvas(look, anim, zoom, every = 1) {
   const scale = zoom * 16 / BODY.w;
@@ -1174,51 +985,42 @@ function fig(parent, canvases, title, note) {
   f.append(pair, cap); parent.appendChild(f);
 }
 function renderCards() {
-  living = [];
-  for (const el of [archEl, animEl, swapEl]) el.textContent = '';
   for (const a of ARCH) {
-    const city = { skin: a.skin, hair: a.hair, shirt: a.shirt, uniform: false, acc: a.acc, hairstyle: a.hairstyle, eyes: a.eyes, outfit: a.outfit };
+    const city = { skin: a.skin, hair: a.hair, uniform: false, acc: a.acc, hairstyle: a.hairstyle, eyes: a.eyes, outfit: a.outfit };
     const field = { ...city, uniform: true };
     fig(archEl, [spriteCanvas(city, 'attesa', 3), spriteCanvas(field, 'camminaB', 3, 2)], a.name, `${a.note}<br>in città · sul campo`);
   }
   for (const [anim, name, note, every] of ANIM_CARDS) fig(animEl, [spriteCanvas(BASE_LOOK, anim, 4, every)], name, note);
-  const STYLES = [['caschetto', 'caschetto'], ['spettinati', 'spettinati'], ['lunghi', 'lunghi'], ['coda', 'coda'], ['chignon', 'chignon'], ['corti', 'corti'], ['rasati', 'rasati']];
+  const HAIRSTYLES = ['caschetto', 'spettinati', 'lunghi', 'coda', 'chignon', 'corti', 'rasati'];
   [[0, 4], [1, 1], [2, 3], [3, 0], [4, 6], [1, 5], [3, 2]].forEach(([s, h], n) => {
-    const [style, styleName] = STYLES[n];
-    const look = { skin: SKINS[s], hair: HAIRS[h], shirt: UNIFORM, uniform: true, acc: [], hairstyle: style, eyes: EYES[n % EYES.length] };
-    if (!BODY.chibi && n === 6) return;
-    fig(swapEl, [spriteCanvas(look, 'attesa', 4)], appearanceNames[s], BODY.chibi ? `capelli ${hairNames[h]}, ${styleName}` : `capelli ${hairNames[h]}`);
+    const look = { skin: SKINS[s], hair: HAIRS[h], uniform: true, acc: [], hairstyle: HAIRSTYLES[n], eyes: EYES[n % EYES.length] };
+    fig(swapEl, [spriteCanvas(look, 'attesa', 4)], appearanceNames[s], `capelli ${hairNames[h]}, ${HAIRSTYLES[n]}`);
   });
   const outfitsEl = document.getElementById('outfits');
-  outfitsEl.textContent = '';
-  document.getElementById('outfitsSheet').hidden = !BODY.chibi;
-  if (BODY.chibi) {
-    [['casual', 'Maglietta e jeans'], ['camicia', 'Camicia'], ['felpa', 'Felpa'], ['giacca', 'Giacca'], ['vestito', 'Vestito'], ['sportivo', 'Sportivo'], ['salopette', 'Salopette']].forEach(([id, name], n) => {
-      const look = { ...BASE_LOOK, outfit: id, uniform: false, hairstyle: STYLES[n][0], hair: HAIRS[[2, 0, 3, 1, 4, 2, 0][n]], skin: SKINS[[1, 2, 0, 3, 1, 4, 2][n]] };
-      fig(outfitsEl, [spriteCanvas(look, 'attesa', 4), spriteCanvas({ ...look, uniform: true }, 'camminaF', 4, 2)], name, 'in città · sul campo');
-    });
-  }
+  [['casual', 'Maglietta e jeans'], ['camicia', 'Camicia'], ['felpa', 'Felpa'], ['giacca', 'Giacca'], ['vestito', 'Vestito'], ['sportivo', 'Sportivo'], ['salopette', 'Salopette']].forEach(([id, name], n) => {
+    const look = { ...BASE_LOOK, outfit: id, uniform: false, hairstyle: HAIRSTYLES[n], hair: HAIRS[[2, 0, 3, 1, 4, 2, 0][n]], skin: SKINS[[1, 2, 0, 3, 1, 4, 2][n]] };
+    fig(outfitsEl, [spriteCanvas(look, 'attesa', 4), spriteCanvas({ ...look, uniform: true }, 'camminaF', 4, 2)], name, 'in città · sul campo');
+  });
 }
 
 /* ---------- Schede: superfici ---------- */
 const surfEl = document.getElementById('surfaces');
 function renderSurfaces() {
-  surfEl.textContent = '';
-  const tw = 64 * S, th = 32 * S;
+  const tw = 64, th = 32;
   for (const [type, name] of [
     ['cemento', 'Cemento crepato'], ['terra', 'Terra battuta'], ['erbacce', 'Erbacce'], ['vangata', 'Terra vangata'],
     ['prato', 'Prato'], ['sentiero', 'Sentiero'], ['aiuola', 'Aiuola'], ['passeggiata', 'Lungomare'], ['basolato', 'Basolato'],
   ]) {
     const b = makeBuf(tw, th);
     for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
-      const dx = (x + 0.5 - tw / 2) / S, dy = (y + 0.5) / S;
+      const dx = x + 0.5 - tw / 2, dy = y + 0.5;
       const X = (dx + 2 * dy) / 2, Y = (2 * dy - dx) / 2;
       if (X < 0 || Y < 0 || X >= 32 || Y >= 32) continue;
       b.set(x, y, surfaceColor(type, X + 64, Y + 80));
     }
     const c = document.createElement('canvas'); c.width = 128; c.height = 64;
     const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false; ctx.drawImage(b.flush(), 0, 0, 128, 64);
-    fig(surfEl, [c], name, S < 1 ? '2×2 tile da 16×8' : '2×2 tile da 32×16');
+    fig(surfEl, [c], name, '2×2 tile da 32×16');
   }
 }
 
@@ -1229,46 +1031,6 @@ for (const [k, name] of PAL_NAMES) {
   d.innerHTML = `<i style="background:${PAL[k]}"></i><span>${name} <code>${PAL[k]}</code></span>`;
   palEl.appendChild(d);
 }
-
-/* ---------- Cambio di stile ---------- */
-const styleButtons = document.getElementById('styleButtons');
-const styleDesc = document.getElementById('styleDesc');
-for (const id of DRAW_ORDER) {
-  const b = document.createElement('button');
-  b.type = 'button'; b.dataset.style = id; b.textContent = DRAWS[id].name;
-  b.addEventListener('click', () => applyStyle(id, true));
-  styleButtons.appendChild(b);
-}
-function applyStyle(id, fromClick = false) {
-  if (!DRAWS[id]) id = 'compatto';
-  DRAW = DRAWS[id]; S = DRAW.scale; FLAT = !!DRAW.flat; BODY = BODIES[DRAW.body];
-  setDims();
-  scene.width = W; scene.height = H;
-  frameCache.clear(); gradeCache.clear();
-  GLOW = glowSprite();
-  SH = { grande: shadowSprite(11, 4), media: shadowSprite(7, 3), piccola: shadowSprite(5, 2) };
-  FERRY = styled(ferrySprite()); GULL = gullSprites().map(styled); SPARKLES = makeSparkles();
-  backdrop = renderBackdrop();
-  objects = buildObjects();
-  setProgress(Math.round(progress * 100));
-  renderCards(); renderSurfaces(); fitStage();
-  styleDesc.textContent = DRAW.desc;
-  for (const b of styleButtons.children) b.setAttribute('aria-pressed', String(b.dataset.style === id));
-  if (fromClick) { try { history.replaceState(null, '', '#' + id); } catch (e) { location.hash = id; } }
-}
-// I volontari chibi sono quelli del gioco: arrivano da assets/personaggi.json.
-fetch('assets/personaggi.json')
-  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(j => { PERS = j; })
-  .catch(() => { errors.push('Non trovo assets/personaggi.json: lo stile Accogliente si vede solo dal sito o con npm run dev.'); })
-  .finally(() => {
-    if (!PERS) delete DRAWS.accogliente;
-    for (const b of [...styleButtons.children]) if (!DRAWS[b.dataset.style]) b.remove();
-    applyStyle(location.hash.slice(1));
-    window.addEventListener('hashchange', () => applyStyle(location.hash.slice(1)));
-    requestAnimationFrame(loop);
-    if (errors.length) document.getElementById('err').textContent = [...new Set(errors)].join('\n');
-  });
 
 /* ---------- Ciclo ---------- */
 const t0 = performance.now();
@@ -1284,6 +1046,14 @@ function loop(now) {
   }
   if (!reduce) requestAnimationFrame(loop);
 }
+
+/* ---------- Avvio ---------- */
+document.getElementById('logo').innerHTML = logoImg(GAME_SUBTITLE, 2, '', GAME_FULL_TITLE);
+animateLogos();
+setProgress(Math.round(progress * 100));
+renderCards(); renderSurfaces(); fitStage();
+requestAnimationFrame(loop);
+if (errors.length) document.getElementById('err').textContent = [...new Set(errors)].join('\n');
 </script>
 </body>
 </html>
