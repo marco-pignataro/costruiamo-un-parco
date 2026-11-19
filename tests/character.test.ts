@@ -13,7 +13,7 @@ describe('personaggi', () => {
     for (const o of ap.outfits) expect(ART.outfits[o.id], o.id).toBeDefined();
   });
 
-  it('ogni combinazione dà uno sprite 16×28 con colori per tutti i caratteri', () => {
+  it('ogni combinazione dà uno sprite 20×32 con colori per tutti i caratteri', () => {
     for (const h of ap.hairstyles) for (const o of ap.outfits) for (const uniform of [false, true]) for (const back of [false, true]) for (const legs of ['stand', 'a', 'b'] as const) {
       const l = look({ hairstyle: h.id, outfit: o.id, uniform });
       const rows = characterRows(l, back, legs);
@@ -29,13 +29,13 @@ describe('personaggi', () => {
   it('sul campo cambia la parte di sopra, le gambe restano quelle dell\'abito', () => {
     const city = characterRows(look({ outfit: 'vestito' }));
     const field = characterRows(look({ outfit: 'vestito', uniform: true }));
-    expect(field.slice(22)).toEqual(city.slice(22));
-    expect(field.slice(16, 22)).not.toEqual(city.slice(16, 22));
+    expect(field.slice(24)).toEqual(city.slice(24));
+    expect(field.slice(15, 24)).not.toEqual(city.slice(15, 24));
     expect(characterColors(look({ uniform: true })).c).toBe(ART.uniform.c);
   });
 
   it('acconciature diverse cambiano la testa', () => {
-    const heads = new Set(ap.hairstyles.map((h) => characterRows(look({ hairstyle: h.id })).slice(0, 16).join('\n')));
+    const heads = new Set(ap.hairstyles.map((h) => characterRows(look({ hairstyle: h.id })).slice(0, 15).join('\n')));
     expect(heads.size).toBe(ap.hairstyles.length);
   });
 });

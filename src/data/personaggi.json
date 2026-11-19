@@ -1,459 +1,512 @@
 {
- "_": "Personaggi 16x28 (stile Accogliente). Righe: testa 0-15, busto 16-21, gambe 22-27. Caratteri: k contorno, s/S pelle, Z riflesso, z/d iride, m guance, t bocca, h/H/f capelli, c/C stoffa, w dettaglio, u stampa della divisa, p/P parte di sotto, b scarpe, x calzini. Le acconciature sono sovrapposizioni riga per riga (il punto lascia sotto).",
+ "_": "Personaggi 20x32 (deciso il 19/11/2026 sullo sprite di riferimento di Marco): visti di tre quarti, capelli grandi a ciocche, volto piccolo, 3-4 toni per materiale, contorno scuro dello stesso colore. Righe: testa 0-14, busto 15-23, gambe 24-31. Caratteri a rampe: capelli F f h H n, pelle a s S D, occhi e Z z, bocca t, sopra W c C K (w dettaglio, u stampa), sotto q p P Q, scarpe B b N, calzini x. Le acconciature si sovrappongono al volto riga per riga (il punto lascia vedere sotto).",
  "size": [
-  16,
-  28
+  20,
+  32
  ],
  "rows": {
   "head": 0,
-  "torso": 16,
-  "legs": 22
+  "torso": 15,
+  "legs": 24
  },
  "face": {
   "front": [
-   "................",
-   "................",
-   "................",
-   "..kkkkkkkkkkkk..",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kskkksssskkksk.",
-   ".kssZzsssszZssk.",
-   ".ksszzsssszzssk.",
-   ".ksszdssssdzssk.",
-   ".ksmmssssssmmsk.",
-   ".ksssssttsssssk.",
-   "..kssssssssssk..",
-   "...kkkSssSkkk..."
+   "....................",
+   "....................",
+   "....................",
+   ".....DDDDDDDDD......",
+   "....DsssssssssSD....",
+   "...DasssssssssSSD...",
+   "...DassssssssssSD...",
+   "..DassssssssssSSSD..",
+   "..DassssssssssSSSD..",
+   "...DsssassssSSSsSD..",
+   "...DseessseeeDSSD...",
+   "...DsZessZzeSDSSD...",
+   "...DassassSSSDSD....",
+   "....DsstssSSD.......",
+   ".....DDssSDD........"
   ],
   "back": [
-   "................",
-   "................",
-   "................",
-   "..kkkkkkkkkkkk..",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   ".kssssssssssssk.",
-   "....ksssssSk....",
-   ".....kSssSk....."
+   "....................",
+   "....................",
+   "....................",
+   ".....DDDDDDDDD......",
+   "....DsssssssssSD....",
+   "...DasssssssssSSD...",
+   "...DassssssssssSD...",
+   "..DassssssssssSSSD..",
+   "..DassssssssssSSSD..",
+   "...DsssssssssSSSD...",
+   "...DsssssssssSSD....",
+   "...DsssssssssSSD....",
+   "....DssssssssSD.....",
+   ".....DssssssSD......",
+   "......DsssSD........"
   ]
  },
  "hairstyles": {
-  "corti": {
-   "front": {
-    "1": "....kkkkkkkk....",
-    "2": "...khhffhhhhk...",
-    "3": "..khhfffhhhhHk..",
-    "4": ".khhhhhhhhhhhHk.",
-    "5": ".khhhhhhhhhhhHk.",
-    "6": ".khhhhhhhhhhhHk.",
-    "7": ".kHhshhhhhhshHk.",
-    "8": "..H..........H..",
-    "9": "..H..........H.."
-   },
-   "back": {
-    "1": "....kkkkkkkk....",
-    "2": "...khhffhhhhk...",
-    "3": "..khhfffhhhhHk..",
-    "4": ".khhhhhhhhhhhHk.",
-    "5": ".khhhhhhhhhhhHk.",
-    "6": ".khhhhhhhhhhhHk.",
-    "7": ".khhhhhhhhhhhHk.",
-    "8": ".khhhhhhhhhhhHk.",
-    "9": ".khhhhhhhhhhHHk.",
-    "10": ".kHhhhhhhhhHHHk.",
-    "11": ".kHHhhhhhhHHHHk.",
-    "12": ".kHHHHHHHHHHHHk.",
-    "13": "..kHHHHHHHHHHk.."
-   }
-  },
   "spettinati": {
    "front": {
-    "0": "...kk..kk..kk...",
-    "1": "..khhkkhfkkhhk..",
-    "2": ".khhhhhffhhhhHk.",
-    "3": "khhfhhhhhhhhhHHk",
-    "4": "khhhhhhhhhhhhhHk",
-    "5": "khHhhhhhhhhhHhHk",
-    "6": "kHhhHhhhhHhhhHHk",
-    "7": "kHHshHhshhHshHHk",
-    "8": "kH............Hk",
-    "9": "kH............Hk",
-    "10": ".k............k."
+    "0": "..f....F.....f......",
+    "1": "..fh..fFh..fh...f...",
+    "2": ".ffhhfFhhhhfhhhfhh..",
+    "3": "..fFFhhhhhFhhhhhhHH.",
+    "4": ".fFFhhhhhFFhhhhhhHHh",
+    "5": "ffFhhhhhhFhhhhhhHHHH",
+    "6": ".fhhhHhhhhhhhHhHHHHn",
+    "7": "fhHhhHhhHhhhHHHHHHn.",
+    "8": "fhHhHDhhHhhDhHHHHHn.",
+    "9": ".hHHD.Dh.DhD.HH.HHn.",
+    "10": "..H...........H.Hn..",
+    "11": "..H...........HHHn..",
+    "12": "..............nHn...",
+    "13": "..............n....."
    },
    "back": {
-    "0": "...kk..kk..kk...",
-    "1": "..khhkkhfkkhhk..",
-    "2": ".khhhhhffhhhhHk.",
-    "3": "khhfhhhhhhhhhHHk",
-    "4": "khhhhhhhhhhhhhHk",
-    "5": "khHhhhhhhhhhHhHk",
-    "6": "kHhhHhhhhHhhhHHk",
-    "7": "khhhhhhhhhhhhHHk",
-    "8": "kHhhhhhhhhhhhHHk",
-    "9": "kHhhhhhhhhhhHHHk",
-    "10": "kHHhhhhhhhhHHHHk",
-    "11": "kHHHhhhhhhHHHHHk",
-    "12": "kHHHHHHHHHHHHHHk",
-    "13": ".kHHHkHHHkHHHHk."
+    "0": "..ffhhhFhHHHnf......",
+    "1": "..fhfhfFhhhfhHnnf...",
+    "2": ".ffhhfFhhhhfhhhfhh..",
+    "3": "..fFFhhhhhFhhhhhhHH.",
+    "4": ".fFFhhhhhFFhhhhhhHHh",
+    "5": "ffFhhhhhhFhhhhhhHHHH",
+    "6": ".fhhhHhhhhhhhHhHHHHn",
+    "7": "fhHhhHhhHhhhHHHHHHn.",
+    "8": "fffhhhhhhhhHHHHHnnn.",
+    "9": ".fffhhhhhhhhHHHHnnn.",
+    "10": "..fffhhhhhhHHHHnnn..",
+    "11": "..fffhhhhhhHHHHnnn..",
+    "12": "....ffnhhnhhnHHnn..."
+   }
+  },
+  "corti": {
+   "front": {
+    "2": "......fffhhhh.......",
+    "3": "....ffFFhhhhhhH.....",
+    "4": "...fFFhhhhhhhhHH....",
+    "5": "..fFhhhhhhhhhhHHH...",
+    "6": "..fhhhhhhhhhhhHHHn..",
+    "7": "..hhhhhhhhhhhHHHHn..",
+    "8": "..hhHhhhhHhhHHHHHn..",
+    "9": "..HhhD.DhD..DHH.Hn..",
+    "10": "..H...........H.n...",
+    "11": "..............H....."
+   },
+   "back": {
+    "2": "......fffhhhh.......",
+    "3": "....ffFFhhhhhhH.....",
+    "4": "...fFFhhhhhhhhHH....",
+    "5": "..fFhhhhhhhhhhHHH...",
+    "6": "..fhhhhhhhhhhhHHHn..",
+    "7": "..hhhhhhhhhhhHHHHn..",
+    "8": "..fffhhhhhhHHHHnnn..",
+    "9": "..fffhhhhhhHHHHnnn..",
+    "10": "..fffhhhhhhHHHnnn...",
+    "11": "...fnhhnhhnHHnnn...."
    }
   },
   "caschetto": {
    "front": {
-    "0": "....kkkkkkkk....",
-    "1": "..kkhhhffhhhkk..",
-    "2": ".khhhhfffhhhhHk.",
-    "3": "khhhfhhhhhhhhhHk",
-    "4": "khhhhhhhhhhhhhHk",
-    "5": "khhhhhhhhhhhhHHk",
-    "6": "khhHhhhHHhhhHhHk",
-    "7": "khHsshHssHhsshHk",
-    "8": "khH..........HHk",
-    "9": "khH..........HHk",
-    "10": "khH..........HHk",
-    "11": "kHH..........HHk",
-    "12": "kHH..........HHk",
-    "13": ".kHk........kHk."
+    "1": "......ffhhhh........",
+    "2": "....ffFFhhhhhH......",
+    "3": "...fFFFhhhhhhhHH....",
+    "4": "..fFFhhhhhhhhhhHH...",
+    "5": "..fFhhhhhhhhhhhHHH..",
+    "6": ".ffhhhhhhhhhhhhHHHn.",
+    "7": ".fhhhhhhhhhhhhHHHHn.",
+    "8": ".fhhhhhhhhhhhHHHHHn.",
+    "9": ".fhhD.....DhhHH.HHn.",
+    "10": ".fhH..........HHHn..",
+    "11": ".fhH..........HHHn..",
+    "12": ".hHH..........nHHn..",
+    "13": "..HHn........nHHn...",
+    "14": "..nn.........nn....."
    },
    "back": {
-    "0": "....kkkkkkkk....",
-    "1": "..kkhhhffhhhkk..",
-    "2": ".khhhhfffhhhhHk.",
-    "3": "khhhfhhhhhhhhhHk",
-    "4": "khhhhhhhhhhhhhHk",
-    "5": "khhhhhhhhhhhhHHk",
-    "6": "khhHhhhHHhhhHhHk",
-    "7": "khhhhhhhhhhhhHHk",
-    "8": "kHhhhhhhhhhhhHHk",
-    "9": "kHhhhhhhhhhhHHHk",
-    "10": "kHHhhhhhhhhHHHHk",
-    "11": "kHHHhhhhhhHHHHHk",
-    "12": "kHHHHHHHHHHHHHHk",
-    "13": ".kHHHHHHHHHHHHk.",
-    "14": "..kkkkkkkkkkkk.."
+    "1": "......ffhhhh........",
+    "2": "....ffFFhhhhhH......",
+    "3": "...fFFFhhhhhhhHH....",
+    "4": "..fFFhhhhhhhhhhHH...",
+    "5": "..fFhhhhhhhhhhhHHH..",
+    "6": ".ffhhhhhhhhhhhhHHHn.",
+    "7": ".fhhhhhhhhhhhhHHHHn.",
+    "8": ".fffhhhhhhhhHHHHnnn.",
+    "9": ".fffhhhhhhhhHHHHnnn.",
+    "10": ".fffhhhhhhhHHHHnnn..",
+    "11": ".fffhhhhhhhHHHHnnn..",
+    "12": ".fffhhhhhhhHHHHnnn..",
+    "13": "..nffnhhnhhnHHnnn...",
+    "14": "..nnHHHHHHHHHnn....."
    }
   },
   "lunghi": {
    "front": {
-    "0": "....kkkkkkkk....",
-    "1": "..kkhhhffhhhkk..",
-    "2": ".khhhhfffhhhhHk.",
-    "3": "khhhfhhhhhhhhhHk",
-    "4": "khhhhhhhhhhhhhHk",
-    "5": "khhhhhhhhhhhhHHk",
-    "6": "khhhhhhhhhhhhHHk",
-    "7": "khhhhhhhhssshHHk",
-    "8": "khh..........HHk",
-    "9": "khh..........HHk",
-    "10": "khh..........HHk",
-    "11": "khh..........HHk",
-    "12": "khh..........HHk",
-    "13": "khh..........HHk",
-    "14": "khh..........HHk",
-    "15": "khhk........kHHk",
-    "16": "khhk........kHHk",
-    "17": "kkkk........kkkk"
+    "1": "......ffhhhh........",
+    "2": "....ffFFhhhhhH......",
+    "3": "...fFFFhhhhhhhHH....",
+    "4": "..fFFhhhhhhhhhhHH...",
+    "5": "..fFhhhhhhhhhhhHHH..",
+    "6": ".ffhhhhhhhhhhhhHHHn.",
+    "7": ".fhhhhhhhhhhhhHHHHn.",
+    "8": ".fhhhhhhhhhhhHHHHHn.",
+    "9": ".fhhD.....DhhHH.HHn.",
+    "10": ".fhH..........HHHn..",
+    "11": ".fhH..........HHHn..",
+    "12": ".hHH..........nHHn..",
+    "13": ".fhH..........HHHn..",
+    "14": ".hhH..........HHHn..",
+    "15": ".hHH..........nHHn..",
+    "16": "..HH..........nHn...",
+    "17": "..Hn...........nn..."
    },
    "back": {
-    "0": "....kkkkkkkk....",
-    "1": "..kkhhhffhhhkk..",
-    "2": ".khhhhfffhhhhHk.",
-    "3": "khhhfhhhhhhhhhHk",
-    "4": "khhhhhhhhhhhhhHk",
-    "5": "khhhhhhhhhhhhHHk",
-    "6": "khhhhhhhhhhhhHHk",
-    "7": "khhhhhhhhhhhhHHk",
-    "8": "kHhhhhhhhhhhhHHk",
-    "9": "kHhhhhhhhhhhHHHk",
-    "10": "kHHhhhhhhhhHHHHk",
-    "11": "kHHHhhhhhhHHHHHk",
-    "12": "kHHHHHHHHHHHHHHk",
-    "13": "kHHHHHHHHHHHHHHk",
-    "14": "kHHHHHHHHHHHHHHk",
-    "15": "kHHHHHHHHHHHHHHk",
-    "16": "kHHHHHHHHHHHHHHk",
-    "17": "kHHHHHHHHHHHHHHk",
-    "18": ".kkkkkkkkkkkkkk."
+    "1": "......ffhhhh........",
+    "2": "....ffFFhhhhhH......",
+    "3": "...fFFFhhhhhhhHH....",
+    "4": "..fFFhhhhhhhhhhHH...",
+    "5": "..fFhhhhhhhhhhhHHH..",
+    "6": ".ffhhhhhhhhhhhhHHHn.",
+    "7": ".fhhhhhhhhhhhhHHHHn.",
+    "8": ".fffhhhhhhhhHHHHnnn.",
+    "9": ".fffhhhhhhhhHHHHnnn.",
+    "10": ".fffhhhhhhhHHHHnnn..",
+    "11": ".fffhhhhhhhHHHHnnn..",
+    "12": ".fffhhhhhhhHHHHnnn..",
+    "13": ".fnfhnhhnhhnHHnnnn..",
+    "14": ".fhhhhhhhhhhHHHHn...",
+    "15": ".fhhhhhhhhhhHHHHn...",
+    "16": "..hhhhhhhhhHHHHn....",
+    "17": "..HhhhHhhhHHHnHn....",
+    "18": "...nH.nHn.HnH.n....."
    }
   },
   "coda": {
    "front": {
-    "1": "....kkkkkkkk....",
-    "2": "...khhffhhhhk...",
-    "3": "..khhfffhhhhHk..",
-    "4": ".khhhhhhhhhhhHk.",
-    "5": ".khhhhhhhhhhhHk.",
-    "6": ".khssssssssshHk.",
-    "7": "..H..........H.."
+    "2": "......ffhhhh........",
+    "3": "....ffFhhhhhhH......",
+    "4": "...fFFhhhhhhhhH.....",
+    "5": "..fFhhhhhhhhhhHHn...",
+    "6": "..fhhhhhhhhhhHHHnhh.",
+    "7": "..hhHhhhHhhhHHHn.hHn",
+    "8": "..H...........Hn.hHn",
+    "9": "..............n..HHn",
+    "10": ".................HHn",
+    "11": "................HHn.",
+    "12": "................Hn..",
+    "13": "...............nn..."
    },
    "back": {
-    "1": "....kkkkkkkk....",
-    "2": "...khhffhhhhk...",
-    "3": "..khhfffhhhhHk..",
-    "4": ".khhhhhhhhhhhHk.",
-    "5": ".khhhhhhhhhhhHk.",
-    "6": ".khhhhhhhhhhhHk.",
-    "7": ".khhhhhhhhhhhHk.",
-    "8": ".khhhhhhhhhhHHk.",
-    "9": ".kHhhhhhhhhHHHk.",
-    "10": ".kHHhhhhhhHHHHk.",
-    "11": ".kHHHHHHHHHHHHk.",
-    "12": "..kHHHkffkHHHk..",
-    "13": "......khHk......",
-    "14": "......khHk......",
-    "15": "......khHk......",
-    "16": "......kHHk......",
-    "17": ".......kk......."
+    "2": "......ffhhhh........",
+    "3": "....ffFhhhhhhH......",
+    "4": "...fFFhhhhhhhhHn....",
+    "5": "..fFhhhhhhhhhhHHn...",
+    "6": "...ffhhhhhhHHHHnn...",
+    "7": "..fffhhhhhhHHHHnnn..",
+    "8": "..ffnhhnhhnHHnHnnn..",
+    "9": "...fhhhhhhhhHHHHn...",
+    "10": "...fhhhhhhhHHHHn....",
+    "11": "....fhhhhnnHHHn.....",
+    "12": ".......nHHn.........",
+    "13": ".......fhHn.........",
+    "14": ".......fhHn.........",
+    "15": ".......hhHn.........",
+    "16": "........hHn.........",
+    "17": "........Hn.........."
    }
   },
   "chignon": {
    "front": {
-    "0": "......kkkk......",
-    "1": ".....khffhk.....",
-    "2": "....kkhhhhkk....",
-    "3": "..kkhhffhhhhkk..",
-    "4": ".khhfhhhhhhhhHk.",
-    "5": ".khhhhhhhhhhhHk.",
-    "6": ".khhhhhhhhhhhHk.",
-    "7": ".kHhsssssssshHk.",
-    "8": "..H..........H.."
+    "0": ".........fhh........",
+    "1": "........fFhhH.......",
+    "2": ".......ffhhHHn......",
+    "3": "....ffFFhhhhhH......",
+    "4": "...fFFhhhhhhhhHH....",
+    "5": "..fFhhhhhhhhhhHHH...",
+    "6": "..fhhhhhhhhhhhHHHn..",
+    "7": "..hhhHhhhhhhHHHHHn..",
+    "8": "..HHhD.......HHHn...",
+    "9": "..H...........H.n...",
+    "10": "..............H....."
    },
    "back": {
-    "0": "......kkkk......",
-    "1": ".....khffhk.....",
-    "2": "....kkhhhhkk....",
-    "3": "..kkhhffhhhhkk..",
-    "4": ".khhfhhhhhhhhHk.",
-    "5": ".khhhhhhhhhhhHk.",
-    "6": ".khhhhhhhhhhhHk.",
-    "7": ".khhhhhhhhhhhHk.",
-    "8": ".khhhhhhhhhhhHk.",
-    "9": ".khhhhhhhhhhHHk.",
-    "10": ".kHhhhhhhhhHHHk.",
-    "11": ".kHHhhhhhhHHHHk.",
-    "12": ".kHHHHHHHHHHHHk.",
-    "13": "..kHHHHHHHHHHk.."
+    "0": ".........fhh........",
+    "1": "........fFhhH.......",
+    "2": ".......ffhhHHn......",
+    "3": "....ffFFhhhhhH......",
+    "4": "...fFFhhhhhhhhHH....",
+    "5": "..fFhhhhhhhhhhHHH...",
+    "6": "..fhhhhhhhhhhhHHHn..",
+    "7": "..hhhHhhhhhhHHHHHn..",
+    "8": "..fffhhhhhhHHHHnnn..",
+    "9": "..fffhhhhhhHHHnnn...",
+    "10": "...ffhhhhhhHHHnn....",
+    "11": "...fnhhnhhnHHnnn...."
    }
   },
   "rasati": {
    "front": {
-    "2": "...kkkkkkkkkk...",
-    "3": "..khhfhhhhhhHk..",
-    "4": ".khhhhhhhHhhhHk.",
-    "5": ".khHhhhhhhhhHHk."
+    "3": ".....fffhhhhh.......",
+    "4": "....fFfhhhhhhHH.....",
+    "5": "...fFhhhhhhhhhHH....",
+    "6": "...fhhhhhhhhhhHHn...",
+    "7": "..Hhhhh.......HHn...",
+    "8": "..H...........Hn....",
+    "9": "..............n....."
    },
    "back": {
-    "2": "...kkkkkkkkkk...",
-    "3": "..khhfhhhhhhHk..",
-    "4": ".khhhhhhhHhhhHk.",
-    "5": ".khHhhhhhhhhHHk.",
-    "6": ".khhHhhhhhHhhHk.",
-    "7": ".khhhhHhhhhhHHk.",
-    "8": ".khhHhhhhhHhhHk.",
-    "9": ".khhhhHhhhhhHHk.",
-    "10": ".khhHhhhhhHhhHk.",
-    "11": ".khhhhHhhhhhHHk.",
-    "12": ".khhHhhhhhHhhHk.",
-    "13": "..kHHHHHHHHHHk.."
+    "3": ".....fffhhhhhn......",
+    "4": "....fFfhhhhhhHHn....",
+    "5": "...fFhhhhhhhhhHHn...",
+    "6": "...fhhhhhhhhhhHHn...",
+    "7": "..HhhhhhhhhHHHHHnn..",
+    "8": "..fffhhhhhhHHHHnnn..",
+    "9": "...ffhhhhhhHHHHnn...",
+    "10": "...ffhhhhhhHHHnn....",
+    "11": "...fnhhnhhnHHnnn...."
    }
   }
  },
  "torsos": {
   "maglietta": {
    "front": [
-    "..kkcccwwccckk..",
-    ".kcccccccccccCk.",
-    ".kcCcccccccuCCk.",
-    ".kssCccccccCssk.",
-    ".kssCccccccCSsk.",
-    ".kSskppppppkSSk."
+    "....KcWcDSDcCCK.....",
+    "...KWWcccccccCCCK...",
+    "..KWcKcccccccCCKCK..",
+    "..KcCKccccccuCCKCCK.",
+    "..DaSKcccccccCCKSD..",
+    "..DasKcccccccCCKsSD.",
+    ".DaasDKcccccCCCKsSSD",
+    ".DassDQppppppPPQDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ],
    "back": [
-    "..kkcccccccckk..",
-    ".kcccccccccccCk.",
-    ".kcCuuuuuuuuCCk.",
-    ".kssCuucuucCssk.",
-    ".kssCccccccCSsk.",
-    ".kSskppppppkSSk."
+    "....KcccccccCCK.....",
+    "...KWWcccccccCCCK...",
+    "..KWcKcuuuuucCCKCK..",
+    "..KcCKcuuuuucCCKCCK.",
+    "..DaSKcccccccCCKSD..",
+    "..DasKcccccccCCKsSD.",
+    ".DaasDKcccccCCCKsSSD",
+    ".DassDQppppppPPQDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ]
   },
   "camicia": {
    "front": [
-    "..kkcwwsswwckk..",
-    ".kcccccwccccCCk.",
-    ".kcCccccwccccCk.",
-    ".kcCccccwcccCCk.",
-    ".kcCccccwcccCCk.",
-    ".kssppppppppSsk."
+    "....KwWwDSDwwCK.....",
+    "...KWWcccwcccCCCK...",
+    "..KWcKccccwccCCKCK..",
+    "..KcCKccccwccCCKCCK.",
+    "..KcCKccccwccCCKCCK.",
+    "..KcCKccccwccCCKCCK.",
+    ".DaasDKcccwcCCCKsSSD",
+    ".DassDQppppppPPQDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ],
    "back": [
-    "..kkcwwccwwckk..",
-    ".kcccccccccccCk.",
-    ".kcCcccccccccCk.",
-    ".kcCcccccccccCk.",
-    ".kcCccccccccCCk.",
-    ".kssppppppppSsk."
+    "....KwwwwwwwwCK.....",
+    "...KWWcccccccCCCK...",
+    "..KWcKcccccccCCKCK..",
+    "..KcCKcccccccCCKCCK.",
+    "..KcCKcccccccCCKCCK.",
+    "..KcCKcccccccCCKCCK.",
+    ".DaasDKcccccCCCKsSSD",
+    ".DassDQppppppPPQDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ]
   },
   "felpa": {
    "front": [
-    ".kkcccwsswccckk.",
-    ".kcccccwwccccCk.",
-    ".kcCcccccccccCk.",
-    ".kcCckkkkkkcCCk.",
-    ".kcCckcccckcCCk.",
-    ".kssCcccccccSsk."
+    "...KCcWcDSDcCCCK....",
+    "...KWWccwccwcCCCK...",
+    "..KWcKccwccwcCCKCK..",
+    "..KcCKcccccccCCKCCK.",
+    "..KcCKcCCCCCcCCKCCK.",
+    "..KcCKcCcccCcCCKCCK.",
+    ".DaasDKcccccCCCKsSSD",
+    ".DassDKCCCCCCCCKDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ],
    "back": [
-    ".kkcccccccccckk.",
-    ".kcckCCCCCCkcCk.",
-    ".kcCckCCCCkcCCk.",
-    ".kcCcckkkkccCCk.",
-    ".kcCccccccccCCk.",
-    ".kssCcccccccSsk."
+    "...KCCCCCCCCCCK.....",
+    "...KWCcccccccCCCK...",
+    "..KWcKCCcccCCCCKCK..",
+    "..KcCKcccccccCCKCCK.",
+    "..KcCKcccccccCCKCCK.",
+    "..KcCKcccccccCCKCCK.",
+    ".DaasDKcccccCCCKsSSD",
+    ".DassDKCCCCCCCCKDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ]
   },
   "giacca": {
    "front": [
-    "..kkcCCsSCCckk..",
-    ".kwccccCCccccwk.",
-    ".kcCcccwCcccCCk.",
-    ".kcCccccCcccCCk.",
-    ".kcCcccwCcccCCk.",
-    ".kssCcccCcccSsk."
+    "....KcCwDSDwCCK.....",
+    "...KWWcCwwwwCCCCK...",
+    "..KWcKcCwwwwCCCKCK..",
+    "..KcCKcCwwwwCCCKCCK.",
+    "..KcCKcCwwwwCCCKCCK.",
+    "..KcCKcCwwwwCCCKCCK.",
+    ".DaasDKcCwwwCCCKsSSD",
+    ".DassDKcCQppKCCKDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ],
    "back": [
-    "..kkcccccccckk..",
-    ".kwcccccccccCwk.",
-    ".kcCcccccccccCk.",
-    ".kcCccccccccCCk.",
-    ".kcCccccccccCCk.",
-    ".kssCcccccccSsk."
+    "....KcccccccCCK.....",
+    "...KWWcccccccCCCK...",
+    "..KWcKcccccccCCKCK..",
+    "..KcCKcccccccCCKCCK.",
+    "..KcCKcccCcccCCKCCK.",
+    "..KcCKcccCcccCCKCCK.",
+    ".DaasDKcccCcCCCKsSSD",
+    ".DassDKccCCcCCCKDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ]
   },
   "vestito": {
    "front": [
-    "..kkccsssscckk..",
-    ".kcccccccccccCk.",
-    ".kcCcccccccccCk.",
-    ".kssCwwwwwwCssk.",
-    ".kssppppppppSsk.",
-    ".kSkppppppppkSk."
+    "....KcWcDSDcCCK.....",
+    "...KWWcccccccCCCK...",
+    "..KWcKcccccccCCKCK..",
+    "..KcCKcccccccCCKCCK.",
+    "..DaSKcccccccCCKSD..",
+    "..DasKwwwwwwwwwKsSD.",
+    ".DaasQqpppppPPPQsSSD",
+    ".DassQqppppppPPPQSSD",
+    "..DDQqppppppPPPPQD.."
    ],
    "back": [
-    "..kkcccccccckk..",
-    ".kcccccccccccCk.",
-    ".kcCcccccccccCk.",
-    ".kssCwwwwwwCssk.",
-    ".kssppppppppSsk.",
-    ".kSkppppppppkSk."
+    "....KcccccccCCK.....",
+    "...KWWcccccccCCCK...",
+    "..KWcKcccccccCCKCK..",
+    "..KcCKcccccccCCKCCK.",
+    "..DaSKcccccccCCKSD..",
+    "..DasKwwwwwwwwwKsSD.",
+    ".DaasQqpppppPPPQsSSD",
+    ".DassQqppppppPPPQSSD",
+    "..DDQqppppppPPPPQD.."
    ]
   },
   "salopette": {
    "front": [
-    "..kkcccwwccckk..",
-    ".kccpcccccpccCk.",
-    ".kcCpppppppppCk.",
-    ".kssppwwwwppSsk.",
-    ".kssppppppppSsk.",
-    ".kSskppppppkSSk."
+    "....KcWcDSDcCCK.....",
+    "...KWWcpccccpCCCK...",
+    "..KWcKcpppppPCCKCK..",
+    "..KcCKcpwwwpPCCKCCK.",
+    "..DaSKcpppppPCCKSD..",
+    "..DasKQpppppPPPKsSD.",
+    ".DaasDQpppppPPPQsSSD",
+    ".DassDQppppppPPQDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ],
    "back": [
-    "..kkcccccccckk..",
-    ".kccpcccccpccCk.",
-    ".kcCcpcccpcccCk.",
-    ".kssppppppppSsk.",
-    ".kssppppppppSsk.",
-    ".kSskppppppkSSk."
+    "....KcccccccCCK.....",
+    "...KWWcpccccpCCCK...",
+    "..KWcKcpcccpcCCKCK..",
+    "..KcCKccpcpccCCKCCK.",
+    "..DaSKcccpcccCCKSD..",
+    "..DasKQpppppPPPKsSD.",
+    ".DaasDQpppppPPPQsSSD",
+    ".DassDQppppppPPQDSSD",
+    "..DDD.QpppqpPPQ.DD.."
    ]
   }
  },
  "legs": {
   "pantaloni": {
    "stand": [
-    "..kkppppppPPkk..",
-    "...kpppkkpPPk...",
-    "...kpppkkpPPk...",
-    "...kpppkkpPPk...",
-    "..kbbbbkkbbbbk..",
-    "..kkkkk..kkkkk.."
+    "......QpppQpPPQ.....",
+    "......QqppQpPPQ.....",
+    "......QqppQpPPQ.....",
+    "......QpppQpPPQ.....",
+    "......QppPQPPPQ.....",
+    ".....NBbbNNbbbN.....",
+    "....NBbbbNNbbbbN....",
+    "....NNNNN..NNNNN...."
    ],
    "a": [
-    "..kkppppppPPkk..",
-    "...kpppkkpPPk...",
-    "...kpppkkpPPk...",
-    "..kbbbbkkpPPk...",
-    "..kkkkk.kbbbbk..",
-    "........kkkkkk.."
+    "......QpppQpPPQ.....",
+    "......QpppQpPPQ.....",
+    "......QqppQpPPQ.....",
+    "......QqpQ.QpPQ.....",
+    ".....QqpQ..QpPQ.....",
+    "....NBbbN..QPPQ.....",
+    "....NNNNN.NBbbbN....",
+    "...........NNNNN...."
    ],
    "b": [
-    "..kkppppppPPkk..",
-    "...kpppkkpPPk...",
-    "...kpppkkpPPk...",
-    "...kpppkkbbbbk..",
-    "..kbbbbk.kkkkk..",
-    "..kkkkkk........"
+    "......QpppQpPPQ.....",
+    "......QpppQpPPQ.....",
+    "......QqppQpPPQ.....",
+    "......QqpQ.QpPQ.....",
+    "......QqpQ..QpPQ....",
+    "......QPPQ..NBbbN...",
+    ".....NBbbbN.NNNNN...",
+    ".....NNNNNN........."
    ]
   },
   "gonna": {
    "stand": [
-    "..kppppppppPPk..",
-    "..kkkkkkkkkkkk..",
-    "....ksk..kSk....",
-    "....kxk..kxk....",
-    "...kbbk..kbbk...",
-    "...kkkk..kkkk..."
+    "....QqppppppPPPPQ...",
+    "....QQQQQQQQQQQQQ...",
+    ".......DsD.DSD......",
+    ".......DsD.DSD......",
+    ".......DxD.DxD......",
+    "......NBbN.NbbN.....",
+    "......NbbN.NbbN.....",
+    "......NNNN.NNNN....."
    ],
    "a": [
-    "..kppppppppPPk..",
-    "..kkkkkkkkkkkk..",
-    "....ksk..kSk....",
-    "...kbbk..kxk....",
-    "...kkkk.kbbk....",
-    "........kkkk...."
+    "....QqppppppPPPPQ...",
+    "....QQQQQQQQQQQQQ...",
+    "......DsD..DSD......",
+    ".....DxD...DSD......",
+    "....NBbN...DxD......",
+    "....NNNN..NBbN......",
+    "..........NbbN......",
+    "..........NNNN......"
    ],
    "b": [
-    "..kppppppppPPk..",
-    "..kkkkkkkkkkkk..",
-    "....ksk..kSk....",
-    "....kxk..kbbk...",
-    "....kbbk.kkkk...",
-    "....kkkk........"
+    "....QqppppppPPPPQ...",
+    "....QQQQQQQQQQQQQ...",
+    ".......DsD..DSD.....",
+    ".......DsD...DxD....",
+    ".......DxD..NBbN....",
+    "......NBbN..NNNN....",
+    "......NbbN..........",
+    "......NNNN.........."
    ]
   },
   "pantaloncini": {
    "stand": [
-    "..kkppppppPPkk..",
-    "...kpppkkpPPk...",
-    "...kkkkkkkkkk...",
-    "....ksk..kSk....",
-    "...kbbbk.kbbbk..",
-    "...kkkkk.kkkkk.."
+    "......QpppQpPPQ.....",
+    "......QQQQQQQQQ.....",
+    ".......DsD.DSD......",
+    ".......DsD.DSD......",
+    ".......DxD.DxD......",
+    "......NBbbNNbbN.....",
+    "......NbbbNNbbbN....",
+    "......NNNNN.NNNN...."
    ],
    "a": [
-    "..kkppppppPPkk..",
-    "...kpppkkpPPk...",
-    "...kkkkkkkkkk...",
-    "...kbbbk.kSk....",
-    "...kkkkkkbbbk...",
-    "........kkkkk..."
+    "......QpppQpPPQ.....",
+    "......QQQQQQQQQ.....",
+    "......DsD..DSD......",
+    ".....DxD...DSD......",
+    "....NBbbN..DxD......",
+    "....NNNNN.NBbbN.....",
+    "..........NbbbN.....",
+    "..........NNNNN....."
    ],
    "b": [
-    "..kkppppppPPkk..",
-    "...kpppkkpPPk...",
-    "...kkkkkkkkkk...",
-    "....ksk.kbbbk...",
-    "...kbbbk.kkkkk..",
-    "...kkkkk........"
+    "......QpppQpPPQ.....",
+    "......QQQQQQQQQ.....",
+    ".......DsD..DSD.....",
+    ".......DsD...DxD....",
+    ".......DxD..NBbbN...",
+    "......NBbbN.NNNNN...",
+    "......NbbbN.........",
+    "......NNNNN........."
    ]
   }
  },
@@ -462,7 +515,6 @@
    "torso": "maglietta",
    "legs": "pantaloni",
    "c": "#e0b030",
-   "w": "#e0b030",
    "p": "#3e55a8",
    "b": "#e8e2d4"
   },
@@ -472,7 +524,7 @@
    "c": "#dfe6ee",
    "w": "#ffffff",
    "p": "#4a4e5e",
-   "b": "#5a3a26"
+   "b": "#6e4630"
   },
   "felpa": {
    "torso": "felpa",
@@ -480,38 +532,38 @@
    "c": "#c0392b",
    "w": "#f4f1e8",
    "p": "#3e55a8",
-   "b": "#2b2d38"
+   "b": "#3a3c46"
   },
   "giacca": {
    "torso": "giacca",
    "legs": "pantaloni",
    "c": "#3f7a35",
-   "w": "#e0b030",
-   "p": "#3e55a8",
-   "b": "#c9c3b3"
+   "w": "#ece6d6",
+   "p": "#2e3a5e",
+   "b": "#8a5a34"
   },
   "vestito": {
    "torso": "vestito",
    "legs": "gonna",
    "c": "#f2c94c",
    "w": "#a0521f",
-   "p": "#a0521f",
+   "p": "#b5452e",
    "b": "#8c4a9a",
-   "x": "#c9c3c8"
+   "x": "#ece6d6"
   },
   "sportivo": {
    "torso": "maglietta",
    "legs": "pantaloncini",
    "c": "#16a085",
-   "w": "#16a085",
    "p": "#2b2d38",
-   "b": "#f4f1e8"
+   "b": "#f4f1e8",
+   "x": "#f4f1e8"
   },
   "salopette": {
    "torso": "salopette",
    "legs": "pantaloni",
    "c": "#e84393",
-   "w": "#e0b030",
+   "w": "#ece6d6",
    "p": "#5a7ab8",
    "b": "#6e4630"
   }

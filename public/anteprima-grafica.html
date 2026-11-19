@@ -233,8 +233,8 @@ const DRAWS = {
     body: 'compatto', scale: 1, flat: true, outline: '#241a26',
   },
   accogliente: {
-    name: 'Accogliente 16×28',
-    desc: 'Dai riferimenti di Marco: volontari chibi 16×28 come quelli del gioco, testa larga e squadrata, occhi grandi con riflesso, guance rosate, capelli voluminosi e contorno vinaccia invece del nero; oggetti con contorno colorato e un filo di luce in cima; scena all’ora dorata con ombre viola, luci calde e lampioni accesi. Il più caldo e caratteristico, ma ogni volto va curato a mano.',
+    name: 'Accogliente 20×32',
+    desc: 'Dai riferimenti di Marco: volontari 20×32 di tre quarti come quelli del gioco, sullo sprite di riferimento: capelli grandi a ciocche con riflessi, volto piccolo con occhi taglienti, tre o quattro toni per materiale e contorno scuro dello stesso colore invece del nero; oggetti con contorno colorato e un filo di luce in cima; scena all’ora dorata con ombre viola, luci calde e lampioni accesi. Il più caldo e caratteristico, ma ogni volto va curato a mano.',
     body: 'chibi', scale: 1, grade: true, selOutline: true, glow: true,
     // Colori dello sfondo ritoccati per il tramonto (prima della correzione).
     swap: {
@@ -535,16 +535,18 @@ const M_ACC = {
   sacco: { front: { 4: '...kk...', 5: '.k2222k.', 6: 's222322s', 7: '.k2222k.' }, back: { 6: 'c......C' } },
 };
 
-// Chibi 16×28 (stile Accogliente): lo stesso disegno del gioco, da assets/personaggi.json.
-// Testa 0-15 con acconciatura sovrapposta, busto 16-21, gambe 22-27.
+// Volontari 20×32 di tre quarti (stile Accogliente): lo stesso disegno del gioco, da assets/personaggi.json.
+// Testa 0-14 con acconciatura sovrapposta, busto 15-23, gambe 24-31.
 let PERS = null;
-// Accessori del corpo compatto spostati: in su di una riga quelli sulla testa, in giù di quattro quelli sul busto.
+const ACC_ALIAS = { u: 'µ', q: 'θ', a: 'α' };
+// Accessori del corpo compatto allargati a 20 colonne e spostati: in giù di una riga quelli sulla testa, di tre quelli sul busto.
 const CH_ACC = Object.fromEntries(Object.entries(C_ACC).map(([name, def]) => {
-  const off = name === 'cappello' || name === 'berretto' ? -1 : 4;
-  const sh = o => o && Object.fromEntries(Object.entries(o).map(([r, row]) => [+r + off, row]));
+  const off = name === 'cappello' || name === 'berretto' ? 1 : 3;
+  // u, q e a negli accessori sono colori della palette, che qui hanno un altro significato: si rinominano.
+  const sh = o => o && Object.fromEntries(Object.entries(o).map(([r, row]) => [+r + off, ('..' + row + '..').replace(/[uqa]/g, ch => ACC_ALIAS[ch])]));
   return [name, { front: sh(def.front), back: sh(def.back) }];
 }));
-CH_ACC.occhiali = { front: { 8: '...kkkk..kkkk...', 9: '...k..kkkk..k...', 10: '...k..k..k..k...', 11: '...kkkk..kkkk...' }, back: {} };
+CH_ACC.occhiali = { front: { 10: '....k..kk...k.......', 11: '....k..kk...k.......', 12: '....kkkk.kkkkk......' }, back: {} };
 const EYES = ['#6b4423', '#3f8a3a', '#3a8fc8', '#2e9a96', '#a0672a'];
 /** Righe del volontario chibi: volto, busto (divisa o abito), gambe dell'abito, acconciatura sopra. */
 function chibiRows(look, back, legs) {
@@ -562,7 +564,7 @@ function chibiRows(look, back, legs) {
 const BODIES = {
   compatto: { w: 16, h: 24, bobRow: 18, headF: C_HEAD_F, headB: C_HEAD_B, torsoF: C_TORSO_F, torsoB: C_TORSO_B, legs: C_LEGS, acc: C_ACC, tool: { top: 7, blade: 17, hands: [12, 15], len: 3, drop: 3 } },
   slanciato: { w: 16, h: 32, bobRow: 20, headF: T_HEAD_F, headB: T_HEAD_B, torsoF: T_TORSO_F, torsoB: T_TORSO_B, legs: T_LEGS, acc: T_ACC, tool: { top: 8, blade: 24, hands: [13, 17], len: 4, drop: 3 } },
-  chibi: { w: 16, h: 28, bobRow: 22, acc: CH_ACC, tool: { top: 10, blade: 21, hands: [19, 21], len: 3, drop: 2 }, chibi: true },
+  chibi: { w: 20, h: 32, bobRow: 24, acc: CH_ACC, tool: { top: 11, blade: 25, hands: [21, 22], len: 3, drop: 2 }, chibi: true },
   micro: { w: 8, h: 12, bobRow: 9, headF: M_HEAD_F, headB: M_HEAD_B, torsoF: M_TORSO_F, torsoB: M_TORSO_B, legs: M_LEGS, acc: M_ACC, tool: { top: 2, blade: 8, hands: [5], len: 2, drop: 1 } },
 };
 let BODY = BODIES.compatto;
@@ -603,12 +605,17 @@ function lookColors(look) {
   // Chibi: come characterColors nel gioco (src/game/character.ts).
   const o = PERS.outfits[look.outfit] ?? PERS.outfits.casual;
   const top = look.uniform ? PERS.uniform.c : o.c, eye = look.eyes ?? EYES[0];
+  const hair = look.hair, skin = look.skin;
   return {
-    k: '#4a1c30', s: look.skin, S: mix(look.skin, '#b0505a', 0.3), m: mix(look.skin, '#ef6a6a', 0.45), t: mix(look.skin, '#9a2f3a', 0.5),
-    Z: '#f6f2ea', z: eye, d: mix(eye, '#1a1020', 0.45),
-    h: look.hair, H: mix(look.hair, '#3a1530', 0.4), f: mix(look.hair, '#ffe0b0', 0.35),
-    c: top, C: mix(top, '#2a1040', 0.35), w: look.uniform ? PERS.uniform.u : o.w, u: look.uniform ? PERS.uniform.u : top,
-    p: o.p, P: mix(o.p, '#1a1030', 0.3), b: o.b, x: o.x ?? '#d8d4c8',
+    ...base,
+    F: mix(hair, '#fff3c8', 0.42), f: mix(hair, '#ffe2a8', 0.2), h: hair, H: mix(hair, '#2a1030', 0.35), n: mix(hair, '#12061a', 0.62),
+    a: mix(skin, '#fff4e0', 0.4), s: skin, S: mix(skin, '#8a3a3a', 0.25), D: mix(skin, '#3a1418', 0.62),
+    e: '#1a1420', Z: '#f6f6f2', z: eye, t: mix(skin, '#7a2030', 0.45),
+    W: mix(top, '#ffffff', 0.35), c: top, C: mix(top, '#20103a', 0.33), K: mix(top, '#0a0614', 0.68),
+    w: look.uniform ? PERS.uniform.u : (o.w ?? top), u: look.uniform ? PERS.uniform.u : top,
+    q: mix(o.p, '#ffffff', 0.25), p: o.p, P: mix(o.p, '#101030', 0.33), Q: mix(o.p, '#05030c', 0.66),
+    B: mix(o.b, '#ffffff', 0.4), b: o.b, N: mix(o.b, '#0a0610', 0.62), x: o.x ?? '#d8d4c8',
+    'µ': PAL.u, 'θ': PAL.q, 'α': PAL.a,
   };
 }
 function charFrame(look, { back = false, legs = 'stand', bob = 0, carry = null, tool = 0 }) {

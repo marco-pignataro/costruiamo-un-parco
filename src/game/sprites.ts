@@ -65,7 +65,7 @@ export function volunteerPortrait(look: VolunteerLook, scale = 12, head = false)
   const cached = portraits.get(key);
   if (cached) return cached;
   let rows = characterRows(look);
-  if (head) rows = rows.slice(0, 19);
+  if (head) rows = rows.slice(0, 18);
   const canvas = document.createElement('canvas');
   canvas.width = CHARACTER.w * scale;
   canvas.height = rows.length * scale;

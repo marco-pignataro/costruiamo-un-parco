@@ -1,7 +1,7 @@
 import art from '../data/personaggi.json';
 
 /**
- * Volontari in stile chibi (16×28), composti da `personaggi.json`: volto,
+ * Volontari 20×32 visti di tre quarti, composti da `personaggi.json`: volto,
  * acconciatura sovrapposta riga per riga, busto e gambe dell'abito scelto.
  * Sul campo il busto diventa la maglietta di gruppo e le gambe restano quelle
  * dell'abito. Niente Phaser né DOM: restituisce righe di caratteri e colori.
@@ -68,29 +68,23 @@ export function mix(a: string, b: string, t: number): string {
   return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
 }
 
-/** Colore di ogni carattere: contorno vinaccia, ombre calde, occhi con riflesso, guance rosate. */
+/**
+ * Colore di ogni carattere. Ogni materiale ha una rampa di 3-4 toni (luce in
+ * alto a sinistra, ombre verso il viola) e il tono più scuro fa da contorno,
+ * come nello sprite di riferimento: niente contorno nero uguale per tutto.
+ */
 export function characterColors(look: CharacterLook): Record<string, string> {
   const o = ART.outfits[look.outfit] ?? Object.values(ART.outfits)[0];
   const top = look.uniform ? ART.uniform.c : o.c;
+  const { hair, skin, eyes } = look;
   return {
-    k: '#4a1c30',
-    s: look.skin,
-    S: mix(look.skin, '#b0505a', 0.3),
-    m: mix(look.skin, '#ef6a6a', 0.45),
-    t: mix(look.skin, '#9a2f3a', 0.5),
-    Z: '#f6f2ea',
-    z: look.eyes,
-    d: mix(look.eyes, '#1a1020', 0.45),
-    h: look.hair,
-    H: mix(look.hair, '#3a1530', 0.4),
-    f: mix(look.hair, '#ffe0b0', 0.35),
-    c: top,
-    C: mix(top, '#2a1040', 0.35),
-    w: look.uniform ? ART.uniform.u : o.w,
-    u: look.uniform ? ART.uniform.u : top,
-    p: o.p,
-    P: mix(o.p, '#1a1030', 0.3),
-    b: o.b,
+    F: mix(hair, '#fff3c8', 0.42), f: mix(hair, '#ffe2a8', 0.2), h: hair, H: mix(hair, '#2a1030', 0.35), n: mix(hair, '#12061a', 0.62),
+    a: mix(skin, '#fff4e0', 0.4), s: skin, S: mix(skin, '#8a3a3a', 0.25), D: mix(skin, '#3a1418', 0.62),
+    e: '#1a1420', Z: '#f6f6f2', z: eyes, t: mix(skin, '#7a2030', 0.45),
+    W: mix(top, '#ffffff', 0.35), c: top, C: mix(top, '#20103a', 0.33), K: mix(top, '#0a0614', 0.68),
+    w: look.uniform ? ART.uniform.u : (o.w ?? top), u: look.uniform ? ART.uniform.u : top,
+    q: mix(o.p, '#ffffff', 0.25), p: o.p, P: mix(o.p, '#101030', 0.33), Q: mix(o.p, '#05030c', 0.66),
+    B: mix(o.b, '#ffffff', 0.4), b: o.b, N: mix(o.b, '#0a0610', 0.62),
     x: o.x ?? '#d8d4c8',
   };
 }

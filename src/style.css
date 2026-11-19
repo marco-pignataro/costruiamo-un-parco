@@ -97,7 +97,7 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 .photo img { display: block; image-rendering: pixelated; }
 .crew-focus { flex: none; width: 250px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: stretch; cursor: pointer; padding: 8px; }
 .crew-focus .photo { width: 84px; padding: 6px 7px 0; }
-.crew-focus .photo img { width: 48px; }
+.crew-focus .photo img { width: 40px; }
 .crew-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 2px; }
 .crew-info strong { font-size: 16px; }
 .crew-info .role { color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
@@ -105,7 +105,7 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 .crew-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap-reverse; gap: 6px; min-width: 0; flex: 1 1 auto; pointer-events: none; }
 .crew-card { position: relative; flex: none; width: 76px; display: grid; justify-items: center; gap: 1px; padding: 5px 4px 6px; cursor: pointer; text-align: center; }
 .crew-card .photo { width: 100%; padding-top: 4px; }
-.crew-card .photo img { width: 32px; }
+.crew-card .photo img { width: 40px; }
 .crew-card strong { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crew-card small { font-size: 10px; line-height: 1.15; }
 .crew-card:hover { outline: 2px solid var(--line); }
@@ -128,7 +128,7 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
 .cand-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; grid-template-columns: repeat(5, minmax(0, 1fr)); align-content: start; gap: 10px !important; padding: 2px; scrollbar-width: thin; scrollbar-gutter: stable; }
 .cand-card { min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 2px; padding: 8px; background: white; border: 1px solid var(--line); border-radius: 8px; }
 .cand-card .photo { height: 96px; margin-bottom: 4px; }
-.cand-card .photo img { width: 48px; }
+.cand-card .photo img { width: 60px; }
 .cand-card .role { color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
 .cand-card small { font-size: 12px; }
 .cand-card button { margin-top: auto; }
@@ -157,7 +157,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 ul.vols .vol { grid-template-columns: auto 1fr auto; }
 label.vol { cursor: pointer; }
 label.vol:hover { background: white; }
-img.face { width: 16px; height: 28px; image-rendering: pixelated; display: block; }
+img.face { width: 20px; height: 32px; image-rendering: pixelated; display: block; }
 [data-profile] { cursor: pointer; border-radius: 6px; }
 [data-profile]:hover { background: white; }
 .vol.busy { opacity: 0.55; }
@@ -209,7 +209,7 @@ img.face { width: 16px; height: 28px; image-rendering: pixelated; display: block
 /* scheda del volontario: sprite grande a sinistra, dati a destra */
 .sheet.profile { width: min(600px, 100%); grid-template-columns: minmax(150px, 1fr) 1.4fr; gap: 18px; align-items: start; }
 .profile .portrait { display: grid; place-items: center; align-self: stretch; background: linear-gradient(#b8e0f2, #b8e0f2 58%, #5a9e3a 58%); border-radius: 8px; padding: 18px 8px; }
-.profile .portrait img { width: 112px; image-rendering: pixelated; }
+.profile .portrait img { width: 120px; image-rendering: pixelated; }
 .profile .info { display: grid; gap: 6px; min-width: 0; }
 .profile h3 { margin: 6px 0 0; }
 .profile .facts .bar { margin: 3px 0 1px; }
@@ -290,12 +290,12 @@ button.ribbon { background: #c0392b; color: white; border-color: #c0392b; }
   .crew-card { width: 64px; }
   .item-card { width: 112px; }
   .crew-card.on { outline: 3px solid var(--accent); }
-  .crew-card .photo img { width: 24px; }
+  .crew-card .photo img { width: 30px; }
   .recruit { padding: 10px; }
   .recruit-head small { display: none; }
   .cand-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px !important; }
   .cand-card .photo { height: 76px; }
-  .cand-card .photo img { width: 40px; }
+  .cand-card .photo img { width: 60px; }
   .menu-sheet .sheet-head { display: flex; }
   .sheet.profile { grid-template-columns: 1fr; }
   .profile .portrait img { width: 80px; }
