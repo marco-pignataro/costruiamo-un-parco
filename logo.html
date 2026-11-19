@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <title>Logo · %GAME_TITLE%</title>
+    <style>
+      :root { --bg: #e8eef3; --ink: #1f2430; --muted: #5d6472; --card: #fbfaf6; --line: #d6d2c6; --accent: #2a5fa8; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+      main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 20px; }
+      h1 { font-size: 20px; margin: 0; }
+      p { margin: 0; color: var(--muted); }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+      .stage { display: grid; place-items: center; padding: 24px 8px; border-radius: 8px; background: linear-gradient(#cfe8f6, #b8dcef); overflow: hidden; }
+      .stage.dark { background: linear-gradient(#2b2440, #1b1830); }
+      .stage img { image-rendering: pixelated; max-width: 100%; height: auto; display: block; }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      label { font-weight: 600; }
+      input[type=text] { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); min-width: 0; flex: 1 1 220px; }
+      button, a.btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: white; color: var(--ink); cursor: pointer; text-decoration: none; }
+      button.on { background: var(--accent); color: white; border-color: var(--accent); }
+      .variants { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+      .variants figure { margin: 0; display: grid; gap: 6px; }
+      figcaption { font-size: 13px; color: var(--muted); }
+      code { font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Il logo</h1>
+        <p>Il marchio <strong>gLOVEs On!</strong> è fisso; il sottotitolo sta su una targa di legno appesa all'isoletta e si cambia in <code>GAME_SUBTITLE</code> dentro <code>src/config.ts</code>. La targa si allarga da sola col testo.</p>
+      </header>
+      <section class="card">
+        <div class="stage" id="stage"><img id="main" alt=""></div>
+        <div class="row">
+          <label for="sub">Sottotitolo</label>
+          <input type="text" id="sub" maxlength="40" autocomplete="off">
+          <button type="button" id="none">Senza</button>
+        </div>
+        <div class="row">
+          <span>Ingrandimento</span>
+          <span class="row" id="scales"></span>
+          <span>Sfondo</span>
+          <button type="button" id="light" class="on">Cielo</button><button type="button" id="dark">Sera</button>
+        </div>
+        <div class="row"><span>Scarica PNG</span><span class="row" id="downloads"></span></div>
+      </section>
+      <section class="card">
+        <h1>Varianti del sottotitolo</h1>
+        <div class="variants" id="variants"></div>
+      </section>
+    </main>
+    <script type="module" src="/src/logo-page.ts"></script>
+  </body>
+</html>

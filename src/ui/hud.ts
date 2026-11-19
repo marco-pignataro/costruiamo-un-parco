@@ -1,10 +1,16 @@
-import { ASSOCIATION, GAME_TITLE, HOURS_PER_WORKING_DAY, INAUGURATION, ORDERS, SIDE_QUEST, SURVEY, VOLUNTEER_NAME_MAX } from '../config';
+import { ASSOCIATION, GAME_FULL_TITLE, GAME_SUBTITLE, HOURS_PER_WORKING_DAY, INAUGURATION, ORDERS, SIDE_QUEST, SURVEY, VOLUNTEER_NAME_MAX } from '../config';
 import { formatHours } from '../core/duration';
 import type { LookKey, LookPatch, Simulation } from '../core/simulation';
 import type { ActiveTask, PraticaStatus, Stage, Volunteer } from '../core/types';
 import type { Insets } from '../game/camera';
 import { ERASER, type EditorTool } from '../game/ParkScene';
 import { inUniform, volunteerLook, volunteerPortrait } from '../game/sprites';
+import { logoDataUrl } from '../game/logo';
+
+/** Il logo come immagine; il testo alternativo è il titolo completo. */
+function logo(subtitle: string | null, scale: number, cls: string): string {
+  return `<img class="${cls}" src="${logoDataUrl(subtitle, scale)}" alt="${esc(GAME_FULL_TITLE)}">`;
+}
 import { type Activity, type Kind, activityAvailable, listActivities, walkTarget } from './activities';
 import { type Timeline, type WeekCell, buildTimeline } from './timeline';
 
@@ -202,7 +208,7 @@ export class Hud {
         this.render();
       }
     });
-    document.title = GAME_TITLE;
+    document.title = GAME_FULL_TITLE;
   }
 
   private get sim() {
@@ -379,7 +385,7 @@ export class Hud {
   }
 
   private brand(subtitle: string, extra = ''): string {
-    return `<section class="card brand"><h1>${esc(GAME_TITLE)}</h1><p>${subtitle}</p>${extra}</section>`;
+    return `<section class="card brand"><h1>${logo(null, 1, 'logo')}</h1><p>${subtitle}</p>${extra}</section>`;
   }
 
   /** Linguette delle schede, ognuna con la sua icona e il suo dato in breve (in basso su telefono, in cima al pannello su desktop). */
@@ -923,6 +929,7 @@ export class Hud {
     const sim = this.sim;
     const min = Math.round(INAUGURATION.minProgress * 100);
     return `<div class="card sheet" role="dialog" aria-modal="true">
+        ${logo(null, 2, 'logo big')}
         <small class="kind">${esc(sim.siteName)}</small>
         <h2>Consegna mancata</h2>
         <p>Alla data di consegna, la settimana ${sim.state.deadlineWeek}, il progetto era realizzato al <strong>${Math.round(sim.projectProgress * 100)}%</strong>: per inaugurare ne serviva almeno il ${min}%.</p>
@@ -938,6 +945,7 @@ export class Hud {
     if (!f) return '';
     const P = (label: string, v: number, max: number) => `<tr><td>${label}</td><td>${v}</td><td><small>su ${max}</small></td></tr>`;
     return `<div class="card sheet" role="dialog" aria-modal="true">
+        ${logo(GAME_SUBTITLE, 2, 'logo big')}
         <small class="kind">${esc(sim.siteName)}</small>
         <h2>Il parco è inaugurato!</h2>
         <small>Progetto realizzato al ${Math.round(f.progress * 100)}% in ${f.week} ${f.week === 1 ? 'settimana' : 'settimane'}.</small>
@@ -1111,9 +1119,9 @@ export class Hud {
   /** Benvenuto della nuova partita: cos'è il gioco e se si vuole il tutorial. */
   private welcomeCard(): string {
     const w = this.sim.tutorialTexts.welcome;
-    const fill = (t: string) => esc(t.replaceAll('{titolo}', GAME_TITLE).replaceAll('{associazione}', ASSOCIATION.name));
+    const fill = (t: string) => esc(t.replaceAll('{titolo}', GAME_FULL_TITLE).replaceAll('{associazione}', ASSOCIATION.name));
     return `<div class="card sheet welcome" role="dialog" aria-modal="true" aria-label="Benvenuto">
-      <h2>${esc(GAME_TITLE)}</h2>
+      <h2>${logo(GAME_SUBTITLE, 2, 'logo big')}</h2>
       <p>${fill(w.intro)}</p>
       <ul>${w.lines.map((l) => `<li>${fill(l)}</li>`).join('')}</ul>
       <p><strong>${fill(w.question)}</strong></p>

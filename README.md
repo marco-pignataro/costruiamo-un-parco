@@ -1,4 +1,4 @@
-# Costrui-AMO: un Parco!
+# gLOVEs On! Let's make a Park
 
 Gestionale in pixel art per browser, realizzato per **Puli-AMO Messina**: una squadra di volontari trasforma un terreno abbandonato in un parco urbano, tra cantiere, pratiche e raccolte fondi.
 

@@ -1,7 +1,15 @@
 // Unico punto in cui vivono titolo e dati dell'associazione:
 // cambiando questi valori cambiano ovunque nel gioco.
 
-export const GAME_TITLE = 'Costrui-AMO: un Parco!';
+/** Titolo principale: è il marchio del logo e non cambia. */
+export const GAME_TITLE = 'gLOVEs On!';
+/**
+ * Sottotitolo accessorio e intercambiabile (in futuro altre varianti): sta
+ * sulla targa di legno sotto il logo, che si allarga da sola col testo.
+ */
+export const GAME_SUBTITLE = "Let's make a Park";
+/** Titolo completo, per la scheda del browser e i testi. */
+export const GAME_FULL_TITLE = GAME_SUBTITLE ? `${GAME_TITLE} ${GAME_SUBTITLE}` : GAME_TITLE;
 
 export const ASSOCIATION = {
   name: 'Puli-AMO Messina',

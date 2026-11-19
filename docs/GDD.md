@@ -1,4 +1,4 @@
-# Costrui-AMO: un Parco! — Game Design Document
+# gLOVEs On! Let's make a Park — Game Design Document
 
 Aggiornato al 13/11/2026 · Marco Pignataro (Puli-AMO Messina)
 
@@ -7,7 +7,7 @@ Aggiornato al 13/11/2026 · Marco Pignataro (Puli-AMO Messina)
 
 ## Visione e concept
 
-Costrui-AMO: un Parco! è un gestionale in pixel art per browser: il giocatore guida un'associazione di volontari dalla scelta di un terreno abbandonato all'inaugurazione di un parco urbano. L'ambientazione è una Messina riconoscibile, ma terreni, enti e fatti sono di fantasia; le difficoltà sono quelle che Puli-AMO Messina vive davvero.
+gLOVEs On! Let's make a Park è un gestionale in pixel art per browser: il giocatore guida un'associazione di volontari dalla scelta di un terreno abbandonato all'inaugurazione di un parco urbano. L'ambientazione è una Messina riconoscibile, ma terreni, enti e fatti sono di fantasia; le difficoltà sono quelle che Puli-AMO Messina vive davvero.
 
 **Pitch in una riga:** trasforma un terreno dimenticato in un parco, con pochi soldi, tanti volontari e una burocrazia da domare.
 
@@ -561,7 +561,8 @@ Fuori dall'MVP restano il mini-dungeon, la modalità manutenzione e l'arte defin
 
 | Tema | Decisione |
 | --- | --- |
-| Titolo (provvisorio) | Costrui-AMO: un Parco! |
+| Titolo (definitivo dal 19/11/2026) | **gLOVEs On!** è il titolo principale e il marchio del logo; **Let's make a Park** è il sottotitolo, accessorio e intercambiabile (in futuro altre varianti). Entrambi in `src/config.ts` (`GAME_TITLE`, `GAME_SUBTITLE`). |
+| Logo | Pixel art generata in codice (`src/game/logo.ts`), nello stile dei volontari: "gLOVEs On!" in lettere a blocchi ("LOVE" in rosso corallo dentro "gloves" in blu, "On!" in giallo) su un'isoletta d'erba sospesa, con alberello, pala piantata e guanto da lavoro col pollice in su. Il sottotitolo sta su una targa di legno appesa sotto, larga quanto il testo, con un font pixel che copre lettere, cifre, punteggiatura e accenti. Senza sottotitolo resta il solo marchio (intestazione del gioco). Pagina `logo.html` con varianti e PNG da scaricare. |
 | Piattaforma | Browser |
 | Tempo | Gioco a timer reali: turni settimanali in-game divisi in parte burocratica (20 ore reali con almeno un compito in corso; chiuderla prima fa avanzare le attese) e parte operativa (1 giorno da 8 ore); compiti con durata in ore reali, ridotta da più volontari e skill adatte; resoconto in modale, in coda se il gioco era chiuso |
 | Burocrazia | Pratiche generate dal progetto e visibili da subito; a timer (richiesta 1-2 ore + attesa che avanza con la sessione, senza scorciatoie a pagamento) o richieste dirette ai dirigenti |

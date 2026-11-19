@@ -81,6 +81,9 @@ body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: v
   backdrop-filter: blur(3px);
 }
 .card h1 { font-size: 17px; margin: 0; font-weight: 700; }
+img.logo { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
+.brand h1 { line-height: 0; }
+img.logo.big { margin: 0 auto 4px; }
 .card h2 { font-size: 12px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .card h3 { font-size: 13px; margin: 6px 0 4px; }
 .card p { margin: 0 0 4px; }

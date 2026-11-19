@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { GAME_TITLE, readTimeScale } from './config';
+import { GAME_FULL_TITLE, GAME_TITLE, readTimeScale } from './config';
 import { defaultContent } from './core/content';
 import { migrate } from './core/migrate';
 import { Simulation } from './core/simulation';
@@ -69,7 +69,7 @@ async function boot() {
     parent: 'game',
     pixelArt: true,
     backgroundColor: '#1b1b1b',
-    title: GAME_TITLE,
+    title: GAME_FULL_TITLE,
     // La tela riempie il riquadro di gioco; la scena sceglie lo zoom (libero, dalla visuale intera in su).
     scale: { mode: Phaser.Scale.RESIZE },
     // Due dita sul telefono per lo zoom a pizzico.
